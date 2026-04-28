@@ -495,10 +495,10 @@
   <div class="card">
     <div class="card-body">
       <div class="boundary-box">
-        <div class="boundary-box-title">일과 경계 기록 (메모 없이 즉시 저장)</div>
+        <div class="boundary-box-title">근태 활동 기록(메모 없이 즉시 저장)</div>
         <div class="boundary-btns">
-          <button id="start-work-btn" class="btn btn-start" type="button">🟢 일과 시작 저장</button>
-          <button id="end-work-btn" class="btn btn-end" type="button">🔴 일과 종료 저장</button>
+          <button id="start-work-btn" class="btn btn-start" type="button">🟢 일과 시작</button>
+          <button id="end-work-btn" class="btn btn-end" type="button">🔴 일과 종료</button>
           <button id="refresh-gps-btn" class="btn btn-ghost btn-gps" type="button">📍 GPS 새로 읽기</button>
         </div>
       </div>
@@ -584,7 +584,7 @@
 
       <div id="activity-source-text" class="helper"></div>
       <div class="field">
-        <label for="memo-input">메모 (선택)</label>
+        <label for="memo-input">활동 기록(활동 중 기록이 어려우시면 활동 저장 후 추후에 작성 가능)</label>
         <textarea id="memo-input" placeholder="예: 병원 동행 후 복약 확인 및 정서지원 진행"></textarea>
       </div>
       <div class="action-row">
@@ -594,15 +594,15 @@
 
       <div class="mini-stats">
         <div class="mini-stat">
-          <div class="mini-stat-label">기록 수</div>
+          <div class="mini-stat-label">활동 수</div>
           <div id="stat-today-count" class="mini-stat-value">0</div>
         </div>
         <div class="mini-stat">
-          <div class="mini-stat-label">총 근무시간</div>
+          <div class="mini-stat-label">근무 시간</div>
           <div id="stat-today-duration" class="mini-stat-value">0초</div>
         </div>
         <div class="mini-stat">
-          <div class="mini-stat-label">현재 세션</div>
+          <div class="mini-stat-label">활동 시간</div>
           <div id="stat-current-elapsed" class="mini-stat-value">-</div>
         </div>
       </div>
