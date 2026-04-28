@@ -42,7 +42,8 @@ jobs:
       - name: Fix Gradle wrapper version
         run: |
           cd android
-          sed -i 's|gradle-.*-all.zip|gradle-7.6.1-all.zip|g' gradle/wrapper/gradle-wrapper.properties
+          sed -i 's|distributionUrl=.*|distributionUrl=https\\://services.gradle.org/distributions/gradle-8.0.2-all.zip|g' gradle/wrapper/gradle-wrapper.properties
+          cat gradle/wrapper/gradle-wrapper.properties
 
       - name: Build APK
         run: |
