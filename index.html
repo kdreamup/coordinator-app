@@ -14,16 +14,16 @@
     html,body{margin:0;padding:0;font-family:Arial,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;background:var(--bg);color:var(--text);-webkit-text-size-adjust:100%;}
     body{min-height:100vh;min-height:100dvh;}
     .hidden{display:none !important;visibility:hidden;height:0;overflow:hidden;}
-    .screen{width:100%;max-width:480px;margin:0 auto;padding:16px 14px 80px;}
-    .hero{background:linear-gradient(135deg,#2563eb 0%,#1d4ed8 38%,#0f766e 100%);color:#fff;border-radius:16px;padding:14px 16px;box-shadow:var(--shadow);margin-bottom:12px;position:relative;overflow:hidden;}
+    .screen{width:100%;max-width:480px;margin:0 auto;padding:12px 12px 80px;}
+    .hero{background:linear-gradient(135deg,#2563eb 0%,#1d4ed8 38%,#0f766e 100%);color:#fff;border-radius:14px;padding:12px 14px;box-shadow:var(--shadow);margin-bottom:10px;position:relative;overflow:hidden;}
     .hero::after{content:"";position:absolute;right:-35px;top:-35px;width:120px;height:120px;border-radius:50%;background:rgba(255,255,255,.12);}
-    .hero h1{margin:0 0 6px;font-size:18px;font-weight:800;}
-    .hero p{margin:0;color:rgba(255,255,255,.92);line-height:1.5;font-size:12px;}
+    .hero h1{margin:0 0 4px;font-size:16px;font-weight:800;}
+    .hero p{margin:0;color:rgba(255,255,255,.92);line-height:1.45;font-size:11px;}
     .card{background:var(--card);border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);overflow:hidden;margin-bottom:14px;}
     .card-head{padding:14px 16px 10px;border-bottom:1px solid #edf2f7;}
     .card-head h3{margin:0;font-size:16px;font-weight:800;}
     .card-head .sub{margin-top:4px;color:var(--sub);font-size:12px;line-height:1.5;}
-    .card-body{padding:14px 16px;}
+    .card-body{padding:12px 14px;}
     .auth-wrap{max-width:760px;margin:0 auto;}
     .recent-box{margin-bottom:14px;padding:14px 16px;background:#f8fbff;border:1px solid #dbeafe;border-radius:16px;color:#274690;font-size:14px;font-weight:700;}
     .selected-box{border:2px solid #93c5fd;border-radius:14px;padding:14px 16px;background:#eff6ff;line-height:1.7;font-size:16px;font-weight:700;color:#1e40af;text-align:center;}
@@ -57,11 +57,11 @@
     .btn-soft{background:#f8fafc;color:#334155;border:1px solid #e2e8f0}
     .btn-sm{padding:7px 11px;font-size:13px;border-radius:10px;}
 
-    .boundary-box{padding:14px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:14px;margin-bottom:16px;}
+    .boundary-box{padding:10px 12px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:12px;margin-bottom:12px;}
     .boundary-box-title{font-size:12px;font-weight:700;color:#166534;margin-bottom:10px;}
     .boundary-btns{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
     .boundary-btns .btn-gps{grid-column:1/-1;}
-    .boundary-btns .btn{padding:16px 8px;font-size:15px;border-radius:14px;text-align:center;width:100%;}
+    .boundary-btns .btn{padding:12px 4px;font-size:13px;border-radius:12px;text-align:center;width:100%;}
 
     .activity-section-title{font-size:13px;font-weight:700;color:#1e3a8a;margin-bottom:10px;}
 
@@ -368,7 +368,7 @@
         <div id="selected-user-box" class="selected-box empty-state">사용자를 선택하세요.</div>
         <!-- 검색 -->
         <div class="field" style="margin-top:12px;">
-          <input id="user-search-input" type="text" placeholder="🔍  이름 검색..." style="border-radius:12px;padding:11px 13px;font-size:14px;" />
+          <input id="user-search-input" type="text" placeholder="🔍  이름 검색..." style="border-radius:12px;padding:13px 16px;font-size:15px;margin-top:12px;" />
         </div>
         <div id="user-list-loading" class="loading-indicator">
           <div class="loading-dot"></div>
@@ -379,7 +379,7 @@
         <div id="login-user-list" class="user-list" style="display:none;"></div>
         <div id="user-list-error" class="error-box" style="display:none;"></div>
         <!-- 기존 코드 호환용 숨김 input -->
-        <input id="manual-user-input" type="text" style="display:none;" />
+        <input id="manual-user-input" type="text" style="display:none!important;width:0;height:0;padding:0;margin:0;border:0;visibility:hidden;" />
         <div class="auth-actions">
           <button id="refresh-auth-btn" class="btn btn-soft" type="button">목록 새로고침</button>
           <button id="login-btn" class="btn btn-primary" type="button">로그인</button>
@@ -422,10 +422,10 @@
   <div class="card">
     <div class="card-body">
       <div class="boundary-box">
-        <div class="boundary-box-title">일과 경계 기록 (메모 없이 즉시 저장)</div>
+        <div class="boundary-box-title">일과 기록 (메모 없이 즉시 저장 가능)</div>
         <div class="boundary-btns">
-          <button id="start-work-btn" class="btn btn-start" type="button">🟢 일과 시작 저장</button>
-          <button id="end-work-btn" class="btn btn-end" type="button">🔴 일과 종료 저장</button>
+          <button id="start-work-btn" class="btn btn-start" type="button">🟢 일과 시작</button>
+          <button id="end-work-btn" class="btn btn-end" type="button">🔴 일과 종료</button>
           <button id="refresh-gps-btn" class="btn btn-ghost btn-gps" type="button">📍 GPS 새로 읽기</button>
         </div>
       </div>
@@ -511,7 +511,7 @@
 
       <div id="activity-source-text" class="helper"></div>
       <div class="field">
-        <label for="memo-input">메모 (선택)</label>
+        <label for="memo-input">활동 기록(바쁘실 땐 활동 저장 후 추후에 기록하세요)</label>
         <textarea id="memo-input" placeholder="예: 병원 동행 후 복약 확인 및 정서지원 진행"></textarea>
       </div>
       <div class="action-row">
@@ -521,15 +521,15 @@
 
       <div class="mini-stats">
         <div class="mini-stat">
-          <div class="mini-stat-label">오늘 기록 수</div>
+          <div class="mini-stat-label">오늘 활동 기록 수</div>
           <div id="stat-today-count" class="mini-stat-value">0</div>
         </div>
         <div class="mini-stat">
-          <div class="mini-stat-label">오늘 활동 시간</div>
+          <div class="mini-stat-label">오늘 총 근무 시간</div>
           <div id="stat-today-duration" class="mini-stat-value">0초</div>
         </div>
         <div class="mini-stat">
-          <div class="mini-stat-label">현재 세션 경과</div>
+          <div class="mini-stat-label">현재 활동 시간</div>
           <div id="stat-current-elapsed" class="mini-stat-value">-</div>
         </div>
       </div>
@@ -1002,7 +1002,23 @@
     const box  = el("selected-user-box");
     if(name){
       box.className="selected-box";
-      box.innerHTML=`👤 ${safeEscape(name)}`;
+      box.innerHTML=`👤 ${safeEscape(name)} <button id="change-user-btn" style="margin-left:10px;padding:6px 14px;font-size:13px;font-weight:800;color:#fff;background:#f59e0b;border:none;border-radius:10px;cursor:pointer;">✏️ 변경</button>`;
+      // 변경 버튼 클릭 시 목록 다시 표시
+      setTimeout(()=>{
+        const changeBtn = document.getElementById("change-user-btn");
+        if(changeBtn){
+          changeBtn.addEventListener("click", function(e){
+            e.stopPropagation();
+            selectedLoginUser = "";
+            el("user-search-input").style.display = "";
+            el("user-search-input").value = "";
+            el("user-search-input").focus();
+            renderUserList(false, null);
+            box.className="selected-box empty-state";
+            box.innerHTML="사용자를 선택하세요.";
+          });
+        }
+      }, 50);
     } else {
       box.className="selected-box empty-state";
       box.innerHTML="사용자를 선택하세요.";
@@ -1024,6 +1040,8 @@
 
     loadingEl.style.display="none";
     if(errorEl) errorEl.style.display="none";
+    // 목록 표시 시 검색창도 보이게
+    if(el("user-search-input")) el("user-search-input").style.display="";
 
     if(errorMsg){
       if(errorEl){ errorEl.style.display="block"; errorEl.textContent="⚠️ " + errorMsg; }
@@ -1061,7 +1079,10 @@
       btn.addEventListener("click",function(){
         selectedLoginUser=name;
         updateSelectedUserBox();
-        renderUserList(false, null);
+        // 선택 후 목록 숨기고 검색창 초기화
+        el("login-user-list").style.display="none";
+        el("user-search-input").value="";
+        el("user-search-input").style.display="none";
       });
       listEl.appendChild(btn);
     });
@@ -1168,7 +1189,11 @@
     const lastUser=currentUserName;
     currentUserName=""; currentSession=null; etcText=""; resetSubActivitySelections(); el("manual-user-input").value="";
     selectedLoginUser=lastUser;
-    renderUserList(false,null);
+    // 로그아웃 시 마지막 사용자 유지, 목록은 숨김
+    selectedLoginUser = lastUser;
+    updateSelectedUserBox();
+    if(el("user-search-input")) el("user-search-input").style.display="none";
+    el("login-user-list").style.display="none";
     showScreen("auth");
     stopSessionTicker(); stopWorkTimer();
   }
