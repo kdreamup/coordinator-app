@@ -22,6 +22,11 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
+      - name: Prepare www folder
+        run: |
+          mkdir -p www
+          cp index.html www/index.html
+
       - name: Install dependencies
         run: |
           npm init -y
@@ -29,7 +34,7 @@ jobs:
 
       - name: Init Capacitor
         run: |
-          npx cap init "노인코디네이터" "kr.nonsan.coordinator" --web-dir .
+          npx cap init "노인코디네이터" "kr.nonsan.coordinator" --web-dir www
 
       - name: Add Android platform
         run: npx cap add android
