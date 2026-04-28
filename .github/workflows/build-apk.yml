@@ -35,6 +35,19 @@ jobs:
       - name: Init Capacitor
         run: |
           npx cap init "노인코디네이터" "kr.nonsan.coordinator" --web-dir www
+          cat > capacitor.config.json << 'EOF'
+          {
+            "appId": "kr.nonsan.coordinator",
+            "appName": "노인코디네이터",
+            "webDir": "www",
+            "android": {
+              "allowMixedContent": true
+            },
+            "server": {
+              "cleartext": true
+            }
+          }
+          EOF
 
       - name: Add Android platform
         run: npx cap add android
