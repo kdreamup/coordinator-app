@@ -15,10 +15,10 @@
     body{min-height:100vh;min-height:100dvh;}
     .hidden{display:none !important;visibility:hidden;height:0;overflow:hidden;}
     .screen{width:100%;max-width:480px;margin:0 auto;padding:16px 14px 80px;}
-    .hero{background:linear-gradient(135deg,#2563eb 0%,#1d4ed8 38%,#0f766e 100%);color:#fff;border-radius:20px;padding:20px 18px;box-shadow:var(--shadow);margin-bottom:14px;position:relative;overflow:hidden;}
+    .hero{background:linear-gradient(135deg,#2563eb 0%,#1d4ed8 38%,#0f766e 100%);color:#fff;border-radius:16px;padding:14px 16px;box-shadow:var(--shadow);margin-bottom:12px;position:relative;overflow:hidden;}
     .hero::after{content:"";position:absolute;right:-35px;top:-35px;width:120px;height:120px;border-radius:50%;background:rgba(255,255,255,.12);}
-    .hero h1{margin:0 0 6px;font-size:22px;font-weight:800;}
-    .hero p{margin:0;color:rgba(255,255,255,.92);line-height:1.55;font-size:13px;}
+    .hero h1{margin:0 0 6px;font-size:18px;font-weight:800;}
+    .hero p{margin:0;color:rgba(255,255,255,.92);line-height:1.5;font-size:12px;}
     .card{background:var(--card);border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);overflow:hidden;margin-bottom:14px;}
     .card-head{padding:14px 16px 10px;border-bottom:1px solid #edf2f7;}
     .card-head h3{margin:0;font-size:16px;font-weight:800;}
@@ -38,11 +38,11 @@
     input[type="text"]:focus,textarea:focus{border-color:#93c5fd;box-shadow:0 0 0 4px rgba(59,130,246,.12);}
     textarea{min-height:96px;resize:vertical;}
     .auth-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:18px;flex-wrap:wrap;}
-    .topbar{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:12px;}
-    .brand-title{margin:0;font-size:18px;font-weight:800;white-space:nowrap;}
+    .topbar{display:flex;justify-content:space-between;align-items:center;gap:6px;margin-bottom:10px;}
+    .brand-title{margin:0;font-size:15px;font-weight:800;white-space:nowrap;}
     .brand-sub{margin-top:3px;font-size:12px;color:var(--sub);}
     .toolbar{display:flex;gap:6px;flex-shrink:0;}
-    .btn{appearance:none;border:none;border-radius:12px;padding:10px 12px;font-size:14px;font-weight:800;cursor:pointer;transition:.15s ease;white-space:nowrap;}
+    .btn{appearance:none;border:none;border-radius:10px;padding:8px 10px;font-size:13px;font-weight:800;cursor:pointer;transition:.15s ease;white-space:nowrap;}
     .btn:active{transform:scale(.97)}
     .btn-primary{background:var(--primary);color:#fff}
     .btn-ghost{background:#eff6ff;color:var(--primary);border:1px solid #dbeafe}
@@ -424,8 +424,8 @@
       <div class="boundary-box">
         <div class="boundary-box-title">일과 경계 기록 (메모 없이 즉시 저장)</div>
         <div class="boundary-btns">
-          <button id="start-work-btn" class="btn btn-start" type="button">🟢 일과 시작</button>
-          <button id="end-work-btn" class="btn btn-end" type="button">🔴 일과 종료</button>
+          <button id="start-work-btn" class="btn btn-start" type="button">🟢 일과 시작 저장</button>
+          <button id="end-work-btn" class="btn btn-end" type="button">🔴 일과 종료 저장</button>
           <button id="refresh-gps-btn" class="btn btn-ghost btn-gps" type="button">📍 GPS 새로 읽기</button>
         </div>
       </div>
