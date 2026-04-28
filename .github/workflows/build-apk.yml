@@ -39,11 +39,35 @@ jobs:
       - name: Add Android platform
         run: npx cap add android
 
+      - name: Apply app icon
+        run: |
+          mkdir -p android/app/src/main/res/mipmap-xxxhdpi
+          mkdir -p android/app/src/main/res/mipmap-xxhdpi
+          mkdir -p android/app/src/main/res/mipmap-xhdpi
+          mkdir -p android/app/src/main/res/mipmap-hdpi
+          mkdir -p android/app/src/main/res/mipmap-mdpi
+          pip install Pillow --break-system-packages -q
+          python3 -c "
+          from PIL import Image
+          img = Image.open('app_icon.png').convert('RGBA')
+          sizes = {
+            'mipmap-xxxhdpi': 192,
+            'mipmap-xxhdpi': 144,
+            'mipmap-xhdpi': 96,
+            'mipmap-hdpi': 72,
+            'mipmap-mdpi': 48,
+          }
+          for folder, size in sizes.items():
+            resized = img.resize((size, size), Image.LANCZOS)
+            resized.save(f'android/app/src/main/res/{folder}/ic_launcher.png')
+            resized.save(f'android/app/src/main/res/{folder}/ic_launcher_round.png')
+          print('아이콘 적용 완료')
+          "
+
       - name: Fix Gradle wrapper version
         run: |
           cd android
           sed -i 's|distributionUrl=.*|distributionUrl=https\\://services.gradle.org/distributions/gradle-8.0.2-all.zip|g' gradle/wrapper/gradle-wrapper.properties
-          cat gradle/wrapper/gradle-wrapper.properties
 
       - name: Build APK
         run: |
