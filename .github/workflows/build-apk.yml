@@ -30,7 +30,7 @@ jobs:
       - name: Install dependencies
         run: |
           npm init -y
-          npm install @capacitor/core @capacitor/cli @capacitor/android
+          npm install @capacitor/core@5.7.0 @capacitor/cli@5.7.0 @capacitor/android@5.7.0
 
       - name: Init Capacitor
         run: |
@@ -39,20 +39,16 @@ jobs:
       - name: Add Android platform
         run: npx cap add android
 
-      - name: Grant Gradle permissions
+      - name: Fix Gradle wrapper version
         run: |
           cd android
-          chmod +x gradlew
-
-      - name: Clean Gradle cache
-        run: |
-          cd android
-          ./gradlew clean --no-daemon
+          sed -i 's|gradle-.*-all.zip|gradle-7.6.1-all.zip|g' gradle/wrapper/gradle-wrapper.properties
 
       - name: Build APK
         run: |
           cd android
-          ./gradlew assembleDebug --no-daemon --stacktrace
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
