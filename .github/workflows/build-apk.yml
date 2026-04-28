@@ -40,10 +40,8 @@ jobs:
             "appId": "kr.nonsan.coordinator",
             "appName": "노인코디네이터",
             "webDir": "www",
-            "android": {
-              "allowMixedContent": true
-            },
             "server": {
+              "url": "https://attendance-system-e2848.web.app",
               "cleartext": true
             }
           }
