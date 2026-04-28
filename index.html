@@ -73,22 +73,22 @@
     html,body{margin:0;padding:0;font-family:Arial,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;background:var(--bg);color:var(--text);-webkit-text-size-adjust:100%;}
     body{min-height:100vh;min-height:100dvh;}
     .hidden{display:none !important;visibility:hidden;height:0;overflow:hidden;}
-    .screen{width:100%;max-width:480px;margin:0 auto;padding:12px 12px 80px;}
-    .hero{background:linear-gradient(135deg,#2563eb 0%,#1d4ed8 38%,#0f766e 100%);color:#fff;border-radius:14px;padding:12px 14px;box-shadow:var(--shadow);margin-bottom:10px;position:relative;overflow:hidden;}
+    .screen{width:100%;max-width:480px;margin:0 auto;padding:10px 10px 80px;}
+    .hero{background:linear-gradient(135deg,#2563eb 0%,#1d4ed8 38%,#0f766e 100%);color:#fff;border-radius:12px;padding:10px 14px;box-shadow:var(--shadow);margin-bottom:8px;position:relative;overflow:hidden;}
     .hero::after{content:"";position:absolute;right:-35px;top:-35px;width:120px;height:120px;border-radius:50%;background:rgba(255,255,255,.12);}
-    .hero h1{margin:0 0 4px;font-size:16px;font-weight:800;}
-    .hero p{margin:0;color:rgba(255,255,255,.92);line-height:1.45;font-size:11px;}
+    .hero h1{margin:0 0 4px;font-size:14px;font-weight:800;}
+    .hero p{margin:0;color:rgba(255,255,255,.92);line-height:1.4;font-size:11px;display:none;}
     .card{background:var(--card);border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);overflow:hidden;margin-bottom:14px;}
-    .card-head{padding:14px 16px 10px;border-bottom:1px solid #edf2f7;}
-    .card-head h3{margin:0;font-size:16px;font-weight:800;}
+    .card-head{padding:10px 14px 8px;border-bottom:1px solid #edf2f7;}
+    .card-head h3{margin:0;font-size:15px;font-weight:800;}
     .card-head .sub{margin-top:4px;color:var(--sub);font-size:12px;line-height:1.5;}
     .card-body{padding:12px 14px;}
     .auth-wrap{max-width:760px;margin:0 auto;}
     .recent-box{margin-bottom:14px;padding:14px 16px;background:#f8fbff;border:1px solid #dbeafe;border-radius:16px;color:#274690;font-size:14px;font-weight:700;}
     .selected-box{border:2px solid #93c5fd;border-radius:14px;padding:14px 16px;background:#eff6ff;line-height:1.7;font-size:16px;font-weight:700;color:#1e40af;text-align:center;}
     .selected-box.empty-state{border:2px dashed #cbd5e1;background:#fafcff;color:#94a3b8;font-size:14px;font-weight:400;}
-    .user-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin-top:14px;}
-    .user-pill{border:1px solid var(--line);background:#fff;color:var(--text);border-radius:14px;padding:13px 12px;text-align:center;cursor:pointer;font-size:14px;font-weight:800;transition:.15s ease;}
+    .user-list{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:10px;}
+    .user-pill{border:1px solid var(--line);background:#fff;color:var(--text);border-radius:12px;padding:11px 8px;text-align:center;cursor:pointer;font-size:13px;font-weight:800;transition:.15s ease;}
     .user-pill:hover{transform:translateY(-1px);border-color:#bfdbfe;background:#f8fbff;}
     .user-pill.selected{background:#eaf2ff;border-color:#93c5fd;color:#1d4ed8;}
     .field{display:flex;flex-direction:column;gap:6px;margin-top:14px;}
@@ -117,7 +117,7 @@
     .btn-sm{padding:7px 11px;font-size:13px;border-radius:10px;}
 
     .boundary-box{padding:10px 12px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:12px;margin-bottom:12px;}
-    .boundary-box-title{font-size:12px;font-weight:700;color:#166534;margin-bottom:10px;}
+    .boundary-box-title{font-size:11px;font-weight:700;color:#166534;margin-bottom:8px;}
     .boundary-btns{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
     .boundary-btns .btn-gps{grid-column:1/-1;}
     .boundary-btns .btn{padding:12px 4px;font-size:13px;border-radius:12px;text-align:center;width:100%;}
@@ -133,12 +133,12 @@
     }
     .activity-chip{
       appearance:none;border:none;
-      display:flex;align-items:center;gap:10px;
+      display:flex;align-items:center;gap:8px;
       background:#f8fafc;
       border:2px solid #e2e8f0;
-      border-radius:14px;
-      padding:13px 14px;
-      font-size:14px;font-weight:700;
+      border-radius:12px;
+      padding:10px 10px;
+      font-size:13px;font-weight:700;
       color:#475569;
       cursor:pointer;
       transition:all .15s ease;
@@ -193,8 +193,8 @@
 
     .mini-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:14px;}
     .mini-stat{background:#f8fafc;border:1px solid #eef2f7;border-radius:12px;padding:10px 12px;}
-    .mini-stat-label{font-size:11px;color:var(--sub);font-weight:700;margin-bottom:3px;}
-    .mini-stat-value{font-size:17px;font-weight:800;line-height:1.2;}
+    .mini-stat-label{font-size:10px;color:var(--sub);font-weight:700;margin-bottom:2px;}
+    .mini-stat-value{font-size:15px;font-weight:800;line-height:1.2;}
 
     .tag{display:inline-flex;align-items:center;padding:5px 9px;border-radius:999px;background:#eef4ff;color:#2447a6;border:1px solid #dbeafe;font-size:12px;font-weight:800;}
     .selected-activities{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;}
@@ -469,7 +469,7 @@
     </div>
   </div>
 
-  <div style="background:#fff;border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);padding:12px 16px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;">
+  <div style="background:#fff;border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);padding:10px 14px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;">
     <div style="display:flex;align-items:center;gap:10px;">
       <div id="profile-avatar" class="profile-avatar" title="탭하여 프로필 사진 변경">
         <span id="profile-initials">👤</span>
@@ -490,7 +490,7 @@
   <div class="card">
     <div class="card-body">
       <div class="boundary-box">
-        <div class="boundary-box-title">일과 근태 기록 (메모 없이 즉시 저장 가능)</div>
+        <div class="boundary-box-title">근태 활동 기록(메모 없이 즉시 저장 가능)</div>
         <div class="boundary-btns">
           <button id="start-work-btn" class="btn btn-start" type="button">🟢 일과 시작</button>
           <button id="end-work-btn" class="btn btn-end" type="button">🔴 일과 종료</button>
@@ -579,12 +579,12 @@
 
       <div id="activity-source-text" class="helper"></div>
       <div class="field">
-        <label for="memo-input">활동 내용(활동 중에 작성이 어려우시면 활동 저장 후 추후에 작성 가능)</label>
+        <label for="memo-input">활동 기록(활동시 등록이 어려우시면 활동 저장 후 추후에 작성 가능)</label>
         <textarea id="memo-input" placeholder="예: 병원 동행 후 복약 확인 및 정서지원 진행"></textarea>
       </div>
       <div class="action-row">
         <button id="save-activity-btn" class="btn btn-primary" type="button">활동 저장</button>
-        <button id="cancel-session-btn" class="btn btn-danger" type="button">현재 선택 취소</button>
+        <button id="cancel-session-btn" class="btn btn-danger" type="button">활동 선택 취소</button>
       </div>
 
       <div class="mini-stats">
@@ -593,11 +593,11 @@
           <div id="stat-today-count" class="mini-stat-value">0</div>
         </div>
         <div class="mini-stat">
-          <div class="mini-stat-label">오늘 총 근무 시간</div>
+          <div class="mini-stat-label">총 근무 시간</div>
           <div id="stat-today-duration" class="mini-stat-value">0초</div>
         </div>
         <div class="mini-stat">
-          <div class="mini-stat-label">현재 활동 시간</div>
+          <div class="mini-stat-label">활동 시간</div>
           <div id="stat-current-elapsed" class="mini-stat-value">-</div>
         </div>
       </div>
