@@ -47,6 +47,8 @@ jobs:
           sed -i 's/compileSdkVersion = .*/compileSdkVersion = 35/' variables.gradle
           sed -i 's/targetSdkVersion = .*/targetSdkVersion = 35/' variables.gradle
           sed -i 's/versionCode = .*/versionCode = 2/' variables.gradle
+          echo "=== variables.gradle 확인 ==="
+          cat variables.gradle
 
       - name: Setup Keystore
         run: |
