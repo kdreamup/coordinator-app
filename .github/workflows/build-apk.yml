@@ -80,12 +80,14 @@ jobs:
           cd android
           sed -i 's|distributionUrl=.*|distributionUrl=https\\://services.gradle.org/distributions/gradle-8.0.2-all.zip|g' gradle/wrapper/gradle-wrapper.properties
 
-      - name: Fix targetSdk to 35
+      - name: Fix targetSdk and version code
         run: |
           sed -i 's/targetSdkVersion 33/targetSdkVersion 35/g' android/app/build.gradle
           sed -i 's/compileSdkVersion 33/compileSdkVersion 35/g' android/app/build.gradle
           sed -i 's/targetSdk = 33/targetSdk = 35/g' android/app/build.gradle
           sed -i 's/compileSdk = 33/compileSdk = 35/g' android/app/build.gradle
+          sed -i 's/versionCode 1/versionCode 2/g' android/app/build.gradle
+          sed -i 's/versionName "1.0"/versionName "1.1"/g' android/app/build.gradle
 
       - name: Decode keystore
         run: |
