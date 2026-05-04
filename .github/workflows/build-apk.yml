@@ -35,94 +35,29 @@ jobs:
       - name: Init Capacitor
         run: |
           npx cap init "노인코디네이터" "kr.nonsan.coordinator" --web-dir www
-          cat > capacitor.config.json << 'EOF'
-          {
-            "appId": "kr.nonsan.coordinator",
-            "appName": "노인코디네이터",
-            "webDir": "www",
-            "server": {
-              "url": "https://attendance-system-e2848.web.app",
-              "cleartext": true
-            }
-          }
-          EOF
 
       - name: Add Android platform
         run: npx cap add android
 
-      - name: Apply app icon
-        run: |
-          mkdir -p android/app/src/main/res/mipmap-xxxhdpi
-          mkdir -p android/app/src/main/res/mipmap-xxhdpi
-          mkdir -p android/app/src/main/res/mipmap-xhdpi
-          mkdir -p android/app/src/main/res/mipmap-hdpi
-          mkdir -p android/app/src/main/res/mipmap-mdpi
-          pip install Pillow --break-system-packages -q
-          python3 -c "
-          from PIL import Image
-          img = Image.open('app_icon.png').convert('RGBA')
-          sizes = {
-            'mipmap-xxxhdpi': 192,
-            'mipmap-xxhdpi': 144,
-            'mipmap-xhdpi': 96,
-            'mipmap-hdpi': 72,
-            'mipmap-mdpi': 48,
-          }
-          for folder, size in sizes.items():
-            resized = img.resize((size, size), Image.LANCZOS)
-            resized.save(f'android/app/src/main/res/{folder}/ic_launcher.png')
-            resized.save(f'android/app/src/main/res/{folder}/ic_launcher_round.png')
-          print('아이콘 적용 완료')
-          "
-
-      - name: Fix Gradle wrapper version
+      - name: Fix Gradle and SDK versions
         run: |
           cd android
-          sed -i 's|distributionUrl=.*|distributionUrl=https\\://services.gradle.org/distributions/gradle-8.0.2-all.zip|g' gradle/wrapper/gradle-wrapper.properties
-
-      - name: Fix targetSdk and version code
-        run: |
-          python3 -c "
-          with open('android/variables.gradle', 'r') as f:
-            content = f.read()
-          print('수정 전:', content)
-          content = content.replace('compileSdkVersion = 33', 'compileSdkVersion = 35')
-          content = content.replace('targetSdkVersion = 33', 'targetSdkVersion = 35')
-          content = content.replace('compileSdk = 33', 'compileSdk = 35')
-          content = content.replace('targetSdk = 33', 'targetSdk = 35')
-          with open('android/variables.gradle', 'w') as f:
-            f.write(content)
-          print('수정 후:', content)
-          "
-          python3 -c "
-          with open('android/app/build.gradle', 'r') as f:
-            content = f.read()
-          content = content.replace('versionCode 1', 'versionCode 4')
-          content = content.replace('versionCode 2', 'versionCode 4')
-          content = content.replace('versionCode 3', 'versionCode 4')
-          content = content.replace('versionName \"1.0\"', 'versionName \"1.3\"')
-          content = content.replace('versionName \"1.2\"', 'versionName \"1.3\"')
-          with open('android/app/build.gradle', 'w') as f:
-            f.write(content)
-          print('버전 코드 완료')
-          "
-
-      - name: Decode keystore
-        run: |
-          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > android/app/coordinator.keystore
+          # Gradle 8.4로 업그레이드
+          sed -i 's|distributionUrl=.*|distributionUrl=https\\://services.gradle.org/distributions/gradle-8.4-all.zip|g' gradle/wrapper/gradle-wrapper.properties
+          # Android Gradle Plugin 8.1.4로 업그레이드
+          sed -i "s|classpath 'com.android.tools.build:gradle:8.0.0'|classpath 'com.android.tools.build:gradle:8.1.4'|g" build.gradle
+          # variables.gradle에서 compileSdk와 targetSdk를 35로 설정
+          sed -i 's/compileSdkVersion = .*/compileSdkVersion = 35/' variables.gradle
+          sed -i 's/targetSdkVersion = .*/targetSdkVersion = 35/' variables.gradle
 
       - name: Build Release AAB
         run: |
           cd android
           chmod +x gradlew
-          ./gradlew bundleRelease --no-daemon \
-            -Pandroid.injected.signing.store.file=$GITHUB_WORKSPACE/android/app/coordinator.keystore \
-            -Pandroid.injected.signing.store.password=${{ secrets.KEYSTORE_PASSWORD }} \
-            -Pandroid.injected.signing.key.alias=${{ secrets.KEY_ALIAS }} \
-            -Pandroid.injected.signing.key.password=${{ secrets.KEY_PASSWORD }}
+          ./gradlew bundleRelease --no-daemon
 
       - name: Upload AAB
         uses: actions/upload-artifact@v4
         with:
-          name: coordinator-app-release
+          name: coordinator-aab
           path: android/app/build/outputs/bundle/release/app-release.aab
