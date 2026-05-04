@@ -82,23 +82,30 @@ jobs:
 
       - name: Fix targetSdk and version code
         run: |
-          cat android/app/build.gradle
+          python3 -c "
+          with open('android/variables.gradle', 'r') as f:
+            content = f.read()
+          print('수정 전:', content)
+          content = content.replace('compileSdkVersion = 33', 'compileSdkVersion = 35')
+          content = content.replace('targetSdkVersion = 33', 'targetSdkVersion = 35')
+          content = content.replace('compileSdk = 33', 'compileSdk = 35')
+          content = content.replace('targetSdk = 33', 'targetSdk = 35')
+          with open('android/variables.gradle', 'w') as f:
+            f.write(content)
+          print('수정 후:', content)
+          "
           python3 -c "
           with open('android/app/build.gradle', 'r') as f:
             content = f.read()
-          content = content.replace('compileSdkVersion 33', 'compileSdkVersion 35')
-          content = content.replace('targetSdkVersion 33', 'targetSdkVersion 35')
-          content = content.replace('compileSdk = 33', 'compileSdk = 35')
-          content = content.replace('targetSdk = 33', 'targetSdk = 35')
-          content = content.replace('compileSdk 33', 'compileSdk 35')
-          content = content.replace('targetSdk 33', 'targetSdk 35')
-          content = content.replace('versionCode 1', 'versionCode 3')
-          content = content.replace('versionName \"1.0\"', 'versionName \"1.2\"')
+          content = content.replace('versionCode 1', 'versionCode 4')
+          content = content.replace('versionCode 2', 'versionCode 4')
+          content = content.replace('versionCode 3', 'versionCode 4')
+          content = content.replace('versionName \"1.0\"', 'versionName \"1.3\"')
+          content = content.replace('versionName \"1.2\"', 'versionName \"1.3\"')
           with open('android/app/build.gradle', 'w') as f:
             f.write(content)
-          print('완료')
+          print('버전 코드 완료')
           "
-          cat android/app/build.gradle
 
       - name: Decode keystore
         run: |
