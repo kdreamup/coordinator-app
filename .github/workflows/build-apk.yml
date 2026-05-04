@@ -42,13 +42,36 @@ jobs:
       - name: Fix Gradle and SDK versions
         run: |
           cd android
-          # Gradle 8.4로 업그레이드
           sed -i 's|distributionUrl=.*|distributionUrl=https\\://services.gradle.org/distributions/gradle-8.4-all.zip|g' gradle/wrapper/gradle-wrapper.properties
-          # Android Gradle Plugin 8.1.4로 업그레이드
           sed -i "s|classpath 'com.android.tools.build:gradle:8.0.0'|classpath 'com.android.tools.build:gradle:8.1.4'|g" build.gradle
-          # variables.gradle에서 compileSdk와 targetSdk를 35로 설정
           sed -i 's/compileSdkVersion = .*/compileSdkVersion = 35/' variables.gradle
           sed -i 's/targetSdkVersion = .*/targetSdkVersion = 35/' variables.gradle
+
+      - name: Setup Keystore
+        run: |
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > android/app/coordinator.keystore
+
+      - name: Configure Signing
+        run: |
+          cd android/app
+          cat >> build.gradle << 'EOF'
+
+          android {
+              signingConfigs {
+                  release {
+                      storeFile file("coordinator.keystore")
+                      storePassword "${{ secrets.KEYSTORE_PASSWORD }}"
+                      keyAlias "${{ secrets.KEY_ALIAS }}"
+                      keyPassword "${{ secrets.KEYSTORE_PASSWORD }}"
+                  }
+              }
+              buildTypes {
+                  release {
+                      signingConfig signingConfigs.release
+                  }
+              }
+          }
+          EOF
 
       - name: Build Release AAB
         run: |
