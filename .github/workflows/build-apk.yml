@@ -46,8 +46,8 @@ jobs:
           sed -i "s|classpath 'com.android.tools.build:gradle:8.0.0'|classpath 'com.android.tools.build:gradle:8.1.4'|g" build.gradle
           sed -i 's/compileSdkVersion = .*/compileSdkVersion = 35/' variables.gradle
           sed -i 's/targetSdkVersion = .*/targetSdkVersion = 35/' variables.gradle
-          sed -i 's/versionCode 1/versionCode 21/' app/build.gradle
-          sed -i 's/versionName "1.0"/versionName "3.1"/' app/build.gradle
+          sed -i 's/versionCode 1/versionCode 22/' app/build.gradle
+          sed -i 's/versionName "1.0"/versionName "3.2"/' app/build.gradle
           echo "=== 버전 확인 ==="
           grep -n "versionCode\|versionName" app/build.gradle
 
