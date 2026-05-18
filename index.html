@@ -120,11 +120,23 @@
 
     .boundary-box{padding:8px 10px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;margin-bottom:8px;}
     .boundary-box-title{font-size:11px;font-weight:700;color:#166534;margin-bottom:8px;}
+    .work-hours-row{display:flex;align-items:center;justify-content:space-between;gap:8px;background:#fff;border:1px solid #bbf7d0;border-radius:10px;padding:8px 10px;margin-bottom:8px;}
+    .work-hours-row label{font-size:13px;font-weight:900;color:#166534;white-space:nowrap;}
+    .work-hours-select{border:2px solid #86efac;border-radius:10px;background:#fff;padding:7px 10px;font-size:14px;font-weight:900;color:#166534;outline:none;}
+    .work-hours-select:focus{border-color:#16a34a;box-shadow:0 0 0 3px rgba(22,163,74,.15);}
+    .work-hours-helper{font-size:11px;font-weight:700;color:#166534;line-height:1.45;margin:-2px 0 8px;}
     .boundary-btns{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
     .boundary-btns .btn-gps{grid-column:1/-1;}
     .boundary-btns .btn{padding:12px 4px;font-size:13px;border-radius:12px;text-align:center;width:100%;}
 
-    .activity-section-title{font-size:12px;font-weight:700;color:#1e3a8a;margin-bottom:6px;}
+    .section-title{display:flex;align-items:center;gap:9px;font-size:21px;font-weight:900;letter-spacing:-.02em;padding-bottom:8px;margin:12px 0 10px;border-bottom:4px solid currentColor;}
+    .section-title .section-number{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:999px;color:#fff;font-size:17px;font-weight:900;flex-shrink:0;}
+    .section-title-blue{color:#1d4ed8;border-bottom-color:#1d4ed8;}
+    .section-title-blue .section-number{background:#2563eb;}
+    .section-title-green{color:#047857;border-bottom-color:#047857;}
+    .section-title-green .section-number{background:#10b981;}
+    .record-guide{font-size:12px;font-weight:700;color:#64748b;line-height:1.45;margin-top:-4px;}
+    .activity-section-title{display:flex;align-items:center;gap:9px;font-size:21px;font-weight:900;color:#1d4ed8;padding-bottom:8px;margin:12px 0 10px;border-bottom:4px solid #1d4ed8;}
 
     /* ✅ 새 활동 선택 그리드 */
     .chip-wrap{
@@ -186,9 +198,12 @@
       border-radius:12px;
     }
     .helper{margin-top:4px;font-size:11px;color:var(--sub);line-height:1.4;}
-    .action-row{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;}
+    .action-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;justify-content:center;align-items:center;}
+    .action-row .btn{min-width:118px;padding:10px 14px;font-size:14px;font-weight:900;}
     .field{display:flex;flex-direction:column;gap:4px;margin-top:8px;}
     .field label{font-size:12px;color:var(--sub);font-weight:700;}
+    .field label.section-title{display:flex;font-size:21px;font-weight:900;color:inherit;padding-bottom:8px;margin:12px 0 8px;border-bottom:4px solid currentColor;}
+    .field label.section-title-green{color:#047857;border-bottom-color:#047857;}
     input[type="text"],textarea{width:100%;border:1px solid var(--line);border-radius:12px;padding:11px 13px;font-size:14px;background:#fff;color:var(--text);outline:none;}
     input[type="text"]:focus,textarea:focus{border-color:#93c5fd;box-shadow:0 0 0 3px rgba(59,130,246,.12);}
     textarea{min-height:80px;resize:vertical;}
@@ -198,7 +213,7 @@
     .mini-stat-label{font-size:9px;color:var(--sub);font-weight:700;margin-bottom:2px;line-height:1.3;}
     .mini-stat-value{font-size:14px;font-weight:800;line-height:1.2;}
 
-    .tag{display:inline-flex;align-items:center;padding:5px 9px;border-radius:999px;background:#eef4ff;color:#2447a6;border:1px solid #dbeafe;font-size:12px;font-weight:800;}
+    .tag{display:inline-flex;align-items:center;padding:5px 9px;border-radius:6px;background:#eef4ff;color:#2447a6;border:1px solid #dbeafe;font-size:12px;font-weight:800;}
     .selected-activities{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;}
 
     .cal-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
@@ -216,12 +231,13 @@
     .cal-day.other-month{color:#cbd5e1;}
 
     .history-list{display:grid;gap:10px;}
-    .history-item{border:1px solid #e8eef7;border-radius:14px;background:#fff;padding:12px 14px;}
-    .badge{display:inline-flex;align-items:center;padding:5px 9px;border-radius:999px;font-size:12px;font-weight:800;}
+    .history-item{border:2px solid #94A3B8;border-radius:14px;background:#fff;padding:12px 14px;}
+    .badge{display:inline-flex;align-items:center;padding:6px 11px;border-radius:999px;font-size:14px;font-weight:900;line-height:1.1;}
     .badge-start{background:#ecfeff;color:#0f766e}
     .badge-end{background:#fff7ed;color:#c2410c}
     .badge-activity{background:#eef2ff;color:#4338ca}
-    .act-num{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:999px;background:#2563eb;color:#fff;font-size:10px;font-weight:800;flex-shrink:0;margin-right:3px;}
+    .act-num{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:999px;background:#2563eb;color:#fff;font-size:11px;font-weight:900;flex-shrink:0;margin-right:3px;}
+    .history-action-btn{width:36px;height:28px;min-width:36px;padding:0!important;font-size:13px!important;font-weight:900!important;border-radius:8px!important;text-align:center;}
     .empty{padding:20px;text-align:center;color:var(--sub);font-size:14px;}
 
     /* 로딩 인디케이터 */
@@ -255,6 +271,8 @@
     .edit-check-item:active{border-color:#93c5fd;background:#eff6ff;}
     .edit-check-item.checked{background:#dbeafe;border-color:#93c5fd;color:#1d4ed8;}
     .edit-check-item input[type="checkbox"]{width:15px;height:15px;accent-color:#2563eb;flex-shrink:0;}
+    .edit-work-hours-box{background:#f0fdf4;border:1px solid #bbf7d0;border-radius:12px;padding:10px 12px;}
+    .edit-work-hours-box label{font-size:13px;font-weight:900;color:#047857;}
     /* ✅ 기타 인라인 입력 영역 */
     .etc-input-wrap{
       display:none;margin-top:10px;
@@ -498,6 +516,17 @@
     <div class="card-body">
       <div class="boundary-box">
         <div class="boundary-box-title">근태 활동 기록(메모 없이 즉시 저장)</div>
+        <div class="work-hours-row">
+          <label for="work-hours-select">근무시간 선택</label>
+          <select id="work-hours-select" class="work-hours-select" aria-label="근무시간 선택">
+            <option value="1">1시간</option>
+            <option value="2">2시간</option>
+            <option value="3">3시간</option>
+            <option value="4">4시간</option>
+            <option value="5" selected>5시간</option>
+          </select>
+        </div>
+        <div id="work-hours-helper" class="work-hours-helper">기본 5시간으로 일과 시작 후 선택한 시간이 지나면 자동 종료됩니다.</div>
         <div class="boundary-btns">
           <button id="start-work-btn" class="btn btn-start" type="button">🟢 일과 시작</button>
           <button id="end-work-btn" class="btn btn-end" type="button">🔴 일과 종료</button>
@@ -505,7 +534,7 @@
         </div>
       </div>
 
-      <div class="activity-section-title">활동 선택 후 저장</div>
+      <div class="section-title section-title-blue"><span class="section-number">1</span><span>활동</span></div>
       <div id="activity-chip-wrap" class="chip-wrap"></div>
 
       <!-- ✅ 기타 인라인 입력 영역 -->
@@ -586,7 +615,8 @@
 
       <div id="activity-source-text" class="helper"></div>
       <div class="field">
-        <label for="memo-input">활동 기록(활동 중 기록이 어려우시면 활동 저장 후 추후에 작성 가능)</label>
+        <label for="memo-input" class="section-title section-title-green"><span class="section-number">2</span><span>활동기록</span></label>
+        <div class="record-guide">활동 중 기록이 어려우시면 활동 저장 후 추후에 작성 가능합니다.</div>
         <textarea id="memo-input" placeholder="예: 병원 동행 후 복약 확인 및 정서지원 진행"></textarea>
       </div>
       <div class="action-row">
@@ -613,7 +643,7 @@
 
   <div class="card">
     <div class="card-head">
-      <h3>기록 보기</h3>
+      <h3>캘린더 기록보기</h3>
       <div class="sub">날짜를 선택해 기록을 확인하세요. 이번 달만 수정·삭제 가능합니다.</div>
     </div>
     <div class="card-body">
@@ -642,6 +672,16 @@
       <div class="field" id="edit-act-section">
         <label>활동 목록 <span style="font-size:11px;color:#94a3b8;font-weight:400;">(체크해서 변경)</span></label>
         <div id="edit-checklist" class="edit-checklist"></div>
+      </div>
+      <div class="field edit-work-hours-box" id="edit-work-hours-section">
+        <label for="edit-work-hours-select">근무시간</label>
+        <select id="edit-work-hours-select" class="work-hours-select">
+          <option value="1">1시간</option>
+          <option value="2">2시간</option>
+          <option value="3">3시간</option>
+          <option value="4">4시간</option>
+          <option value="5">5시간</option>
+        </select>
       </div>
       <div class="field">
         <label for="edit-memo-input">메모</label>
@@ -700,6 +740,7 @@
   const LS_MEMO      = "coordinator_memo";
   const LS_GPS       = "coordinator_last_gps";
   const LS_PROFILE   = "coordinator_profile_"; // + userName 으로 사용자별 저장
+  const DEFAULT_WORK_HOURS = 5;
 
   const DEFAULT_ACTIVITIES = ["병원 동행","정서지원","복약 확인","식사 지원","청소 및 정리","안전 확인","산책 지원","말벗","장보기","기타 지원"];
   // ✅ 기타 항목으로 인식할 키워드 (이 단어로 시작하는 활동 선택 시 입력창 표시)
@@ -729,7 +770,7 @@
   let selectedLoginUser = "", currentUserName = "";
   let coordinatorNames = [], masterActivities = [], usingDefaultActivities = false;
   let allLogs = [], lastGps = null, currentSession = null, sessionTicker = null;
-  let workTimerTicker = null;
+  let workTimerTicker = null, autoEndTicker = null, autoEndInProgress = false;
   let etcText = ""; // ✅ 기타 입력 내용
 
   let calYear = new Date().getFullYear();
@@ -771,6 +812,24 @@
     if(m>0&&s>0) return `${m}분 ${s}초`;
     if(m>0) return `${m}분`;
     return `${s}초`;
+  }
+  function clampWorkHours(v){
+    const n=Math.round(Number(v));
+    if(isNaN(n)) return DEFAULT_WORK_HOURS;
+    return Math.max(1,Math.min(5,n));
+  }
+  function formatClockTime(ms){
+    const d=toDate(ms);
+    if(!d) return "-";
+    return `${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
+  }
+  function getSelectedWorkHours(){
+    const select=el("work-hours-select");
+    return clampWorkHours(select?select.value:DEFAULT_WORK_HOURS);
+  }
+  function getWorkHoursFromLog(log){
+    if(!log) return DEFAULT_WORK_HOURS;
+    return clampWorkHours(log.workHours ?? log.workHoursSelected ?? log.scheduledWorkHours ?? DEFAULT_WORK_HOURS);
   }
 
   /* ── 로그 헬퍼 ── */
@@ -1270,7 +1329,7 @@
     const savedGps=loadGpsFromStorage(); if(savedGps) lastGps=savedGps;
     renderActivityChips(); updateActivityAreaState(); updateEtcInputVisibility(); updateSubActivityVisibility(); updateCurrentElapsedUi();
     updateTodaySummary(); renderCalendar(); renderHistory();
-    startSessionTicker(); startWorkTimer();
+    startSessionTicker(); startWorkTimer(); startAutoEndTimer();
   }
 
   function logout(){
@@ -1284,7 +1343,7 @@
     if(el("user-search-input")) el("user-search-input").style.display="none";
     el("login-user-list").style.display="none";
     showScreen("auth");
-    stopSessionTicker(); stopWorkTimer();
+    stopSessionTicker(); stopWorkTimer(); stopAutoEndTimer();
   }
 
   /* ── 일과 타이머 ── */
@@ -1320,10 +1379,96 @@
     return toDate(endLogs[0].clientTimeMs)?.getTime()||toDate(endLogs[0].timestamp)?.getTime()||null;
   }
 
+  function getLatestStartLogForDate(dateKey){
+    const logs=allLogs.filter(log=>
+      getLogUserName(log)===currentUserName&&
+      formatDateKey(getLogDateTime(log))===dateKey&&
+      isStartLog(log)
+    );
+    if(!logs.length) return null;
+    logs.sort((a,b)=>{
+      const ta=toDate(a.clientTimeMs)?.getTime()||toDate(a.timestamp)?.getTime()||0;
+      const tb=toDate(b.clientTimeMs)?.getTime()||toDate(b.timestamp)?.getTime()||0;
+      return tb-ta;
+    });
+    return logs[0];
+  }
+
+  function getCurrentWorkHours(){
+    const today=formatDateKey(new Date());
+    const startLog=getLatestStartLogForDate(today);
+    return startLog?getWorkHoursFromLog(startLog):getSelectedWorkHours();
+  }
+
+  function getWorkHoursForLog(log){
+    const own=Number(log?.workHours ?? log?.workHoursSelected ?? log?.scheduledWorkHours);
+    if(!isNaN(own)&&own>0) return clampWorkHours(own);
+    const key=formatDateKey(getLogDateTime(log));
+    const startLog=getLatestStartLogForDate(key);
+    return startLog?getWorkHoursFromLog(startLog):DEFAULT_WORK_HOURS;
+  }
+
+  function getCurrentAutoEndInfo(){
+    if(getTodayWorkStatus()!=="started") return null;
+    const today=formatDateKey(new Date());
+    const startLog=getLatestStartLogForDate(today);
+    const startMs=toDate(startLog?.clientTimeMs)?.getTime()||toDate(startLog?.timestamp)?.getTime()||null;
+    if(!startMs) return null;
+    const hours=getWorkHoursFromLog(startLog);
+    return {hours,startMs,autoEndAtMs:startMs+(hours*60*60*1000)};
+  }
+
+  function updateWorkHoursUi(){
+    const select=el("work-hours-select"), helper=el("work-hours-helper");
+    if(!select||!helper) return;
+    const status=getTodayWorkStatus();
+    const today=formatDateKey(new Date());
+    const startLog=getLatestStartLogForDate(today);
+    if(startLog) select.value=String(getWorkHoursFromLog(startLog));
+    select.disabled=status!=="none";
+    select.style.opacity=select.disabled?"0.55":"1";
+    if(status==="started"){
+      const info=getCurrentAutoEndInfo();
+      helper.textContent=info?`선택 근무시간 ${info.hours}시간 · 자동 종료 예정 ${formatClockTime(info.autoEndAtMs)}`:"근무시간 확인 중입니다.";
+    }else if(status==="ended"){
+      helper.textContent=`오늘 일과가 종료되었습니다. 선택 근무시간 ${getCurrentWorkHours()}시간`;
+    }else{
+      helper.textContent="기본 5시간으로 일과 시작 후 선택한 시간이 지나면 자동 종료됩니다.";
+      if(!select.value) select.value=String(DEFAULT_WORK_HOURS);
+    }
+  }
+
+  async function checkAutoWorkEnd(){
+    if(autoEndInProgress||!currentUserName) return;
+    const info=getCurrentAutoEndInfo();
+    updateWorkHoursUi();
+    if(!info||Date.now()<info.autoEndAtMs) return;
+    autoEndInProgress=true;
+    try{
+      if(currentSession&&currentSession.activities&&currentSession.activities.length){
+        const saved=await saveActivityRecord({silent:true});
+        if(!saved){
+          alert("자동 일과종료 전에 진행 중인 활동 저장에 실패했습니다. 수동으로 확인해주세요.");
+          return;
+        }
+      }
+      if(getTodayWorkStatus()==="started"){
+        const ended=await _doSaveWorkBoundaryLog("일과 종료",{autoEnded:true,silent:true});
+        if(ended) alert(`${info.hours}시간 근무시간이 지나 자동으로 일과 종료되었습니다.`);
+      }
+    }finally{
+      autoEndInProgress=false;
+    }
+  }
+
+  function startAutoEndTimer(){ stopAutoEndTimer(); checkAutoWorkEnd(); autoEndTicker=setInterval(checkAutoWorkEnd,60000); }
+  function stopAutoEndTimer(){ if(autoEndTicker) clearInterval(autoEndTicker); autoEndTicker=null; }
+
   function updateWorkTimerUi(){
     const status=getTodayWorkStatus();
     const startTime=getWorkStartTime();
     const endTime=getWorkEndTime();
+    updateWorkHoursUi();
     if(status==="none"||!startTime){ el("stat-today-duration").textContent="0초"; return; }
     if(status==="ended"&&endTime){ el("stat-today-duration").textContent=formatDuration(endTime-startTime); return; }
     el("stat-today-duration").textContent=formatDuration(Date.now()-startTime);
@@ -1439,7 +1584,9 @@
 
   async function saveWorkBoundaryLog(type){
     if(!currentUserName){ alert("사용자를 먼저 선택해주세요."); return; }
-    if(type==="일과 종료"&&getTodayWorkStatus()==="none"){ alert("일과 시작을 먼저 저장해주세요."); return; }
+    const status=getTodayWorkStatus();
+    if(type==="일과 시작"&&status==="started"){ alert("이미 일과가 시작되어 있습니다."); return; }
+    if(type==="일과 종료"&&status==="none"){ alert("일과 시작을 먼저 저장해주세요."); return; }
 
     // ✅ 일과 종료 시 선택된 활동이 있으면 확인 모달 표시
     if(type==="일과 종료" && currentSession && currentSession.activities.length){
@@ -1447,16 +1594,21 @@
       return;
     }
 
-    await _doSaveWorkBoundaryLog(type);
+    await _doSaveWorkBoundaryLog(type,type==="일과 시작"?{workHours:getSelectedWorkHours()}:{});
   }
 
-  async function _doSaveWorkBoundaryLog(type){
+  async function _doSaveWorkBoundaryLog(type,options={}){
     const tempNow=Date.now();
+    const workHours=type==="일과 시작"?clampWorkHours(options.workHours):null;
+    const autoEndAtMs=type==="일과 시작"?tempNow+(workHours*60*60*1000):null;
     const tempLog={id:"__temp__",userName:currentUserName,type:type,activities:type,clientTimeMs:tempNow,timestamp:{seconds:Math.floor(tempNow/1000)}};
+    if(type==="일과 시작"){ tempLog.workHours=workHours; tempLog.autoEndAtMs=autoEndAtMs; }
     allLogs.unshift(tempLog);
-    updateBoundaryBtnState(); updateActivityAreaState();
+    updateBoundaryBtnState(); updateActivityAreaState(); updateWorkHoursUi();
     const now=Date.now();
     const payload={userName:currentUserName,type:type,activities:type,memo:"",timestamp:firebase.firestore.FieldValue.serverTimestamp(),clientTimeMs:now,timeStr:new Date(now).toLocaleString("ko-KR"),lat:lastGps?.lat??null,lng:lastGps?.lng??null,accuracy:lastGps?.accuracy??null};
+    if(type==="일과 시작"){ payload.workHours=workHours; payload.workHoursText=`${workHours}시간`; payload.autoEndAtMs=now+(workHours*60*60*1000); payload.autoEndAtText=new Date(payload.autoEndAtMs).toLocaleString("ko-KR"); }
+    if(options.autoEnded){ payload.autoEnded=true; payload.autoEndedReason="selected-work-hours"; }
     getGpsBackground(gps=>{
       db.collection("attendanceLogs").where("clientTimeMs","==",now).where("userName","==",currentUserName).get()
         .then(snap=>{ snap.forEach(doc=>doc.ref.update({lat:gps.lat,lng:gps.lng,accuracy:gps.accuracy})); })
@@ -1466,15 +1618,17 @@
       await db.collection("attendanceLogs").add(payload);
       allLogs=allLogs.filter(l=>l.id!=="__temp__");
       await reloadMainData();
-      alert(type+"이 저장되었습니다.");
+      if(!options.silent) alert(type+"이 저장되었습니다.");
+      return true;
     }catch(err){
       allLogs=allLogs.filter(l=>l.id!=="__temp__");
-      updateBoundaryBtnState(); updateActivityAreaState();
-      alert("저장 중 오류가 발생했습니다.");
+      updateBoundaryBtnState(); updateActivityAreaState(); updateWorkHoursUi();
+      if(!options.silent) alert("저장 중 오류가 발생했습니다.");
+      return false;
     }
   }
 
-  async function saveActivityRecord(){
+  async function saveActivityRecord(options={}){
     if(!currentUserName){ alert("사용자를 먼저 선택해주세요."); return; }
     if(!currentSession||!currentSession.activities.length){ alert("활동을 1개 이상 선택해주세요."); return; }
     // ✅ 기타 항목 + 지역복지자원연계 하위 항목 모두 반영
@@ -1490,6 +1644,7 @@
       activityStartedAt:startedAt,activitySavedAt:now,activityDurationMs:durationMs,activityDurationText:formatDuration(durationMs),
       activityCheckLat:checkGps?.lat??null,activityCheckLng:checkGps?.lng??null,activityCheckAccuracy:checkGps?.accuracy??null,activityCheckCapturedAt:checkGps?.capturedAt??null,
       activitySaveLat:lastGps?.lat??null,activitySaveLng:lastGps?.lng??null,activitySaveAccuracy:lastGps?.accuracy??null,activitySaveCapturedAt:lastGps?.capturedAt??null,
+      workHours:getCurrentWorkHours(),workHoursText:`${getCurrentWorkHours()}시간`,
       primaryActivityName:"",secondaryActivities:[],secondaryActivitiesText:""
     };
     getGpsBackground(gps=>{
@@ -1502,8 +1657,14 @@
       currentSession=null; etcText=""; resetSubActivitySelections();
       saveSessionToStorage(); localStorage.removeItem(LS_MEMO); el("memo-input").value="";
       renderActivityChips(); updateActivityAreaState(); updateEtcInputVisibility(); updateSubActivityVisibility(); updateCurrentElapsedUi();
-      alert("활동 기록이 저장되었습니다."); await reloadMainData();
-    }catch(err){ alert("활동 저장 중 오류가 발생했습니다."); }
+      if(!options.silent) alert("활동 기록이 저장되었습니다.");
+      await reloadMainData();
+      return true;
+    }catch(err){
+      console.error("활동 저장 중 오류:",err);
+      if(!options.silent) alert("활동 저장 중 오류가 발생했습니다.");
+      return false;
+    }
   }
 
   /* ── 수정 모달 ── */
@@ -1526,6 +1687,8 @@
       });
     }
     el("edit-act-section").style.display=isAct?"":"none";
+    el("edit-work-hours-section").style.display=isAct?"":"none";
+    if(isAct) el("edit-work-hours-select").value=String(getWorkHoursForLog(log));
     el("edit-memo-input").value=normalizeText(log.memo);
     el("edit-modal").classList.add("show");
   };
@@ -1544,6 +1707,8 @@
       const checked=[...el("edit-checklist").querySelectorAll("input:checked")].map(cb=>normalizeText(cb.value)).filter(Boolean);
       if(!checked.length){ alert("활동을 1개 이상 선택해주세요."); return; }
       updates.activities=checked; updates.activitiesText=checked.join(", ");
+      const workHours=clampWorkHours(el("edit-work-hours-select").value);
+      updates.workHours=workHours; updates.workHoursText=`${workHours}시간`;
     }
     try{ await db.collection("attendanceLogs").doc(editingLogId).update(updates); alert("기록이 수정되었습니다."); closeEditModal(); await reloadMainData(); }
     catch(err){ alert("수정 중 오류가 발생했습니다."); }
@@ -1562,6 +1727,7 @@
     endBtn.classList.remove("active");
     if(status==="started"){ startBtn.classList.add("done"); }
     else if(status==="ended"){ startBtn.classList.add("active"); endBtn.classList.add("active"); }
+    updateWorkHoursUi();
   }
 
   function updateTodaySummary(){
@@ -1621,6 +1787,7 @@
       const dt=formatDateTime(getLogDateTime(log));
       const activities=getActivitiesFromLog(log);
       const durationText=isActivityLog(log)?(normalizeText(log.activityDurationText)||formatDuration(getDurationMs(log))):"-";
+      const workHoursText=isActivityLog(log)?`${getWorkHoursForLog(log)}시간`:"";
       const memo=normalizeText(log.memo)||"-";
       const logId=log.id;
       const numBadge=isActivityLog(log)?`<span class="act-num">${--actCounter}</span>`:"";
@@ -1633,8 +1800,8 @@
               <span style="font-size:12px;color:#64748b;">${safeEscape(dt)}</span>
             </div>
             <div style="display:flex;gap:8px;flex-shrink:0;">
-              ${canEdit&&isActivityLog(log)?`<button type="button" class="btn btn-soft btn-sm" style="padding:4px 10px;font-size:12px;" onclick="openEditModal('${logId}')">수정</button>`:""}
-              ${canEdit?`<button type="button" class="btn btn-danger btn-sm" style="padding:4px 10px;font-size:12px;" onclick="deleteLog('${logId}')">삭제</button>`:""}
+              ${canEdit&&isActivityLog(log)?`<button type="button" class="btn btn-soft history-action-btn" onclick="openEditModal('${logId}')">수정</button>`:""}
+              ${canEdit?`<button type="button" class="btn btn-danger history-action-btn" onclick="deleteLog('${logId}')">삭제</button>`:""}
             </div>
           </div>
           ${isActivityLog(log)?`
@@ -1643,6 +1810,7 @@
               ${activities.map(v=>`<span class="tag">${safeEscape(v)}</span>`).join("")}
             </div>
             <div style="background:#f9fafb;padding:10px;border-radius:12px;font-size:13px;line-height:1.6;">
+              <strong>근무시간:</strong> ${safeEscape(workHoursText)}<br/>
               <strong>소요 시간:</strong> ${safeEscape(durationText)}<br/>
               <strong>메모:</strong> ${safeEscape(memo)}
             </div>`:""}
@@ -1680,8 +1848,8 @@
         renderActivityChips(); updateActivityAreaState(); updateBoundaryBtnState();
         updateEtcInputVisibility(); updateSubActivityVisibility(); updateCurrentElapsedUi();
         updateTodaySummary(); renderCalendar(); renderHistory();
-        startSessionTicker(); startWorkTimer();
-        document.addEventListener("visibilitychange",function(){ if(document.visibilityState==="visible") refreshGps(true); });
+        startSessionTicker(); startWorkTimer(); startAutoEndTimer();
+        document.addEventListener("visibilitychange",function(){ if(document.visibilityState==="visible"){ refreshGps(true); checkAutoWorkEnd(); } });
       } else {
         renderUserList(false, null);
         renderActivityChips(); updateCurrentElapsedUi();
@@ -1714,7 +1882,8 @@
   // ✅ 일과 종료 확인 모달 버튼
   el("end-work-save-and-end").addEventListener("click", async function(){
     closeEndWorkModal();
-    try{ await saveActivityRecord(); }catch(e){}
+    const saved=await saveActivityRecord();
+    if(saved===false) return;
     setTimeout(async ()=>{ await _doSaveWorkBoundaryLog("일과 종료"); }, 300);
   });
 
