@@ -134,7 +134,7 @@
     .table-head{padding:18px;border-bottom:1px solid #edf2f7;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;}
     .table-meta{color:var(--sub);font-size:13px;}
     .table-wrap{width:100%;overflow:auto;}
-    table{width:100%;border-collapse:separate;border-spacing:0;min-width:1200px;}
+    table{width:100%;border-collapse:separate;border-spacing:0;min-width:1320px;}
     thead th{position:sticky;top:0;z-index:1;background:#f8fafc;color:#334155;font-size:13px;font-weight:800;text-align:left;padding:14px 12px;border-bottom:1px solid #e5e7eb;white-space:nowrap;}
     tbody td{padding:13px 12px;border-bottom:1px solid #edf2f7;vertical-align:top;font-size:14px;line-height:1.55;}
     tbody tr:hover{background:#fcfdff}
@@ -145,6 +145,8 @@
     .badge-activity{background:#eef2ff;color:#4338ca}
     .tag-wrap{display:flex;flex-wrap:wrap;gap:6px;}
     .tag{display:inline-flex;align-items:center;padding:5px 9px;border-radius:999px;background:#f1f5f9;color:#334155;border:1px solid #e2e8f0;font-size:12px;font-weight:700;}
+    .work-hours-badge{display:inline-flex;align-items:center;gap:4px;padding:5px 9px;border-radius:10px;background:#f0fdf4;color:#166534;border:1px solid #bbf7d0;font-size:12px;font-weight:900;white-space:nowrap;}
+    .work-hours-badge.empty{background:#f8fafc;color:#94a3b8;border-color:#e2e8f0;font-weight:800;}
     /* 하위 항목 태그 — 구분 색상 */
     .tag.sub-type1{background:#eef3ef;color:#2d5236;border-color:#7aab85;}   /* 지역복지자원연계1 */
     .tag.sub-type2{background:#eceef8;color:#2e3362;border-color:#7b82c4;}   /* 지역복지자원연계2 */
@@ -552,7 +554,7 @@
           <thead>
             <tr>
               <th>일시</th><th>사용자</th><th>유형</th><th>활동</th>
-              <th>소요 시간</th><th>메모</th><th>GPS</th><th>관리</th>
+              <th>소요 시간</th><th>선택 근무시간</th><th>메모</th><th>GPS</th><th>관리</th>
             </tr>
           </thead>
           <tbody id="history-tbody"></tbody>
@@ -568,7 +570,7 @@
       <div class="modal-head">
         <div>
           <h3 class="panel-title" style="margin:0;">기록 수정</h3>
-          <div class="panel-sub">활동 기록의 사용자, 일시, 활동 목록, 소요 시간, 메모를 수정할 수 있습니다.</div>
+          <div class="panel-sub">활동 기록의 사용자, 일시, 활동 목록, 소요 시간, 선택 근무시간, 메모를 수정할 수 있습니다.</div>
         </div>
         <button id="close-edit-modal-btn" class="btn btn-soft btn-sm" type="button">닫기</button>
       </div>
@@ -589,6 +591,16 @@
           <div class="field" id="edit-row-duration">
             <label for="edit-duration-minutes">소요 시간(분)</label>
             <input id="edit-duration-minutes" type="number" min="0" placeholder="예: 35" />
+          </div>
+          <div class="field" id="edit-row-work-hours">
+            <label for="edit-work-hours">선택 근무시간</label>
+            <select id="edit-work-hours">
+              <option value="1">1시간</option>
+              <option value="2">2시간</option>
+              <option value="3">3시간</option>
+              <option value="4">4시간</option>
+              <option value="5" selected>5시간</option>
+            </select>
           </div>
         </div>
         <div class="field" id="edit-row-activities">
@@ -696,6 +708,39 @@
       return "";
     }
     function getDurationMs(log){ const n=Number(log.activityDurationMs); return !isNaN(n)&&n>0?n:0; }
+    function clampWorkHours(v){
+      const n=Math.round(Number(v));
+      if(isNaN(n)||n<=0) return 5;
+      return Math.min(5,Math.max(1,n));
+    }
+    function getOwnWorkHours(log){
+      const raw = log?.workHours ?? log?.workHoursSelected ?? log?.scheduledWorkHours;
+      const n = Number(raw);
+      if(!isNaN(n)&&n>0) return clampWorkHours(n);
+      const text = normalizeText(log?.workHoursText ?? log?.scheduledWorkHoursText);
+      const m = text.match(/([1-5])/);
+      return m ? clampWorkHours(m[1]) : null;
+    }
+    function getRelatedStartWorkHours(log){
+      const user = getLogUserName(log);
+      const day = dateKey(getLogDateTime(log));
+      if(!user||!day) return null;
+      const logTime = getLogDateTime(log)?.getTime() || 0;
+      const candidates = state.allLogs
+        .filter(v=>isStartLog(v)&&getLogUserName(v)===user&&dateKey(getLogDateTime(v))===day)
+        .map(v=>({log:v,time:getLogDateTime(v)?.getTime()||0,hours:getOwnWorkHours(v)}))
+        .filter(v=>v.hours);
+      if(!candidates.length) return null;
+      const before = candidates.filter(v=>!logTime||v.time<=logTime).sort((a,b)=>b.time-a.time)[0];
+      return (before || candidates.sort((a,b)=>b.time-a.time)[0]).hours;
+    }
+    function getWorkHoursForLog(log){
+      return getOwnWorkHours(log) || getRelatedStartWorkHours(log) || 5;
+    }
+    function getWorkHoursDisplay(log){
+      const own = getOwnWorkHours(log) || getRelatedStartWorkHours(log);
+      return own ? `${own}시간` : "-";
+    }
     function getRepresentativeGps(log){
       const lat=log.activitySaveLat??log.lat??log.activityCheckLat;
       const lng=log.activitySaveLng??log.lng??log.activityCheckLng;
@@ -1486,6 +1531,7 @@
         const type=getLogType(log);
         const activities=getActivities(log);
         const duration=isActivityLog(log)?formatDuration(getDurationMs(log)):"-";
+        const workHours=getWorkHoursDisplay(log);
         const memo=normalizeText(log.memo)||"-";
         const gps=getRepresentativeGps(log);
         const gpsCell=gps
@@ -1499,6 +1545,7 @@
           <td><span class="${getTypeBadgeClass(type)}">${safeEscape(type)}</span></td>
           <td>${activities.length?`<div class="tag-wrap">${activities.map(v=>`<span class="tag ${getSubTagClass(v)}">${safeEscape(v)}</span>`).join("")}</div>`:`<span class="muted">-</span>`}</td>
           <td>${safeEscape(duration)}</td>
+          <td>${workHours!=="-"?`<span class="work-hours-badge">🕐 ${safeEscape(workHours)}</span>`:`<span class="work-hours-badge empty">-</span>`}</td>
           <td style="min-width:220px;">${safeEscape(memo)}</td>
           <td>${gpsCell}</td>
           <td>
@@ -1542,6 +1589,7 @@
       const isAct=type==="활동 기록";
       el("edit-readonly-banner").style.display=isAct?"none":"block";
       el("edit-row-duration").style.display=isAct?"":"none";
+      el("edit-row-work-hours").style.display=isAct?"":"none";
       el("edit-row-activities").style.display=isAct?"":"none";
       el("save-edit-btn").style.display=isAct?"":"none";
       el("edit-type-display").textContent=type;
@@ -1550,6 +1598,7 @@
       el("edit-datetime").readOnly=readOnly; el("edit-datetime").style.background=readOnly?"#f8fafc":""; el("edit-datetime").style.color=readOnly?"var(--sub)":"";
       const editUserSel=el("edit-user"); editUserSel.disabled=readOnly; editUserSel.style.background=readOnly?"#f8fafc":"";
       el("edit-memo").readOnly=readOnly; el("edit-memo").style.background=readOnly?"#f8fafc":""; el("edit-memo").style.color=readOnly?"var(--sub)":"";
+      const workHoursSel=el("edit-work-hours"); if(workHoursSel){ workHoursSel.disabled=readOnly; workHoursSel.style.background=readOnly?"#f8fafc":""; }
     }
     function openEditModal(id){
       const log=state.allLogs.find(v=>v.id===id);
@@ -1564,6 +1613,7 @@
       el("edit-datetime").value=formatDateTimeLocalValue(dt);
       el("edit-user").value=user||"";
       el("edit-duration-minutes").value=durationMin>0?durationMin:"";
+      el("edit-work-hours").value=String(getWorkHoursForLog(log));
       el("edit-memo").value=normalizeText(log.memo);
       buildActivityChecklist(checkedActs);
       syncModalToType(type);
@@ -1577,6 +1627,7 @@
       const userName=normalizeText(el("edit-user").value);
       const activities=getCheckedActivities();
       const durationMin=Number(el("edit-duration-minutes").value||0);
+      const workHours=clampWorkHours(el("edit-work-hours").value);
       const memo=normalizeText(el("edit-memo").value);
       const dtValue=el("edit-datetime").value;
       if(!userName) return alert("사용자를 선택해주세요.");
@@ -1595,6 +1646,7 @@
         activities,activitiesText:activities.join(", "),
         activityDurationMs:Math.max(0,durationMin)*60000,
         activityDurationText:formatMinutes(Math.max(0,durationMin)),
+        workHours,workHoursText:`${workHours}시간`,
         activitySavedAt:dt.getTime(),
         activitySaveLat:lat,activitySaveLng:lng,activitySaveAccuracy:accuracy,
         lat,lng,accuracy,
@@ -1648,6 +1700,7 @@
           "활동 시간(세션)": isActivityLog(log)
             ? (normalizeText(log.activityDurationText)||(Number(log.activityDurationMs)>0?formatDuration(Number(log.activityDurationMs)):""))
             : "-",
+          "선택 근무시간": getWorkHoursDisplay(log),
           "메모":      normalizeText(log.memo),
           "위도":      gps ? gps.lat : "",
           "경도":      gps ? gps.lng : "",
@@ -1662,7 +1715,7 @@
       try{
         const rows = buildExportRows(state.filteredLogs);
         const wb = XLSX.utils.book_new();
-        const emptyRow = {"일시":"","사용자":"","유형":"","활동 (메인)":"","현금·현물":"","복지자원":"","유관기관 세부":"","활동 시간(세션)":"","메모":"","위도":"","경도":"","정확도":"","구글맵 링크":"","카카오맵 링크":""};
+        const emptyRow = {"일시":"","사용자":"","유형":"","활동 (메인)":"","현금·현물":"","복지자원":"","유관기관 세부":"","활동 시간(세션)":"","선택 근무시간":"","메모":"","위도":"","경도":"","정확도":"","구글맵 링크":"","카카오맵 링크":""};
         const ws = XLSX.utils.json_to_sheet(rows.length ? rows : [emptyRow]);
 
         if(rows.length){
@@ -1698,6 +1751,7 @@
             {wch:22}, // 복지자원
             {wch:30}, // 유관기관 세부
             {wch:14}, // 활동 시간
+            {wch:14}, // 선택 근무시간
             {wch:30}, // 메모
             {wch:12}, // 위도
             {wch:12}, // 경도
