@@ -1631,8 +1631,7 @@
       await db.collection("attendanceLogs").add(payload);
       allLogs=allLogs.filter(l=>l.id!=="__temp__");
       await reloadMainData();
-      if(!options.silent) alert(type+"이 저장되었습니다."+(freshGps?"
-GPS 위치가 함께 저장되었습니다.":""));
+      if(!options.silent) alert(type+"이 저장되었습니다."+(freshGps?"\nGPS 위치가 함께 저장되었습니다.":""));
       return true;
     }catch(err){
       allLogs=allLogs.filter(l=>l.id!=="__temp__");
