@@ -770,7 +770,8 @@
   let selectedLoginUser = "", currentUserName = "";
   let coordinatorNames = [], masterActivities = [], usingDefaultActivities = false;
   let allLogs = [], lastGps = null, currentSession = null, sessionTicker = null;
-  let workTimerTicker = null, autoEndTicker = null, autoEndInProgress = false;
+  let workTimerTicker = null, autoEndTicker = null, autoEndInProgress = false, gpsCheckTicker = null;
+  let lastGpsErrorMessage = "";
   let etcText = ""; // ✅ 기타 입력 내용
 
   let calYear = new Date().getFullYear();
@@ -1314,7 +1315,7 @@
   }
 
   /* ── 로그인/로그아웃 ── */
-  function loginToMain(){
+  async function loginToMain(){
     const finalUser = selectedLoginUser;
     if(!finalUser){ alert("목록에서 사용자를 선택해주세요."); return; }
     // ✅ 관리자 등록 + 기존 로그 파생 이름 모두 허용
@@ -1329,7 +1330,11 @@
     const savedGps=loadGpsFromStorage(); if(savedGps) lastGps=savedGps;
     renderActivityChips(); updateActivityAreaState(); updateEtcInputVisibility(); updateSubActivityVisibility(); updateCurrentElapsedUi();
     updateTodaySummary(); renderCalendar(); renderHistory();
-    startSessionTicker(); startWorkTimer(); startAutoEndTimer();
+    startSessionTicker(); startWorkTimer(); startAutoEndTimer(); syncGpsCheckTimer();
+
+    // ✅ 안드로이드 앱은 로그인 직후 위치 권한을 먼저 요청합니다.
+    // 사용자가 위치 권한을 허용해야 일과 시작/종료 및 5분 자동 GPS 확인이 안정적으로 작동합니다.
+    await saveGpsCheckLog("login",false);
   }
 
   function logout(){
@@ -1343,7 +1348,7 @@
     if(el("user-search-input")) el("user-search-input").style.display="none";
     el("login-user-list").style.display="none";
     showScreen("auth");
-    stopSessionTicker(); stopWorkTimer(); stopAutoEndTimer();
+    stopSessionTicker(); stopWorkTimer(); stopAutoEndTimer(); stopGpsCheckTimer();
   }
 
   /* ── 일과 타이머 ── */
@@ -1425,15 +1430,17 @@
     const today=formatDateKey(new Date());
     const startLog=getLatestStartLogForDate(today);
     if(startLog) select.value=String(getWorkHoursFromLog(startLog));
+
+    // 근무시간은 일과 시작 전에만 선택하고, 일과 시작 시 그 값이 확정 저장됩니다.
     select.disabled=status!=="none";
     select.style.opacity=select.disabled?"0.55":"1";
     if(status==="started"){
       const info=getCurrentAutoEndInfo();
-      helper.textContent=info?`선택 근무시간 ${info.hours}시간 · 자동 종료 예정 ${formatClockTime(info.autoEndAtMs)}`:"근무시간 확인 중입니다.";
+      helper.textContent=info?`선택 근무시간 ${info.hours}시간 · 자동 종료 예정 ${formatClockTime(info.autoEndAtMs)} · GPS는 5분마다 자동 확인됩니다.`:"근무시간 확인 중입니다.";
     }else if(status==="ended"){
       helper.textContent=`오늘 일과가 종료되었습니다. 선택 근무시간 ${getCurrentWorkHours()}시간`;
     }else{
-      helper.textContent="기본 5시간으로 일과 시작 후 선택한 시간이 지나면 자동 종료됩니다.";
+      helper.textContent="일과 시작 전에 1~5시간 중 선택하세요. 시작 후에는 선택 시간이 고정되고 GPS가 5분마다 자동 확인됩니다.";
       if(!select.value) select.value=String(DEFAULT_WORK_HOURS);
     }
   }
@@ -1485,34 +1492,105 @@
 
   /* ── GPS ── */
   function isFreshGps(gps,maxAgeMs=5*60*1000){
-    return gps && gps.lat!=null && gps.lng!=null && gps.capturedAt && (Date.now()-Number(gps.capturedAt) <= maxAgeMs);
+    return !!(gps && gps.lat!=null && gps.lng!=null && gps.capturedAt && (Date.now()-Number(gps.capturedAt) <= maxAgeMs));
   }
 
-  function requestGpsOnce(options={}){
-    const timeout=Number(options.timeout)||15000;
+  function getGpsErrorMessage(err){
+    if(!navigator.geolocation) return "이 기기 또는 앱에서 위치 기능을 지원하지 않습니다.";
+    if(!err) return "위치 정보를 가져오지 못했습니다.";
+    if(err.code===1) return "위치 권한이 거부되어 있습니다. 앱 권한에서 위치를 허용해주세요.";
+    if(err.code===2) return "현재 위치를 확인할 수 없습니다. 휴대폰 위치 서비스와 GPS를 켜고 실외 또는 창가에서 다시 시도해주세요.";
+    if(err.code===3) return "위치 확인 시간이 초과되었습니다. 잠시 후 다시 시도해주세요.";
+    return err.message || "위치 정보를 가져오지 못했습니다.";
+  }
+
+  function requestGpsSingle(options={}){
+    const timeout=Number(options.timeout)||30000;
+    const enableHighAccuracy=options.enableHighAccuracy!==false;
+    const maximumAge=Number(options.maximumAge)||0;
+    lastGpsErrorMessage="";
     return new Promise(resolve=>{
-      if(!navigator.geolocation){ resolve(null); return; }
+      if(!navigator.geolocation){ lastGpsErrorMessage=getGpsErrorMessage(null); resolve(null); return; }
       navigator.geolocation.getCurrentPosition(
         pos=>{
           const gps={lat:pos.coords.latitude,lng:pos.coords.longitude,accuracy:pos.coords.accuracy,capturedAt:Date.now()};
-          lastGps=gps; saveGpsToStorage(gps);
-          resolve(gps);
+          lastGps=gps; saveGpsToStorage(gps); lastGpsErrorMessage=""; resolve(gps);
         },
-        err=>{ console.warn("GPS 오류:",err); resolve(null); },
-        {enableHighAccuracy:true,timeout,maximumAge:0}
+        err=>{ console.warn("GPS 오류:",err); lastGpsErrorMessage=getGpsErrorMessage(err); resolve(null); },
+        {enableHighAccuracy,timeout,maximumAge}
       );
     });
   }
 
+  async function requestGpsOnce(options={}){
+    const timeout=Number(options.timeout)||30000;
+    const first=await requestGpsSingle({enableHighAccuracy:true,timeout,maximumAge:0});
+    if(first) return first;
+    // 실내에서 고정밀 GPS가 실패하는 경우를 대비해 일반 위치로 한 번 더 시도합니다.
+    const second=await requestGpsSingle({enableHighAccuracy:false,timeout:Math.max(15000,Math.floor(timeout/2)),maximumAge:60000});
+    return second;
+  }
+
+  function getGpsSourceText(source){
+    const map={
+      login:"로그인", "manual-refresh":"수동 새로읽기", "work-start":"일과 시작", "work-end":"일과 종료", "5min-check":"5분 자동 확인", "app-visible":"앱 재진입"
+    };
+    return map[source]||source||"GPS 확인";
+  }
+
+  async function saveGpsCheckSnapshot(source,gps){
+    if(!gps||!currentUserName) return false;
+    const now=Date.now();
+    try{
+      await db.collection("gpsCheckLogs").add({
+        userName:currentUserName,
+        source:source||"gps-check",
+        sourceText:getGpsSourceText(source),
+        timestamp:firebase.firestore.FieldValue.serverTimestamp(),
+        clientTimeMs:now,
+        timeStr:new Date(now).toLocaleString("ko-KR"),
+        lat:gps.lat,lng:gps.lng,accuracy:gps.accuracy??null,capturedAt:gps.capturedAt??now,
+        workStatus:getTodayWorkStatus()
+      });
+      return true;
+    }catch(err){ console.warn("GPS 확인 로그 저장 오류:",err); return false; }
+  }
+
+  async function saveGpsCheckLog(source="manual-refresh",silent=false){
+    if(!currentUserName){ if(!silent) alert("사용자를 먼저 선택해주세요."); return null; }
+    const helper=el("work-hours-helper");
+    const prevHelper=helper?helper.textContent:"";
+    if(helper) helper.textContent=`GPS 위치를 확인하고 있습니다. (${getGpsSourceText(source)})`;
+    const gps=await requestGpsOnce({timeout:30000});
+    if(helper) helper.textContent=prevHelper;
+    updateWorkHoursUi();
+    if(!gps){
+      if(!silent) alert("GPS를 읽지 못했습니다.\n" + (lastGpsErrorMessage||"휴대폰 위치 권한과 위치 서비스가 켜져 있는지 확인해주세요."));
+      return null;
+    }
+    await saveGpsCheckSnapshot(source,gps);
+    if(!silent) alert("GPS 위치를 확인하고 저장했습니다.");
+    return gps;
+  }
+
   function getGpsBackground(onSuccess){
-    requestGpsOnce({timeout:12000}).then(gps=>{ if(gps&&onSuccess) onSuccess(gps); });
+    requestGpsOnce({timeout:20000}).then(gps=>{ if(gps&&onSuccess) onSuccess(gps); });
   }
 
   async function refreshGps(silent){
-    const gps=await requestGpsOnce({timeout:15000});
-    if(gps){ if(!silent) alert("GPS를 새로 읽었습니다."); return gps; }
-    if(!silent) alert("GPS를 읽지 못했습니다. 휴대폰 위치 권한과 위치 서비스가 켜져 있는지 확인해주세요.");
-    return null;
+    return await saveGpsCheckLog("manual-refresh",!!silent);
+  }
+
+  function startGpsCheckTimer(){
+    stopGpsCheckTimer();
+    if(!currentUserName||getTodayWorkStatus()!=="started") return;
+    gpsCheckTicker=setInterval(function(){ saveGpsCheckLog("5min-check",true); },5*60*1000);
+  }
+  function stopGpsCheckTimer(){ if(gpsCheckTicker) clearInterval(gpsCheckTicker); gpsCheckTicker=null; }
+  function syncGpsCheckTimer(){
+    if(currentUserName&&getTodayWorkStatus()==="started"){
+      if(!gpsCheckTicker) startGpsCheckTimer();
+    }else stopGpsCheckTimer();
   }
 
   function renderActivityChips(){
@@ -1604,16 +1682,18 @@
     const autoEndAtMs=type==="일과 시작"?tempNow+(workHours*60*60*1000):null;
     let gpsForSave=null;
 
-    // 일과 시작/종료 버튼을 누르면 먼저 GPS를 실제로 요청한 뒤 저장합니다.
-    // 기존 방식은 저장 후 백그라운드로 GPS를 갱신해서, 기록에 위치가 비어 보일 수 있었습니다.
-    if(options.requireGps&&!options.autoEnded){
+    // ✅ 일과 시작/종료는 저장 전에 GPS를 먼저 요청합니다.
+    // 자동 종료도 조용히 GPS를 시도하고, 수동 시작/종료는 실패 사유를 사용자에게 안내합니다.
+    const shouldRequestGps = options.requireGps || options.autoEnded || type==="일과 시작" || type==="일과 종료";
+    if(shouldRequestGps){
       const helper=el("work-hours-helper");
       const prevHelper=helper?helper.textContent:"";
-      if(helper) helper.textContent="GPS 위치를 확인하고 있습니다. 휴대폰 위치 권한을 허용해주세요.";
-      gpsForSave=await requestGpsOnce({timeout:15000});
+      if(helper) helper.textContent=`${type} 전 GPS 위치를 확인하고 있습니다. 휴대폰 위치 권한을 허용해주세요.`;
+      gpsForSave=await requestGpsOnce({timeout:30000});
       if(helper) helper.textContent=prevHelper;
-      if(type==="일과 시작"&&!gpsForSave){
-        const ok=confirm("GPS 위치를 읽지 못했습니다. 위치 권한 또는 실내 수신 상태를 확인해주세요. GPS 없이 일과 시작을 저장할까요?");
+      updateWorkHoursUi();
+      if(!gpsForSave && !options.silent && !options.autoEnded){
+        const ok=confirm("GPS 위치를 읽지 못했습니다.\n" + (lastGpsErrorMessage||"휴대폰 위치 권한과 위치 서비스를 확인해주세요.") + "\n\nGPS 없이 " + type + "을 저장할까요?");
         if(!ok){ updateBoundaryBtnState(); updateActivityAreaState(); updateWorkHoursUi(); return false; }
       }
     }
@@ -1622,20 +1702,22 @@
     const tempLog={id:"__temp__",userName:currentUserName,type:type,activities:type,clientTimeMs:tempNow,timestamp:{seconds:Math.floor(tempNow/1000)}};
     if(type==="일과 시작"){ tempLog.workHours=workHours; tempLog.autoEndAtMs=autoEndAtMs; }
     allLogs.unshift(tempLog);
-    updateBoundaryBtnState(); updateActivityAreaState(); updateWorkHoursUi();
+    updateBoundaryBtnState(); updateActivityAreaState(); updateWorkHoursUi(); syncGpsCheckTimer();
     const now=Date.now();
     const payload={userName:currentUserName,type:type,activities:type,memo:"",timestamp:firebase.firestore.FieldValue.serverTimestamp(),clientTimeMs:now,timeStr:new Date(now).toLocaleString("ko-KR"),lat:freshGps?.lat??null,lng:freshGps?.lng??null,accuracy:freshGps?.accuracy??null};
     if(type==="일과 시작"){ payload.workHours=workHours; payload.workHoursText=`${workHours}시간`; payload.autoEndAtMs=now+(workHours*60*60*1000); payload.autoEndAtText=new Date(payload.autoEndAtMs).toLocaleString("ko-KR"); }
     if(options.autoEnded){ payload.autoEnded=true; payload.autoEndedReason="selected-work-hours"; }
     try{
       await db.collection("attendanceLogs").add(payload);
+      if(freshGps) await saveGpsCheckSnapshot(type==="일과 시작"?"work-start":"work-end",freshGps);
       allLogs=allLogs.filter(l=>l.id!=="__temp__");
       await reloadMainData();
+      syncGpsCheckTimer();
       if(!options.silent) alert(type + "이 저장되었습니다." + (freshGps ? " GPS 위치가 함께 저장되었습니다." : ""));
       return true;
     }catch(err){
       allLogs=allLogs.filter(l=>l.id!=="__temp__");
-      updateBoundaryBtnState(); updateActivityAreaState(); updateWorkHoursUi();
+      updateBoundaryBtnState(); updateActivityAreaState(); updateWorkHoursUi(); syncGpsCheckTimer();
       if(!options.silent) alert("저장 중 오류가 발생했습니다.");
       return false;
     }
@@ -1835,7 +1917,7 @@
   async function reloadMainData(){
     await loadAttendanceLogs();
     updateTodaySummary(); renderCalendar(); renderHistory();
-    updateActivityAreaState(); updateBoundaryBtnState();
+    updateActivityAreaState(); updateBoundaryBtnState(); syncGpsCheckTimer();
   }
 
   /* ── 초기화 ── */
@@ -1861,8 +1943,8 @@
         renderActivityChips(); updateActivityAreaState(); updateBoundaryBtnState();
         updateEtcInputVisibility(); updateSubActivityVisibility(); updateCurrentElapsedUi();
         updateTodaySummary(); renderCalendar(); renderHistory();
-        startSessionTicker(); startWorkTimer(); startAutoEndTimer();
-        document.addEventListener("visibilitychange",function(){ if(document.visibilityState==="visible"){ refreshGps(true); checkAutoWorkEnd(); } });
+        startSessionTicker(); startWorkTimer(); startAutoEndTimer(); syncGpsCheckTimer();
+        document.addEventListener("visibilitychange",function(){ if(document.visibilityState==="visible"){ if(currentUserName&&getTodayWorkStatus()==="started") saveGpsCheckLog("app-visible",true); checkAutoWorkEnd(); syncGpsCheckTimer(); } });
       } else {
         renderUserList(false, null);
         renderActivityChips(); updateCurrentElapsedUi();
@@ -1897,7 +1979,7 @@
     closeEndWorkModal();
     const saved=await saveActivityRecord();
     if(saved===false) return;
-    setTimeout(async ()=>{ await _doSaveWorkBoundaryLog("일과 종료"); }, 300);
+    setTimeout(async ()=>{ await _doSaveWorkBoundaryLog("일과 종료",{requireGps:true}); }, 300);
   });
 
   el("end-work-just-end").addEventListener("click", async function(){
@@ -1905,7 +1987,7 @@
     currentSession=null; etcText=""; resetSubActivitySelections();
     saveSessionToStorage(); localStorage.removeItem(LS_MEMO); el("memo-input").value="";
     renderActivityChips(); updateActivityAreaState(); updateEtcInputVisibility(); updateSubActivityVisibility(); updateCurrentElapsedUi();
-    await _doSaveWorkBoundaryLog("일과 종료");
+    await _doSaveWorkBoundaryLog("일과 종료",{requireGps:true});
   });
 
   el("end-work-cancel").addEventListener("click", function(){
@@ -1918,7 +2000,7 @@
   el("login-btn").addEventListener("click",loginToMain);
   el("logout-btn").addEventListener("click",logout);
   el("reload-main-btn").addEventListener("click",reloadMainData);
-  el("refresh-gps-btn").addEventListener("click",()=>refreshGps(false));
+  el("refresh-gps-btn").addEventListener("click",()=>saveGpsCheckLog("manual-refresh",false));
   if(el("work-hours-select")) el("work-hours-select").addEventListener("change",updateWorkHoursUi);
   el("start-work-btn").addEventListener("click",()=>saveWorkBoundaryLog("일과 시작"));
   el("end-work-btn").addEventListener("click",()=>saveWorkBoundaryLog("일과 종료"));
