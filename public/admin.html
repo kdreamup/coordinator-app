@@ -143,8 +143,13 @@
     .badge-start{background:#ecfeff;color:#0f766e}
     .badge-end{background:#fff7ed;color:#c2410c}
     .badge-activity{background:#eef2ff;color:#4338ca}
+    .badge-visit{background:#ecfdf5;color:#047857;border:1px solid #a7f3d0}
     .tag-wrap{display:flex;flex-wrap:wrap;gap:6px;}
     .tag{display:inline-flex;align-items:center;padding:5px 9px;border-radius:999px;background:#f1f5f9;color:#334155;border:1px solid #e2e8f0;font-size:12px;font-weight:700;}
+    .case-info{min-width:210px;line-height:1.55;}
+    .case-info strong{display:block;font-size:13px;color:#0f172a;}
+    .case-info span{display:block;font-size:12px;color:var(--sub);}
+    .visit-summary-cell{min-width:280px;max-width:420px;white-space:pre-wrap;}
     .work-hours-badge{display:inline-flex;align-items:center;gap:4px;padding:5px 9px;border-radius:10px;background:#f0fdf4;color:#166534;border:1px solid #bbf7d0;font-size:12px;font-weight:900;white-space:nowrap;}
     .work-hours-badge.empty{background:#f8fafc;color:#94a3b8;border-color:#e2e8f0;font-weight:800;}
     /* 하위 항목 태그 — 구분 색상 */
@@ -241,11 +246,12 @@
     <div class="topbar-inner">
       <div>
         <h1 class="brand-title">노인돌봄 코디네이터 관리자 시스템</h1>
-        <div class="brand-sub">회원·활동 목록 관리, 핵심 요약 카드, 날짜/사용자/활동 필터, 그래프, 상세 내역 수정/삭제, 엑셀/PDF 저장을 한 화면에서 제공합니다.</div>
+        <div class="brand-sub">회원·방문(사례) 기록 관리, 날짜/사용자/수요처/방문목적 필터, 상세 내역 확인, 엑셀/PDF 저장을 한 화면에서 제공합니다.</div>
       </div>
       <div class="toolbar">
         <button id="reload-btn" class="btn btn-ghost" type="button">새로고침</button>
         <button id="export-excel-btn" class="btn btn-mint" type="button">엑셀 다운로드</button>
+        <button id="export-supply-excel-btn" class="btn btn-ghost" type="button">수요처 제출용 엑셀</button>
         <button id="export-pdf-btn" class="btn btn-orange" type="button">PDF 저장</button>
       </div>
     </div>
@@ -427,7 +433,7 @@
         <div class="panel-head">
           <div>
             <h3 class="panel-title">필터</h3>
-            <div class="panel-sub">날짜, 사용자, 활동, 유형, 키워드, 시간 범위로 좁혀서 보고 같은 기준으로 엑셀/PDF를 내보낼 수 있습니다.</div>
+            <div class="panel-sub">날짜, 사용자, 수요처, 방문목적, 유형, 키워드, 시간 범위로 좁혀서 보고 같은 기준으로 엑셀/PDF를 내보낼 수 있습니다.</div>
           </div>
         </div>
         <div class="panel-body">
@@ -443,15 +449,21 @@
                 <option value="일과 시작">일과 시작</option>
                 <option value="일과 종료">일과 종료</option>
                 <option value="활동 기록">활동 기록</option>
+                <option value="방문사례기록">방문사례기록</option>
               </select>
             </div>
           </div>
-          <div class="filters-grid" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr;">
-            <div class="field"><label for="filter-keyword">검색어</label><input id="filter-keyword" type="text" placeholder="메모, 사용자명, 활동명 등" /></div>
+          <div class="filters-grid" style="grid-template-columns:1fr 1fr 2fr 1fr 1fr;">
+            <div class="field"><label for="filter-demand-org">수요처</label><select id="filter-demand-org"><option value="">전체</option></select></div>
+            <div class="field"><label for="filter-visit-reason">방문사유</label><select id="filter-visit-reason"><option value="">전체</option></select></div>
+            <div class="field"><label for="filter-keyword">검색어</label><input id="filter-keyword" type="text" placeholder="수요처, 대상자, 방문내용, 의견, 사용자명 등" /></div>
             <div class="field"><label for="filter-min-duration">최소 시간(분)</label><input id="filter-min-duration" type="number" min="0" placeholder="0" /></div>
             <div class="field"><label for="filter-max-duration">최대 시간(분)</label><input id="filter-max-duration" type="number" min="0" placeholder="없음" /></div>
+          </div>
+          <div class="filters-grid" style="grid-template-columns:1fr 1fr 3fr;">
             <div class="field"><label>&nbsp;</label><button id="apply-filter-btn" class="btn btn-primary" type="button">필터 적용</button></div>
             <div class="field"><label>&nbsp;</label><button id="reset-filter-btn" class="btn btn-soft" type="button">필터 초기화</button></div>
+            <div class="helper" style="display:flex;align-items:end;padding-bottom:4px;">수요처 제출용 엑셀은 현재 필터 결과 중 방문(사례) 기록만 내보내며 연락처/상세주소는 제외합니다.</div>
           </div>
           <div class="quick-range">
             <button class="btn btn-soft btn-sm" type="button" data-range="today">오늘</button>
@@ -553,8 +565,8 @@
         <table>
           <thead>
             <tr>
-              <th>일시</th><th>사용자</th><th>유형</th><th>활동</th>
-              <th>소요 시간</th><th>선택 근무시간</th><th>메모</th><th>GPS</th><th>관리</th>
+              <th>일시</th><th>사용자</th><th>유형</th><th>수요처/대상자</th><th>방문사유</th><th>방문목적/활동</th>
+              <th>소요 시간</th><th>선택 근무시간</th><th>방문내용/메모</th><th>GPS</th><th>관리</th>
             </tr>
           </thead>
           <tbody id="history-tbody"></tbody>
@@ -570,7 +582,7 @@
       <div class="modal-head">
         <div>
           <h3 class="panel-title" style="margin:0;">기록 수정</h3>
-          <div class="panel-sub">활동 기록의 사용자, 일시, 활동 목록, 소요 시간, 선택 근무시간, 메모를 수정할 수 있습니다.</div>
+          <div class="panel-sub">활동 기록은 수정할 수 있고, 방문(사례) 기록은 현재 상세 확인 및 삭제가 가능합니다.</div>
         </div>
         <button id="close-edit-modal-btn" class="btn btn-soft btn-sm" type="button">닫기</button>
       </div>
@@ -648,7 +660,7 @@
     if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
-    const state = { allLogs:[], filteredLogs:[], userNames:[], activityNames:[], charts:{}, editingId:null };
+    const state = { allLogs:[], filteredLogs:[], userNames:[], activityNames:[], demandOrgNames:[], visitReasonNames:[], charts:{}, editingId:null };
 
     /* ── 유틸 ── */
     function el(id){ return document.getElementById(id); }
@@ -682,14 +694,34 @@
     function formatMinutes(min){ return formatDuration((Number(min)||0)*60000); }
     function dateKey(v){ const d=toDate(v); if(!d) return ""; return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`; }
     function getTodayKey(){ return dateKey(new Date()); }
-    function getLogDateTime(log){ return toDate(log.timestamp)||toDate(log.clientTimeMs)||toDate(log.activitySavedAt)||toDate(log.timeStr)||null; }
-    function getLogUserName(log){ return normalizeText(log.userName||log.name||log.user||""); }
+    function getLogDateTime(log){ return toDate(log.visitDateTime)||toDate(log.timestamp)||toDate(log.clientTimeMs)||toDate(log.activitySavedAt)||toDate(log.timeStr)||null; }
+    function getLogUserName(log){ return normalizeText(log.coordinatorName||log.userName||log.name||log.user||""); }
+    function isVisitCaseLog(log){ return normalizeText(log.recordType)==="visitCase"||normalizeText(log.type)==="방문사례기록"||normalizeText(log.type)==="방문(사례)기록"; }
     function isStartLog(log){ const t=normalizeText(log.type); return t==="일과 시작"||log.activities==="일과 시작"; }
     function isEndLog(log){ const t=normalizeText(log.type); return t==="일과 종료"||log.activities==="일과 종료"; }
     function isActivityLog(log){ return !isStartLog(log)&&!isEndLog(log); }
-    function getLogType(log){ if(isStartLog(log)) return "일과 시작"; if(isEndLog(log)) return "일과 종료"; return "활동 기록"; }
+    function getLogType(log){ if(isStartLog(log)) return "일과 시작"; if(isEndLog(log)) return "일과 종료"; if(isVisitCaseLog(log)) return "방문사례기록"; return "활동 기록"; }
+    function getDemandOrgName(log){ return normalizeText(log.demandOrgName||log.orgName||log.institutionName||log.centerName||""); }
+    function getClientName(log){ return normalizeText(log.clientName||log.targetName||log.elderName||""); }
+    function getClientGender(log){ return normalizeText(log.gender||log.clientGender||""); }
+    function getClientAge(log){ return normalizeText(log.age||log.clientAge||""); }
+    function getClientAddress(log){ return normalizeText(log.address||log.clientAddress||""); }
+    function getClientPhone(log){ return normalizeText(log.phone||log.clientPhone||""); }
+    function getVisitReason(log){ return normalizeText(log.visitReason||log.visitReasonEtc||""); }
+    function getVisitPlace(log){ return normalizeText(log.visitPlace||""); }
+    function getVisitPurposes(log){
+      let arr=[];
+      if(Array.isArray(log.visitPurposes)) arr.push(...log.visitPurposes);
+      else if(normalizeText(log.visitPurposes)) arr.push(...String(log.visitPurposes).split(",").map(v=>v.trim()));
+      if(normalizeText(log.visitPurposeEtc)) arr.push(log.visitPurposeEtc);
+      if(normalizeText(log.agencySupportDetail)) arr.push("유관기관 업무지원 - "+normalizeText(log.agencySupportDetail));
+      return uniqueSorted(arr);
+    }
+    function getVisitSummary(log){ return normalizeText(log.visitSummary||log.summary||log.memo||""); }
+    function getCoordinatorOpinion(log){ return normalizeText(log.coordinatorOpinion||log.opinion||""); }
     function getActivities(log){
       if(!isActivityLog(log)) return [];
+      if(isVisitCaseLog(log)) return getVisitPurposes(log);
       let arr=[];
       if(Array.isArray(log.activities)) arr.push(...log.activities);
       else if(normalizeText(log.activities)) arr.push(log.activities);
@@ -697,6 +729,13 @@
       if(Array.isArray(log.secondaryActivities)) arr.push(...log.secondaryActivities);
       else if(normalizeText(log.secondaryActivitiesText)) arr.push(...log.secondaryActivitiesText.split(",").map(v=>v.trim()));
       return uniqueSorted(arr);
+    }
+    function getVisitCaseSummaryText(log){
+      const lines=[];
+      if(getVisitPlace(log)) lines.push("방문지: "+getVisitPlace(log));
+      if(getVisitSummary(log)) lines.push("내용: "+getVisitSummary(log));
+      if(getCoordinatorOpinion(log)) lines.push("의견: "+getCoordinatorOpinion(log));
+      return lines.join("\n");
     }
 
     // ✅ 하위 항목 태그 클래스 반환
@@ -1109,13 +1148,17 @@
         ]);
         state.allLogs=logs;
         state.userNames=uniqueSorted([...usersFromConfig,...deriveUsersFromLogs(logs)]);
-        state.activityNames=uniqueSorted(activitiesFromConfig);
+        state.activityNames=uniqueSorted([...activitiesFromConfig,...logs.flatMap(getActivities)]);
+        state.demandOrgNames=uniqueSorted(logs.map(getDemandOrgName));
+        state.visitReasonNames=uniqueSorted(["의뢰","자발적","발굴","기타",...logs.map(getVisitReason)]);
         buildSelects(); renderMemberList(); renderActivityList(); renderAllSubItemLists(); applyFilters();
       }catch(err){ console.error(err); alert("데이터를 불러오는 중 오류가 발생했습니다."); }
     }
     function buildSelects(){
       setSelectOptions(el("filter-user"),state.userNames,"전체");
       setSelectOptions(el("filter-activity"),state.activityNames,"전체");
+      setSelectOptions(el("filter-demand-org"),state.demandOrgNames,"전체");
+      setSelectOptions(el("filter-visit-reason"),state.visitReasonNames,"전체");
       setSelectOptions(el("edit-user"),state.userNames,"선택");
     }
 
@@ -1308,6 +1351,8 @@
       const endDate=normalizeText(el("filter-end-date").value);
       const user=normalizeText(el("filter-user").value);
       const activity=normalizeText(el("filter-activity").value);
+      const demandOrg=normalizeText(el("filter-demand-org").value);
+      const visitReason=normalizeText(el("filter-visit-reason").value);
       const type=normalizeText(el("filter-type").value);
       const keyword=normalizeText(el("filter-keyword").value).toLowerCase();
       const minDuration=Number(el("filter-min-duration").value);
@@ -1318,6 +1363,8 @@
         if(startDate&&day&&day<startDate) return false;
         if(endDate&&day&&day>endDate) return false;
         if(user&&getLogUserName(log)!==user) return false;
+        if(demandOrg&&getDemandOrgName(log)!==demandOrg) return false;
+        if(visitReason&&getVisitReason(log)!==visitReason) return false;
         if(type&&getLogType(log)!==type) return false;
         // ✅ 하위 항목 포함 매칭 (예: "지역복지자원연계" 선택 시 "지역복지자원연계1 - 떡, 빵"도 포함)
         if(activity&&!getActivities(log).some(a=>a===activity||a.startsWith(activity+" ")||a.startsWith(activity+"-")||a.startsWith(activity+" -"))) return false;
@@ -1328,7 +1375,7 @@
           if(Math.floor(getDurationMs(log)/60000)>maxDuration) return false;
         }
         if(keyword){
-          const bag=[getLogUserName(log),getLogType(log),getActivities(log).join(", "),normalizeText(log.memo)].join(" ").toLowerCase();
+          const bag=[getLogUserName(log),getLogType(log),getDemandOrgName(log),getClientName(log),getClientGender(log),getClientAge(log),getClientAddress(log),getClientPhone(log),getVisitReason(log),getVisitPlace(log),getActivities(log).join(", "),getVisitSummary(log),getCoordinatorOpinion(log),normalizeText(log.memo)].join(" ").toLowerCase();
           if(!bag.includes(keyword)) return false;
         }
         return true;
@@ -1343,6 +1390,7 @@
     function resetFilters(){
       el("filter-start-date").value=""; el("filter-end-date").value="";
       el("filter-user").value=""; el("filter-activity").value="";
+      el("filter-demand-org").value=""; el("filter-visit-reason").value="";
       el("filter-type").value=""; el("filter-keyword").value="";
       el("filter-min-duration").value=""; el("filter-max-duration").value="";
       applyFilters();
@@ -1351,7 +1399,8 @@
       const wrap=el("active-filter-chips"); wrap.innerHTML="";
       const chips=[];
       [["시작",el("filter-start-date").value],["종료",el("filter-end-date").value],
-       ["사용자",el("filter-user").value],["활동",el("filter-activity").value],
+       ["사용자",el("filter-user").value],["활동/방문목적",el("filter-activity").value],
+       ["수요처",el("filter-demand-org").value],["방문사유",el("filter-visit-reason").value],
        ["유형",el("filter-type").value],["검색",el("filter-keyword").value],
        ["최소시간",el("filter-min-duration").value?`${el("filter-min-duration").value}분`:""],
        ["최대시간",el("filter-max-duration").value?`${el("filter-max-duration").value}분`:""]
@@ -1518,7 +1567,7 @@
     }
 
     /* ── 테이블 ── */
-    function getTypeBadgeClass(type){ if(type==="일과 시작") return "badge badge-start"; if(type==="일과 종료") return "badge badge-end"; return "badge badge-activity"; }
+    function getTypeBadgeClass(type){ if(type==="일과 시작") return "badge badge-start"; if(type==="일과 종료") return "badge badge-end"; if(type==="방문사례기록") return "badge badge-visit"; return "badge badge-activity"; }
     function renderTable(){
       const rows=state.filteredLogs.slice();
       const tbody=el("history-tbody"),empty=el("table-empty"),meta=el("table-meta");
@@ -1532,8 +1581,16 @@
         const activities=getActivities(log);
         const duration=isActivityLog(log)?formatDuration(getDurationMs(log)):"-";
         const workHours=getWorkHoursDisplay(log);
-        const memo=normalizeText(log.memo)||"-";
         const gps=getRepresentativeGps(log);
+        const isVisit=isVisitCaseLog(log);
+        const demandOrg=getDemandOrgName(log);
+        const client=getClientName(log);
+        const gender=getClientGender(log), age=getClientAge(log);
+        const visitReason=getVisitReason(log)||"-";
+        const memo=isVisit ? (getVisitCaseSummaryText(log)||"-") : (normalizeText(log.memo)||"-");
+        const caseInfo=isVisit
+          ? `<div class="case-info"><strong>${safeEscape(demandOrg||"수요처 미입력")}</strong><span>대상자: ${safeEscape(client||"-")}${gender?` · ${safeEscape(gender)}`:""}${age?` · ${safeEscape(age)}세`:""}</span>${getVisitPlace(log)?`<span>방문지: ${safeEscape(getVisitPlace(log))}</span>`:""}</div>`
+          : `<span class="muted">-</span>`;
         const gpsCell=gps
           ? `<button class="gps-btn" type="button" onclick="openGpsModal(state.allLogs.find(l=>l.id==='${log.id}'))">
                📍 ${Number(gps.lat).toFixed(4)}, ${Number(gps.lng).toFixed(4)}
@@ -1543,14 +1600,16 @@
         return `<tr>
           <td>${safeEscape(dt)}</td><td>${safeEscape(user)}</td>
           <td><span class="${getTypeBadgeClass(type)}">${safeEscape(type)}</span></td>
+          <td>${caseInfo}</td>
+          <td>${isVisit?`<span class="tag">${safeEscape(visitReason)}</span>`:`<span class="muted">-</span>`}</td>
           <td>${activities.length?`<div class="tag-wrap">${activities.map(v=>`<span class="tag ${getSubTagClass(v)}">${safeEscape(v)}</span>`).join("")}</div>`:`<span class="muted">-</span>`}</td>
           <td>${safeEscape(duration)}</td>
           <td>${workHours!=="-"?`<span class="work-hours-badge">🕐 ${safeEscape(workHours)}</span>`:`<span class="work-hours-badge empty">-</span>`}</td>
-          <td style="min-width:220px;">${safeEscape(memo)}</td>
+          <td class="visit-summary-cell">${safeEscape(memo)}</td>
           <td>${gpsCell}</td>
           <td>
             <div class="inline-actions">
-              ${type==="활동 기록"?`<button class="btn btn-soft btn-sm" type="button" onclick="openEditModal('${log.id}')">수정</button>`:`<span class="helper" style="font-size:11px;">수정 불필요</span>`}
+              ${type==="활동 기록"||type==="방문사례기록"?`<button class="btn btn-soft btn-sm" type="button" onclick="openEditModal('${log.id}')">상세</button>`:`<span class="helper" style="font-size:11px;">수정 불필요</span>`}
               <button class="btn btn-danger btn-sm" type="button" onclick="deleteRecord('${log.id}')">삭제</button>
             </div>
           </td>
@@ -1587,6 +1646,8 @@
     function getCheckedActivities(){ return [...el("edit-activity-checklist").querySelectorAll("input[type='checkbox']:checked")].map(cb=>normalizeText(cb.value)).filter(Boolean); }
     function syncModalToType(type){
       const isAct=type==="활동 기록";
+      const isVisit=type==="방문사례기록";
+      el("edit-readonly-banner").textContent=isVisit?"ℹ️ 방문(사례) 기록은 현재 상세 확인 및 삭제만 가능합니다. 수정 기능은 다음 단계에서 추가할 수 있습니다.":"⚠️ 일과 시작 / 일과 종료 기록은 내용 수정이 필요하지 않습니다. 삭제만 가능합니다.";
       el("edit-readonly-banner").style.display=isAct?"none":"block";
       el("edit-row-duration").style.display=isAct?"":"none";
       el("edit-row-work-hours").style.display=isAct?"":"none";
@@ -1614,7 +1675,7 @@
       el("edit-user").value=user||"";
       el("edit-duration-minutes").value=durationMin>0?durationMin:"";
       el("edit-work-hours").value=String(getWorkHoursForLog(log));
-      el("edit-memo").value=normalizeText(log.memo);
+      el("edit-memo").value=isVisitCaseLog(log)?getVisitCaseSummaryText(log):normalizeText(log.memo);
       buildActivityChecklist(checkedActs);
       syncModalToType(type);
       el("edit-modal").classList.add("show");
@@ -1689,81 +1750,105 @@
         const gps = getRepresentativeGps(log);
         const acts = getActivities(log);
         const { main, sub1, sub2, sub3 } = classifyActivities(acts);
+        const isVisit = isVisitCaseLog(log);
         return {
-          "일시":          formatDateTime(getLogDateTime(log)),
-          "사용자":        getLogUserName(log),
-          "유형":          getLogType(log),
-          "활동 (메인)":   main.join(", "),
-          "현금·현물":     sub1.join(", "),   // 지역복지자원연계1 세부
-          "복지자원":      sub2.join(", "),   // 지역복지자원연계2 세부
-          "유관기관 세부": sub3.join(", "),   // 유관기관업무지원 세부
+          "일시": formatDateTime(getLogDateTime(log)),
+          "사용자": getLogUserName(log),
+          "유형": getLogType(log),
+          "수요처": getDemandOrgName(log),
+          "대상자명": getClientName(log),
+          "성별": getClientGender(log),
+          "나이": getClientAge(log),
+          "주소": getClientAddress(log),
+          "연락처": getClientPhone(log),
+          "방문사유": getVisitReason(log),
+          "방문지": getVisitPlace(log),
+          "방문목적/활동": acts.join(", "),
+          "활동 (메인)": main.join(", "),
+          "현금·현물": sub1.join(", "),
+          "복지자원": sub2.join(", "),
+          "유관기관 세부": sub3.join(", "),
+          "방문내용 요약": isVisit ? getVisitSummary(log) : "",
+          "코디네이터 의견": isVisit ? getCoordinatorOpinion(log) : "",
           "활동 시간(세션)": isActivityLog(log)
             ? (normalizeText(log.activityDurationText)||(Number(log.activityDurationMs)>0?formatDuration(Number(log.activityDurationMs)):""))
             : "-",
           "선택 근무시간": getWorkHoursDisplay(log),
-          "메모":      normalizeText(log.memo),
-          "위도":      gps ? gps.lat : "",
-          "경도":      gps ? gps.lng : "",
-          "정확도":    gps && gps.accuracy!=null ? Math.round(gps.accuracy)+"m" : "",
-          "구글맵 링크":  gps ? `https://www.google.com/maps?q=${Number(gps.lat).toFixed(6)},${Number(gps.lng).toFixed(6)}` : "",
+          "메모": isVisit ? "" : normalizeText(log.memo),
+          "위도": gps ? gps.lat : "",
+          "경도": gps ? gps.lng : "",
+          "정확도": gps && gps.accuracy!=null ? Math.round(gps.accuracy)+"m" : "",
+          "구글맵 링크": gps ? `https://www.google.com/maps?q=${Number(gps.lat).toFixed(6)},${Number(gps.lng).toFixed(6)}` : "",
           "카카오맵 링크": gps ? `https://map.kakao.com/link/map/${encodeURIComponent(getLogUserName(log)||"위치")},${Number(gps.lat).toFixed(6)},${Number(gps.lng).toFixed(6)}` : ""
         };
       });
+    }
+
+    function buildSupplyExportRows(rows){
+      return rows.filter(isVisitCaseLog).map(function(log,idx){
+        return {
+          "번호": idx+1,
+          "방문일시": formatDateTime(getLogDateTime(log)),
+          "코디네이터": getLogUserName(log),
+          "수요처": getDemandOrgName(log),
+          "대상자명": getClientName(log),
+          "성별": getClientGender(log),
+          "나이": getClientAge(log),
+          "방문사유": getVisitReason(log),
+          "방문지": getVisitPlace(log),
+          "방문목적": getActivities(log).join(", "),
+          "방문내용 요약": getVisitSummary(log),
+          "코디네이터 의견": getCoordinatorOpinion(log)
+        };
+      });
+    }
+
+    function applyGpsHyperlinks(ws){
+      if(!ws["!ref"]) return;
+      const range = XLSX.utils.decode_range(ws["!ref"]);
+      let googleColIdx=-1, kakaoColIdx=-1;
+      for(let c=range.s.c; c<=range.e.c; c++){
+        const v = ws[XLSX.utils.encode_cell({r:0,c})]?.v;
+        if(v==="구글맵 링크") googleColIdx=c;
+        if(v==="카카오맵 링크") kakaoColIdx=c;
+      }
+      for(let r=1; r<=range.e.r; r++){
+        if(googleColIdx>=0){
+          const addr=XLSX.utils.encode_cell({r,c:googleColIdx});
+          if(ws[addr]?.v){ ws[addr].l={Target:ws[addr].v,Tooltip:"구글맵에서 보기"}; ws[addr].v="📍 구글맵 보기"; }
+        }
+        if(kakaoColIdx>=0){
+          const addr=XLSX.utils.encode_cell({r,c:kakaoColIdx});
+          if(ws[addr]?.v){ ws[addr].l={Target:ws[addr].v,Tooltip:"카카오맵에서 보기"}; ws[addr].v="🗺️ 카카오맵 보기"; }
+        }
+      }
     }
 
     function exportExcel(){
       try{
         const rows = buildExportRows(state.filteredLogs);
         const wb = XLSX.utils.book_new();
-        const emptyRow = {"일시":"","사용자":"","유형":"","활동 (메인)":"","현금·현물":"","복지자원":"","유관기관 세부":"","활동 시간(세션)":"","선택 근무시간":"","메모":"","위도":"","경도":"","정확도":"","구글맵 링크":"","카카오맵 링크":""};
+        const emptyRow = {"일시":"","사용자":"","유형":"","수요처":"","대상자명":"","성별":"","나이":"","주소":"","연락처":"","방문사유":"","방문지":"","방문목적/활동":"","활동 (메인)":"","현금·현물":"","복지자원":"","유관기관 세부":"","방문내용 요약":"","코디네이터 의견":"","활동 시간(세션)":"","선택 근무시간":"","메모":"","위도":"","경도":"","정확도":"","구글맵 링크":"","카카오맵 링크":""};
         const ws = XLSX.utils.json_to_sheet(rows.length ? rows : [emptyRow]);
-
-        if(rows.length){
-          const range = XLSX.utils.decode_range(ws["!ref"]);
-
-          // 헤더에서 컬럼 인덱스 찾기
-          let googleColIdx=-1, kakaoColIdx=-1;
-          for(let c=range.s.c; c<=range.e.c; c++){
-            const v = ws[XLSX.utils.encode_cell({r:0,c})]?.v;
-            if(v==="구글맵 링크")  googleColIdx=c;
-            if(v==="카카오맵 링크") kakaoColIdx=c;
-          }
-
-          // GPS 링크 하이퍼링크 적용
-          for(let r=1; r<=range.e.r; r++){
-            if(googleColIdx>=0){
-              const addr=XLSX.utils.encode_cell({r,c:googleColIdx});
-              if(ws[addr]?.v){ ws[addr].l={Target:ws[addr].v,Tooltip:"구글맵에서 보기"}; ws[addr].v="📍 구글맵 보기"; }
-            }
-            if(kakaoColIdx>=0){
-              const addr=XLSX.utils.encode_cell({r,c:kakaoColIdx});
-              if(ws[addr]?.v){ ws[addr].l={Target:ws[addr].v,Tooltip:"카카오맵에서 보기"}; ws[addr].v="🗺️ 카카오맵 보기"; }
-            }
-          }
-
-          // 컬럼 너비
-          ws["!cols"]=[
-            {wch:18}, // 일시
-            {wch:12}, // 사용자
-            {wch:10}, // 유형
-            {wch:28}, // 활동 (메인)
-            {wch:18}, // 현금·현물
-            {wch:22}, // 복지자원
-            {wch:30}, // 유관기관 세부
-            {wch:14}, // 활동 시간
-            {wch:14}, // 선택 근무시간
-            {wch:30}, // 메모
-            {wch:12}, // 위도
-            {wch:12}, // 경도
-            {wch:10}, // 정확도
-            {wch:16}, // 구글맵
-            {wch:16}, // 카카오맵
-          ];
-        }
-
+        applyGpsHyperlinks(ws);
+        ws["!cols"]=[
+          {wch:18},{wch:12},{wch:12},{wch:18},{wch:14},{wch:8},{wch:8},{wch:28},{wch:16},{wch:14},{wch:18},{wch:28},{wch:28},{wch:18},{wch:22},{wch:30},{wch:36},{wch:34},{wch:14},{wch:14},{wch:30},{wch:12},{wch:12},{wch:10},{wch:16},{wch:16}
+        ];
         XLSX.utils.book_append_sheet(wb, ws, "attendanceLogs");
         XLSX.writeFile(wb, "coordinator_admin_export.xlsx");
       }catch(err){ console.error(err); alert("엑셀 다운로드 중 오류가 발생했습니다."); }
+    }
+
+    function exportSupplyExcel(){
+      try{
+        const rows = buildSupplyExportRows(state.filteredLogs);
+        if(!rows.length) return alert("현재 필터 결과에 방문(사례) 기록이 없습니다.");
+        const wb = XLSX.utils.book_new();
+        const ws = XLSX.utils.json_to_sheet(rows);
+        ws["!cols"]=[{wch:8},{wch:18},{wch:12},{wch:20},{wch:14},{wch:8},{wch:8},{wch:14},{wch:18},{wch:28},{wch:42},{wch:38}];
+        XLSX.utils.book_append_sheet(wb, ws, "수요처제출용");
+        XLSX.writeFile(wb, "방문사례기록_수요처제출용.xlsx");
+      }catch(err){ console.error(err); alert("수요처 제출용 엑셀 다운로드 중 오류가 발생했습니다."); }
     }
     function exportPdf(){ window.print(); }
 
@@ -1779,6 +1864,7 @@
     el("apply-filter-btn").addEventListener("click",applyFilters);
     el("reset-filter-btn").addEventListener("click",resetFilters);
     el("export-excel-btn").addEventListener("click",exportExcel);
+    el("export-supply-excel-btn").addEventListener("click",exportSupplyExcel);
     el("export-pdf-btn").addEventListener("click",exportPdf);
     el("filter-keyword").addEventListener("keydown",function(e){ if(e.key==="Enter") applyFilters(); });
     document.querySelectorAll("[data-range]").forEach(btn=>{
