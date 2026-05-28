@@ -134,7 +134,7 @@
     .table-head{padding:18px;border-bottom:1px solid #edf2f7;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;}
     .table-meta{color:var(--sub);font-size:13px;}
     .table-wrap{width:100%;overflow:auto;}
-    table{width:100%;border-collapse:separate;border-spacing:0;min-width:1320px;}
+    table{width:100%;border-collapse:separate;border-spacing:0;min-width:1180px;}
     thead th{position:sticky;top:0;z-index:1;background:#f8fafc;color:#334155;font-size:13px;font-weight:800;text-align:left;padding:14px 12px;border-bottom:1px solid #e5e7eb;white-space:nowrap;}
     tbody td{padding:13px 12px;border-bottom:1px solid #edf2f7;vertical-align:top;font-size:14px;line-height:1.55;}
     tbody tr:hover{background:#fcfdff}
@@ -146,10 +146,20 @@
     .badge-visit{background:#ecfdf5;color:#047857;border:1px solid #a7f3d0}
     .tag-wrap{display:flex;flex-wrap:wrap;gap:6px;}
     .tag{display:inline-flex;align-items:center;padding:5px 9px;border-radius:999px;background:#f1f5f9;color:#334155;border:1px solid #e2e8f0;font-size:12px;font-weight:700;}
-    .case-info{min-width:210px;line-height:1.55;}
-    .case-info strong{display:block;font-size:13px;color:#0f172a;}
-    .case-info span{display:block;font-size:12px;color:var(--sub);}
-    .visit-summary-cell{min-width:280px;max-width:420px;white-space:pre-wrap;}
+    .case-info{min-width:230px;line-height:1.55;}
+    .case-info strong{display:block;font-size:14px;color:#0f172a;letter-spacing:-.01em;}
+    .case-info span{display:block;font-size:12px;color:var(--sub);margin-top:2px;}
+    .case-info .case-line{display:flex;gap:6px;align-items:flex-start;flex-wrap:wrap;}
+    .visit-info-cell{min-width:260px;max-width:360px;}
+    .visit-info-block{display:flex;flex-direction:column;gap:8px;}
+    .visit-info-line{display:flex;align-items:flex-start;gap:8px;flex-wrap:wrap;}
+    .visit-info-label{min-width:42px;font-size:12px;font-weight:900;color:#475569;padding-top:4px;}
+    .visit-summary-cell{min-width:360px;max-width:520px;}
+    .visit-text-card{background:#f8fafc;border:1px solid #e2e8f0;border-radius:14px;padding:10px 12px;display:grid;gap:7px;white-space:normal;}
+    .visit-text-line{display:grid;grid-template-columns:48px 1fr;gap:8px;align-items:start;font-size:13px;line-height:1.55;}
+    .visit-text-label{font-weight:900;color:#334155;white-space:nowrap;}
+    .visit-text-value{white-space:pre-wrap;word-break:break-word;color:#0f172a;}
+    .visit-text-muted{color:var(--sub);}
     .work-hours-badge{display:inline-flex;align-items:center;gap:4px;padding:5px 9px;border-radius:10px;background:#f0fdf4;color:#166534;border:1px solid #bbf7d0;font-size:12px;font-weight:900;white-space:nowrap;}
     .work-hours-badge.empty{background:#f8fafc;color:#94a3b8;border-color:#e2e8f0;font-weight:800;}
     /* 하위 항목 태그 — 구분 색상 */
@@ -565,8 +575,8 @@
         <table>
           <thead>
             <tr>
-              <th>일시</th><th>사용자</th><th>유형</th><th>수요처/대상자</th><th>방문사유</th><th>방문목적/활동</th>
-              <th>소요 시간</th><th>선택 근무시간</th><th>방문내용/메모</th><th>GPS</th><th>관리</th>
+              <th>일시</th><th>사용자</th><th>유형</th><th>수요처/대상자</th><th>방문 정보</th>
+              <th>방문내용/의견</th><th>GPS</th><th>관리</th>
             </tr>
           </thead>
           <tbody id="history-tbody"></tbody>
@@ -1587,10 +1597,37 @@
         const client=getClientName(log);
         const gender=getClientGender(log), age=getClientAge(log);
         const visitReason=getVisitReason(log)||"-";
-        const memo=isVisit ? (getVisitCaseSummaryText(log)||"-") : (normalizeText(log.memo)||"-");
+        const visitPlace=getVisitPlace(log);
+        const visitSummary=getVisitSummary(log);
+        const coordinatorOpinion=getCoordinatorOpinion(log);
+        const normalMemo=normalizeText(log.memo)||"-";
+
         const caseInfo=isVisit
-          ? `<div class="case-info"><strong>${safeEscape(demandOrg||"수요처 미입력")}</strong><span>대상자: ${safeEscape(client||"-")}${gender?` · ${safeEscape(gender)}`:""}${age?` · ${safeEscape(age)}세`:""}</span>${getVisitPlace(log)?`<span>방문지: ${safeEscape(getVisitPlace(log))}</span>`:""}</div>`
+          ? `<div class="case-info">
+               <strong>${safeEscape(demandOrg||"수요처 미입력")}</strong>
+               <span>대상자: ${safeEscape(client||"-")}${gender?` · ${safeEscape(gender)}`:""}${age?` · ${safeEscape(age)}세`:""}</span>
+               ${visitPlace?`<span>방문지: ${safeEscape(visitPlace)}</span>`:""}
+             </div>`
           : `<span class="muted">-</span>`;
+
+        const visitInfo=isVisit
+          ? `<div class="visit-info-block">
+               <div class="visit-info-line"><span class="visit-info-label">사유</span><span class="tag">${safeEscape(visitReason)}</span></div>
+               <div class="visit-info-line"><span class="visit-info-label">목적</span>${activities.length?`<div class="tag-wrap">${activities.map(v=>`<span class="tag ${getSubTagClass(v)}">${safeEscape(v)}</span>`).join("")}</div>`:`<span class="muted">-</span>`}</div>
+               <div class="visit-info-line"><span class="visit-info-label">시간</span>${duration!=="-"?`<span class="tag">${safeEscape(duration)}</span>`:""}${workHours!=="-"?`<span class="work-hours-badge">🕐 ${safeEscape(workHours)}</span>`:`<span class="work-hours-badge empty">-</span>`}</div>
+             </div>`
+          : `<div class="visit-info-block">
+               <div class="visit-info-line"><span class="visit-info-label">활동</span>${activities.length?`<div class="tag-wrap">${activities.map(v=>`<span class="tag ${getSubTagClass(v)}">${safeEscape(v)}</span>`).join("")}</div>`:`<span class="muted">-</span>`}</div>
+               <div class="visit-info-line"><span class="visit-info-label">시간</span>${duration!=="-"?`<span class="tag">${safeEscape(duration)}</span>`:""}${workHours!=="-"?`<span class="work-hours-badge">🕐 ${safeEscape(workHours)}</span>`:""}</div>
+             </div>`;
+
+        const summaryCell=isVisit
+          ? `<div class="visit-text-card">
+               <div class="visit-text-line"><span class="visit-text-label">내용</span><span class="visit-text-value ${visitSummary?"":"visit-text-muted"}">${safeEscape(visitSummary||"-")}</span></div>
+               <div class="visit-text-line"><span class="visit-text-label">의견</span><span class="visit-text-value ${coordinatorOpinion?"":"visit-text-muted"}">${safeEscape(coordinatorOpinion||"-")}</span></div>
+             </div>`
+          : `<div class="visit-text-card"><div class="visit-text-line"><span class="visit-text-label">메모</span><span class="visit-text-value">${safeEscape(normalMemo)}</span></div></div>`;
+
         const gpsCell=gps
           ? `<button class="gps-btn" type="button" onclick="openGpsModal(state.allLogs.find(l=>l.id==='${log.id}'))">
                📍 ${Number(gps.lat).toFixed(4)}, ${Number(gps.lng).toFixed(4)}
@@ -1598,14 +1635,12 @@
              </button>`
           : `<span class="gps-no-data-cell">-</span>`;
         return `<tr>
-          <td>${safeEscape(dt)}</td><td>${safeEscape(user)}</td>
+          <td>${safeEscape(dt)}</td>
+          <td>${safeEscape(user)}</td>
           <td><span class="${getTypeBadgeClass(type)}">${safeEscape(type)}</span></td>
           <td>${caseInfo}</td>
-          <td>${isVisit?`<span class="tag">${safeEscape(visitReason)}</span>`:`<span class="muted">-</span>`}</td>
-          <td>${activities.length?`<div class="tag-wrap">${activities.map(v=>`<span class="tag ${getSubTagClass(v)}">${safeEscape(v)}</span>`).join("")}</div>`:`<span class="muted">-</span>`}</td>
-          <td>${safeEscape(duration)}</td>
-          <td>${workHours!=="-"?`<span class="work-hours-badge">🕐 ${safeEscape(workHours)}</span>`:`<span class="work-hours-badge empty">-</span>`}</td>
-          <td class="visit-summary-cell">${safeEscape(memo)}</td>
+          <td class="visit-info-cell">${visitInfo}</td>
+          <td class="visit-summary-cell">${summaryCell}</td>
           <td>${gpsCell}</td>
           <td>
             <div class="inline-actions">
