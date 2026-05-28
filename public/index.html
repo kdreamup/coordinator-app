@@ -208,6 +208,31 @@
     input[type="text"]:focus,textarea:focus{border-color:#93c5fd;box-shadow:0 0 0 3px rgba(59,130,246,.12);}
     textarea{min-height:80px;resize:vertical;}
 
+
+    /* ── 방문(사례) 기록지 입력 폼 ── */
+    .visit-form-card{margin-top:12px;border:2px solid #bfdbfe;border-radius:18px;background:#ffffff;overflow:hidden;}
+    .visit-form-head{padding:12px 14px;background:linear-gradient(135deg,#eff6ff 0%,#ecfdf5 100%);border-bottom:1px solid #dbeafe;}
+    .visit-form-title{display:flex;align-items:center;gap:9px;font-size:21px;font-weight:900;color:#047857;padding-bottom:8px;margin:0 0 8px;border-bottom:4px solid #047857;}
+    .visit-form-title .section-number{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:999px;background:#10b981;color:#fff;font-size:17px;font-weight:900;flex-shrink:0;}
+    .visit-form-helper{margin:0;font-size:12px;font-weight:700;color:#475569;line-height:1.5;}
+    .visit-form-body{padding:12px 14px;display:grid;gap:12px;}
+    .visit-group{border:1px solid #e2e8f0;border-radius:14px;background:#f8fafc;padding:12px;display:grid;gap:10px;}
+    .visit-group-title{display:flex;align-items:center;gap:7px;font-size:15px;font-weight:900;color:#1e40af;margin-bottom:2px;}
+    .visit-step{width:22px;height:22px;border-radius:999px;background:#2563eb;color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:900;}
+    .visit-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+    .visit-grid-3{display:grid;grid-template-columns:1.3fr 0.8fr 0.8fr;gap:8px;}
+    .visit-field{display:flex;flex-direction:column;gap:5px;}
+    .visit-field label{font-size:12px;font-weight:800;color:#475569;}
+    .visit-field input,.visit-field select,.visit-field textarea{width:100%;border:1px solid #cbd5e1;border-radius:12px;background:#fff;padding:10px 11px;font-size:14px;color:#1f2937;outline:none;}
+    .visit-field textarea{min-height:86px;resize:vertical;line-height:1.5;}
+    .visit-field input:focus,.visit-field select:focus,.visit-field textarea:focus{border-color:#60a5fa;box-shadow:0 0 0 3px rgba(37,99,235,.12);}
+    .visit-checks{display:flex;flex-wrap:wrap;gap:7px;}
+    .visit-check{display:inline-flex;align-items:center;gap:6px;background:#fff;border:1px solid #cbd5e1;border-radius:10px;padding:8px 10px;font-size:13px;font-weight:800;color:#334155;user-select:none;}
+    .visit-check input{width:16px;height:16px;accent-color:#2563eb;}
+    .visit-save-info{padding:10px 12px;border:1px solid #bbf7d0;border-radius:12px;background:#f0fdf4;color:#166534;font-size:12px;font-weight:800;line-height:1.45;}
+    .visit-hidden-legacy{display:none!important;}
+    @media (max-width:420px){.visit-grid-2,.visit-grid-3{grid-template-columns:1fr;}}
+
     .mini-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:10px;}
     .mini-stat{background:#f8fafc;border:1px solid #eef2f7;border-radius:10px;padding:8px 6px;text-align:center;}
     .mini-stat-label{font-size:9px;color:var(--sub);font-weight:700;margin-bottom:2px;line-height:1.3;}
@@ -534,94 +559,68 @@
         </div>
       </div>
 
-      <div class="section-title section-title-blue"><span class="section-number">1</span><span>활동</span></div>
-      <div id="activity-chip-wrap" class="chip-wrap"></div>
-
-      <!-- ✅ 기타 인라인 입력 영역 -->
-      <div id="etc-input-wrap" class="etc-input-wrap">
-        <label>기타 내용 입력 <span style="font-size:11px;color:#64748b;font-weight:400;">(선택 사항)</span></label>
-        <div class="etc-input-row">
-          <span>기타 (</span>
-          <input id="etc-text-input" class="etc-text-input" type="text" placeholder="내용을 입력하세요" maxlength="50" />
-          <span>)</span>
+      <div class="visit-form-card">
+        <div class="visit-form-head">
+          <div class="visit-form-title"><span class="section-number">2</span><span>방문(사례) 기록</span></div>
+          <p class="visit-form-helper">어떤 활동을 하더라도 방문 기록지 양식에 맞춰 순서대로 작성합니다. 저장된 항목은 추후 수요처별 엑셀 분류에 활용됩니다.</p>
+          <div id="activity-source-text" class="helper" style="margin-top:6px;"></div>
         </div>
-        <div id="etc-preview" class="etc-preview">입력하지 않으면 '기타'로 저장됩니다.</div>
-      </div>
-
-      <!-- ✅ 지역복지자원연계1 하위 체크리스트 (현금·현물) -->
-      <div id="sub-activity-wrap-1" class="sub-activity-wrap type1">
-        <div class="sub-activity-label">지역복지자원연계1 — 현금·현물 세부 선택 <span style="font-size:11px;font-weight:400;color:#4ade80;">(복수 선택 가능)</span></div>
-        <div class="sub-check-grid" id="sub-check-grid-1">
-          <label class="sub-check-item type1"><input type="checkbox" value="떡, 빵"/><span>떡, 빵</span></label>
-          <label class="sub-check-item type1"><input type="checkbox" value="후원금"/><span>후원금</span></label>
-          <label class="sub-check-item type1"><input type="checkbox" value="반찬지원"/><span>반찬지원</span></label>
-          <label class="sub-check-item type1 sub-etc-item" data-group="지역복지자원연계1"><input type="checkbox" value="__etc__"/><span>기타</span></label>
-        </div>
-        <div id="sub-etc-wrap-1" class="sub-etc-input-wrap" style="display:none;">
-          <div class="sub-etc-row">
-            <span>기타 (</span>
-            <input id="sub-etc-input-1" class="sub-etc-text-input" type="text" placeholder="내용 입력" maxlength="40"/>
-            <span>)</span>
+        <div class="visit-form-body">
+          <div class="visit-group">
+            <div class="visit-group-title"><span class="visit-step">1</span>대상자 기본정보</div>
+            <div class="visit-grid-2">
+              <div class="visit-field"><label for="demand-org-input">수요처 / 기관명</label><input id="demand-org-input" class="visit-case-field" type="text" placeholder="예: ○○경로당, ○○복지관" /></div>
+              <div class="visit-field"><label for="client-name-input">대상자 성명</label><input id="client-name-input" class="visit-case-field" type="text" placeholder="대상자 성명" /></div>
+            </div>
+            <div class="visit-grid-3">
+              <div class="visit-field"><label for="gender-select">성별</label><select id="gender-select" class="visit-case-field"><option value="">선택</option><option value="남">남</option><option value="여">여</option></select></div>
+              <div class="visit-field"><label for="age-input">나이</label><input id="age-input" class="visit-case-field" type="number" min="0" max="120" placeholder="나이" /></div>
+              <div class="visit-field"><label for="phone-input">연락처</label><input id="phone-input" class="visit-case-field" type="text" placeholder="010-0000-0000" /></div>
+            </div>
+            <div class="visit-field"><label for="address-input">주소</label><input id="address-input" class="visit-case-field" type="text" placeholder="주소를 입력하세요" /></div>
           </div>
-          <div id="sub-etc-preview-1" class="sub-etc-preview"></div>
-        </div>
-        <div id="sub-preview-1" class="sub-selected-preview" style="display:none;"></div>
-      </div>
 
-      <!-- ✅ 지역복지자원연계2 하위 체크리스트 (복지자원) -->
-      <div id="sub-activity-wrap-2" class="sub-activity-wrap type2">
-        <div class="sub-activity-label">지역복지자원연계2 — 복지자원 세부 선택 <span style="font-size:11px;font-weight:400;color:#c084fc;">(복수 선택 가능)</span></div>
-        <div class="sub-check-grid" id="sub-check-grid-2">
-          <label class="sub-check-item type2"><input type="checkbox" value="응급벨 신청"/><span>응급벨 신청</span></label>
-          <label class="sub-check-item type2"><input type="checkbox" value="맞춤돌봄"/><span>맞춤돌봄</span></label>
-          <label class="sub-check-item type2"><input type="checkbox" value="요양등급신청"/><span>요양등급신청</span></label>
-          <label class="sub-check-item type2"><input type="checkbox" value="급여신청(기초생활수급대상자, 차상위계층 등)"/><span>급여신청(기초·차상위)</span></label>
-          <label class="sub-check-item type2"><input type="checkbox" value="통합돌봄"/><span>통합돌봄</span></label>
-          <label class="sub-check-item type2"><input type="checkbox" value="사전연명의료의향서 안내"/><span>사전연명의료의향서 안내</span></label>
-          <label class="sub-check-item type2"><input type="checkbox" value="생활 환경 개선"/><span>생활 환경 개선</span></label>
-          <label class="sub-check-item type2 sub-etc-item" data-group="지역복지자원연계2"><input type="checkbox" value="__etc__"/><span>기타</span></label>
-        </div>
-        <div id="sub-etc-wrap-2" class="sub-etc-input-wrap" style="display:none;">
-          <div class="sub-etc-row">
-            <span>기타 (</span>
-            <input id="sub-etc-input-2" class="sub-etc-text-input" type="text" placeholder="내용 입력" maxlength="40"/>
-            <span>)</span>
+          <div class="visit-group">
+            <div class="visit-group-title"><span class="visit-step">2</span>방문 정보</div>
+            <div class="visit-grid-2">
+              <div class="visit-field"><label for="visit-datetime-input">방문 일시</label><input id="visit-datetime-input" class="visit-case-field" type="datetime-local" /></div>
+              <div class="visit-field"><label for="visit-place-input">방문지</label><input id="visit-place-input" class="visit-case-field" type="text" placeholder="예: 대상자 가정, 경로당" /></div>
+            </div>
+            <div class="visit-field"><label>방문 사유</label><div class="visit-checks">
+              <label class="visit-check"><input name="visit-reason" class="visit-case-field" type="radio" value="의뢰">의뢰</label>
+              <label class="visit-check"><input name="visit-reason" class="visit-case-field" type="radio" value="자발적">자발적</label>
+              <label class="visit-check"><input name="visit-reason" class="visit-case-field" type="radio" value="발굴">발굴</label>
+              <label class="visit-check"><input name="visit-reason" class="visit-case-field" type="radio" value="기타">기타</label>
+            </div></div>
+            <div class="visit-field"><label for="visit-reason-etc-input">방문 사유 기타</label><input id="visit-reason-etc-input" class="visit-case-field" type="text" placeholder="기타 사유가 있을 때 입력" /></div>
           </div>
-          <div id="sub-etc-preview-2" class="sub-etc-preview"></div>
-        </div>
-        <div id="sub-preview-2" class="sub-selected-preview" style="display:none;"></div>
-      </div>
 
-      <!-- ✅ 유관기관업무지원 하위 체크리스트 -->
-      <div id="sub-activity-wrap-3" class="sub-activity-wrap type3">
-        <div class="sub-activity-label">유관기관업무지원 — 세부 선택 <span style="font-size:11px;font-weight:400;color:#fb923c;">(복수 선택 가능)</span></div>
-        <div class="sub-check-grid" id="sub-check-grid-3">
-          <label class="sub-check-item type3"><input type="checkbox" value="IOT 대상자"/><span>IOT 대상자</span></label>
-          <label class="sub-check-item type3"><input type="checkbox" value="재가 도시락 대상자 만족도조사 및 취약계층 발굴"/><span>재가 도시락 만족도조사 및 취약계층 발굴</span></label>
-          <label class="sub-check-item type3"><input type="checkbox" value="응급안전안심서비스 대상자 만족도조사 및 취약계층 발굴"/><span>응급안전안심서비스 만족도조사 및 취약계층 발굴</span></label>
-          <label class="sub-check-item type3"><input type="checkbox" value="신입회원 복지관 안내 및 취약계층 발굴"/><span>신입회원 복지관 안내 및 취약계층 발굴</span></label>
-          <label class="sub-check-item type3 sub-etc-item" data-group="유관기관업무지원"><input type="checkbox" value="__etc__"/><span>기타</span></label>
-        </div>
-        <div id="sub-etc-wrap-3" class="sub-etc-input-wrap" style="display:none;">
-          <div class="sub-etc-row">
-            <span>기타 (</span>
-            <input id="sub-etc-input-3" class="sub-etc-text-input" type="text" placeholder="내용 입력" maxlength="40"/>
-            <span>)</span>
+          <div class="visit-group">
+            <div class="visit-group-title"><span class="visit-step">3</span>방문 목적</div>
+            <div class="visit-checks">
+              <label class="visit-check"><input name="visit-purpose" class="visit-case-field" type="checkbox" value="홍보">홍보</label>
+              <label class="visit-check"><input name="visit-purpose" class="visit-case-field" type="checkbox" value="상담">상담</label>
+              <label class="visit-check"><input name="visit-purpose" class="visit-case-field" type="checkbox" value="지역자원 연계">지역자원 연계</label>
+              <label class="visit-check"><input name="visit-purpose" class="visit-case-field" type="checkbox" value="말벗 및 일상생활지원서비스">말벗 및 일상생활지원서비스</label>
+              <label class="visit-check"><input name="visit-purpose" class="visit-case-field" type="checkbox" value="유관기관 업무지원">유관기관 업무지원</label>
+            </div>
+            <div class="visit-field"><label for="visit-purpose-etc-input">기타 또는 세부 내용</label><input id="visit-purpose-etc-input" class="visit-case-field" type="text" placeholder="유관기관 업무지원 세부 내용 등" /></div>
           </div>
-          <div id="sub-etc-preview-3" class="sub-etc-preview"></div>
-        </div>
-        <div id="sub-preview-3" class="sub-selected-preview" style="display:none;"></div>
-      </div>
 
-      <div id="activity-source-text" class="helper"></div>
-      <div class="field">
-        <label for="memo-input" class="section-title section-title-green"><span class="section-number">2</span><span>활동기록</span></label>
-        <div class="record-guide">활동 중 기록이 어려우시면 활동 저장 후 추후에 작성 가능합니다.</div>
-        <textarea id="memo-input" placeholder="예: 병원 동행 후 복약 확인 및 정서지원 진행"></textarea>
-      </div>
-      <div class="action-row">
-        <button id="save-activity-btn" class="btn btn-primary" type="button">활동 저장</button>
-        <button id="cancel-session-btn" class="btn btn-danger" type="button">현재 선택 취소</button>
+          <div class="visit-group"><div class="visit-group-title"><span class="visit-step">4</span>방문 내용 요약</div><div class="visit-field"><label for="memo-input">요약</label><textarea id="memo-input" class="visit-case-field" placeholder="방문 내용의 주요 내용을 간단히 요약하여 입력하세요."></textarea></div></div>
+          <div class="visit-group"><div class="visit-group-title"><span class="visit-step">5</span>코디네이터 의견</div><div class="visit-field"><label for="coordinator-opinion-input">의견</label><textarea id="coordinator-opinion-input" class="visit-case-field" placeholder="대상자 상태, 특이사항, 향후 계획 등 코디네이터 의견을 입력하세요."></textarea></div></div>
+
+          <div class="visit-save-info">저장 시 GPS 위치, 근무시간, 작성자가 함께 저장됩니다. 관리자페이지에서 수요처·방문목적·기간별 엑셀 분류가 가능하도록 항목별로 저장됩니다.</div>
+          <div class="action-row"><button id="save-activity-btn" class="btn btn-primary" type="button">방문기록 저장</button><button id="cancel-session-btn" class="btn btn-danger" type="button">작성 내용 초기화</button></div>
+
+          <div class="visit-hidden-legacy">
+            <div id="activity-chip-wrap" class="chip-wrap"></div>
+            <div id="etc-input-wrap" class="etc-input-wrap"><input id="etc-text-input" type="text"/><div id="etc-preview"></div></div>
+            <div id="sub-activity-wrap-1"><div id="sub-check-grid-1"></div><div id="sub-preview-1"></div><input id="sub-etc-input-1"/><div id="sub-etc-wrap-1"></div><div id="sub-etc-preview-1"></div></div>
+            <div id="sub-activity-wrap-2"><div id="sub-check-grid-2"></div><div id="sub-preview-2"></div><input id="sub-etc-input-2"/><div id="sub-etc-wrap-2"></div><div id="sub-etc-preview-2"></div></div>
+            <div id="sub-activity-wrap-3"><div id="sub-check-grid-3"></div><div id="sub-preview-3"></div><input id="sub-etc-input-3"/><div id="sub-etc-wrap-3"></div><div id="sub-etc-preview-3"></div></div>
+          </div>
+        </div>
       </div>
 
       <div class="mini-stats">
@@ -770,7 +769,8 @@
   let selectedLoginUser = "", currentUserName = "";
   let coordinatorNames = [], masterActivities = [], usingDefaultActivities = false;
   let allLogs = [], lastGps = null, currentSession = null, sessionTicker = null;
-  let workTimerTicker = null, autoEndTicker = null, autoEndInProgress = false;
+  let workTimerTicker = null, autoEndTicker = null, autoEndInProgress = false, gpsCheckTicker = null;
+  let lastGpsErrorMessage = "";
   let etcText = ""; // ✅ 기타 입력 내용
 
   let calYear = new Date().getFullYear();
@@ -838,7 +838,7 @@
   function isStartLog(log){ return normalizeText(log.type)==="일과 시작"||normalizeText(log.activities)==="일과 시작"; }
   function isEndLog(log){ return normalizeText(log.type)==="일과 종료"||normalizeText(log.activities)==="일과 종료"; }
   function isActivityLog(log){ return !isStartLog(log)&&!isEndLog(log); }
-  function getLogType(log){ if(isStartLog(log)) return "일과 시작"; if(isEndLog(log)) return "일과 종료"; return "활동 기록"; }
+  function getLogType(log){ if(isStartLog(log)) return "일과 시작"; if(isEndLog(log)) return "일과 종료"; if(normalizeText(log.type)==="방문사례기록"||normalizeText(log.recordType)==="visitCase") return "방문사례기록"; return "활동 기록"; }
   function getActivitiesFromLog(log){
     if(!isActivityLog(log)) return [];
     if(Array.isArray(log.activities)) return uniqueSorted(log.activities);
@@ -1031,13 +1031,13 @@
   function updateActivityAreaState(){
     const status=getTodayWorkStatus(), canWork=(status==="started");
     document.querySelectorAll(".activity-chip").forEach(c=>{ c.disabled=!canWork; c.style.opacity=canWork?"1":"0.4"; c.style.cursor=canWork?"pointer":"not-allowed"; });
-    el("memo-input").disabled=!canWork; el("memo-input").style.opacity=canWork?"1":"0.4";
-    el("save-activity-btn").disabled=!canWork; el("save-activity-btn").style.opacity=canWork?"1":"0.4";
-    el("cancel-session-btn").disabled=!canWork; el("cancel-session-btn").style.opacity=canWork?"1":"0.4";
+    document.querySelectorAll(".visit-case-field").forEach(field=>{ field.disabled=!canWork; field.style.opacity=canWork?"1":"0.55"; field.style.cursor=canWork?"":"not-allowed"; });
+    el("save-activity-btn").disabled=!canWork; el("save-activity-btn").style.opacity=canWork?"1":"0.45";
+    el("cancel-session-btn").disabled=!canWork; el("cancel-session-btn").style.opacity=canWork?"1":"0.45";
     const src=el("activity-source-text");
-    if(status==="none") src.textContent="일과 시작을 먼저 저장해주세요.";
-    else if(status==="ended") src.textContent="오늘 일과가 종료되었습니다.";
-    else src.textContent=usingDefaultActivities?"현재 Firestore 활동 설정이 없어서 기본 활동 목록을 표시하고 있습니다.":"현재 Firestore에 저장된 활동 목록을 표시하고 있습니다.";
+    if(status==="none") src.textContent="일과 시작을 먼저 저장한 뒤 방문(사례) 기록을 작성할 수 있습니다.";
+    else if(status==="ended") src.textContent="오늘 일과가 종료되었습니다. 방문기록은 조회만 가능합니다.";
+    else src.textContent="방문(사례) 기록지를 순서대로 작성한 뒤 저장해주세요.";
   }
 
   /* ── Firestore ── */
@@ -1314,7 +1314,7 @@
   }
 
   /* ── 로그인/로그아웃 ── */
-  function loginToMain(){
+  async function loginToMain(){
     const finalUser = selectedLoginUser;
     if(!finalUser){ alert("목록에서 사용자를 선택해주세요."); return; }
     // ✅ 관리자 등록 + 기존 로그 파생 이름 모두 허용
@@ -1329,7 +1329,11 @@
     const savedGps=loadGpsFromStorage(); if(savedGps) lastGps=savedGps;
     renderActivityChips(); updateActivityAreaState(); updateEtcInputVisibility(); updateSubActivityVisibility(); updateCurrentElapsedUi();
     updateTodaySummary(); renderCalendar(); renderHistory();
-    startSessionTicker(); startWorkTimer(); startAutoEndTimer();
+    startSessionTicker(); startWorkTimer(); startAutoEndTimer(); syncGpsCheckTimer();
+
+    // ✅ 안드로이드 앱은 로그인 직후 위치 권한을 먼저 요청합니다.
+    // 사용자가 위치 권한을 허용해야 일과 시작/종료 및 5분 자동 GPS 확인이 안정적으로 작동합니다.
+    await saveGpsCheckLog("login",false);
   }
 
   function logout(){
@@ -1343,7 +1347,7 @@
     if(el("user-search-input")) el("user-search-input").style.display="none";
     el("login-user-list").style.display="none";
     showScreen("auth");
-    stopSessionTicker(); stopWorkTimer(); stopAutoEndTimer();
+    stopSessionTicker(); stopWorkTimer(); stopAutoEndTimer(); stopGpsCheckTimer();
   }
 
   /* ── 일과 타이머 ── */
@@ -1425,15 +1429,17 @@
     const today=formatDateKey(new Date());
     const startLog=getLatestStartLogForDate(today);
     if(startLog) select.value=String(getWorkHoursFromLog(startLog));
+
+    // 근무시간은 일과 시작 전에만 선택하고, 일과 시작 시 그 값이 확정 저장됩니다.
     select.disabled=status!=="none";
     select.style.opacity=select.disabled?"0.55":"1";
     if(status==="started"){
       const info=getCurrentAutoEndInfo();
-      helper.textContent=info?`선택 근무시간 ${info.hours}시간 · 자동 종료 예정 ${formatClockTime(info.autoEndAtMs)}`:"근무시간 확인 중입니다.";
+      helper.textContent=info?`선택 근무시간 ${info.hours}시간 · 자동 종료 예정 ${formatClockTime(info.autoEndAtMs)} · GPS는 5분마다 자동 확인됩니다.`:"근무시간 확인 중입니다.";
     }else if(status==="ended"){
       helper.textContent=`오늘 일과가 종료되었습니다. 선택 근무시간 ${getCurrentWorkHours()}시간`;
     }else{
-      helper.textContent="기본 5시간으로 일과 시작 후 선택한 시간이 지나면 자동 종료됩니다.";
+      helper.textContent="일과 시작 전에 1~5시간 중 선택하세요. 시작 후에는 선택 시간이 고정되고 GPS가 5분마다 자동 확인됩니다.";
       if(!select.value) select.value=String(DEFAULT_WORK_HOURS);
     }
   }
@@ -1485,34 +1491,105 @@
 
   /* ── GPS ── */
   function isFreshGps(gps,maxAgeMs=5*60*1000){
-    return gps && gps.lat!=null && gps.lng!=null && gps.capturedAt && (Date.now()-Number(gps.capturedAt) <= maxAgeMs);
+    return !!(gps && gps.lat!=null && gps.lng!=null && gps.capturedAt && (Date.now()-Number(gps.capturedAt) <= maxAgeMs));
   }
 
-  function requestGpsOnce(options={}){
-    const timeout=Number(options.timeout)||15000;
+  function getGpsErrorMessage(err){
+    if(!navigator.geolocation) return "이 기기 또는 앱에서 위치 기능을 지원하지 않습니다.";
+    if(!err) return "위치 정보를 가져오지 못했습니다.";
+    if(err.code===1) return "위치 권한이 거부되어 있습니다. 앱 권한에서 위치를 허용해주세요.";
+    if(err.code===2) return "현재 위치를 확인할 수 없습니다. 휴대폰 위치 서비스와 GPS를 켜고 실외 또는 창가에서 다시 시도해주세요.";
+    if(err.code===3) return "위치 확인 시간이 초과되었습니다. 잠시 후 다시 시도해주세요.";
+    return err.message || "위치 정보를 가져오지 못했습니다.";
+  }
+
+  function requestGpsSingle(options={}){
+    const timeout=Number(options.timeout)||30000;
+    const enableHighAccuracy=options.enableHighAccuracy!==false;
+    const maximumAge=Number(options.maximumAge)||0;
+    lastGpsErrorMessage="";
     return new Promise(resolve=>{
-      if(!navigator.geolocation){ resolve(null); return; }
+      if(!navigator.geolocation){ lastGpsErrorMessage=getGpsErrorMessage(null); resolve(null); return; }
       navigator.geolocation.getCurrentPosition(
         pos=>{
           const gps={lat:pos.coords.latitude,lng:pos.coords.longitude,accuracy:pos.coords.accuracy,capturedAt:Date.now()};
-          lastGps=gps; saveGpsToStorage(gps);
-          resolve(gps);
+          lastGps=gps; saveGpsToStorage(gps); lastGpsErrorMessage=""; resolve(gps);
         },
-        err=>{ console.warn("GPS 오류:",err); resolve(null); },
-        {enableHighAccuracy:true,timeout,maximumAge:0}
+        err=>{ console.warn("GPS 오류:",err); lastGpsErrorMessage=getGpsErrorMessage(err); resolve(null); },
+        {enableHighAccuracy,timeout,maximumAge}
       );
     });
   }
 
+  async function requestGpsOnce(options={}){
+    const timeout=Number(options.timeout)||30000;
+    const first=await requestGpsSingle({enableHighAccuracy:true,timeout,maximumAge:0});
+    if(first) return first;
+    // 실내에서 고정밀 GPS가 실패하는 경우를 대비해 일반 위치로 한 번 더 시도합니다.
+    const second=await requestGpsSingle({enableHighAccuracy:false,timeout:Math.max(15000,Math.floor(timeout/2)),maximumAge:60000});
+    return second;
+  }
+
+  function getGpsSourceText(source){
+    const map={
+      login:"로그인", "manual-refresh":"수동 새로읽기", "work-start":"일과 시작", "work-end":"일과 종료", "5min-check":"5분 자동 확인", "app-visible":"앱 재진입", "visit-record":"방문기록 저장"
+    };
+    return map[source]||source||"GPS 확인";
+  }
+
+  async function saveGpsCheckSnapshot(source,gps){
+    if(!gps||!currentUserName) return false;
+    const now=Date.now();
+    try{
+      await db.collection("gpsCheckLogs").add({
+        userName:currentUserName,
+        source:source||"gps-check",
+        sourceText:getGpsSourceText(source),
+        timestamp:firebase.firestore.FieldValue.serverTimestamp(),
+        clientTimeMs:now,
+        timeStr:new Date(now).toLocaleString("ko-KR"),
+        lat:gps.lat,lng:gps.lng,accuracy:gps.accuracy??null,capturedAt:gps.capturedAt??now,
+        workStatus:getTodayWorkStatus()
+      });
+      return true;
+    }catch(err){ console.warn("GPS 확인 로그 저장 오류:",err); return false; }
+  }
+
+  async function saveGpsCheckLog(source="manual-refresh",silent=false){
+    if(!currentUserName){ if(!silent) alert("사용자를 먼저 선택해주세요."); return null; }
+    const helper=el("work-hours-helper");
+    const prevHelper=helper?helper.textContent:"";
+    if(helper) helper.textContent=`GPS 위치를 확인하고 있습니다. (${getGpsSourceText(source)})`;
+    const gps=await requestGpsOnce({timeout:30000});
+    if(helper) helper.textContent=prevHelper;
+    updateWorkHoursUi();
+    if(!gps){
+      if(!silent) alert("GPS를 읽지 못했습니다.\n" + (lastGpsErrorMessage||"휴대폰 위치 권한과 위치 서비스가 켜져 있는지 확인해주세요."));
+      return null;
+    }
+    await saveGpsCheckSnapshot(source,gps);
+    if(!silent) alert("GPS 위치를 확인하고 저장했습니다.");
+    return gps;
+  }
+
   function getGpsBackground(onSuccess){
-    requestGpsOnce({timeout:12000}).then(gps=>{ if(gps&&onSuccess) onSuccess(gps); });
+    requestGpsOnce({timeout:20000}).then(gps=>{ if(gps&&onSuccess) onSuccess(gps); });
   }
 
   async function refreshGps(silent){
-    const gps=await requestGpsOnce({timeout:15000});
-    if(gps){ if(!silent) alert("GPS를 새로 읽었습니다."); return gps; }
-    if(!silent) alert("GPS를 읽지 못했습니다. 휴대폰 위치 권한과 위치 서비스가 켜져 있는지 확인해주세요.");
-    return null;
+    return await saveGpsCheckLog("manual-refresh",!!silent);
+  }
+
+  function startGpsCheckTimer(){
+    stopGpsCheckTimer();
+    if(!currentUserName||getTodayWorkStatus()!=="started") return;
+    gpsCheckTicker=setInterval(function(){ saveGpsCheckLog("5min-check",true); },5*60*1000);
+  }
+  function stopGpsCheckTimer(){ if(gpsCheckTicker) clearInterval(gpsCheckTicker); gpsCheckTicker=null; }
+  function syncGpsCheckTimer(){
+    if(currentUserName&&getTodayWorkStatus()==="started"){
+      if(!gpsCheckTicker) startGpsCheckTimer();
+    }else stopGpsCheckTimer();
   }
 
   function renderActivityChips(){
@@ -1561,11 +1638,9 @@
   }
 
   function cancelCurrentSession(){
-    if(!currentSession||!currentSession.activities.length){ alert("취소할 활동 세션이 없습니다."); return; }
-    if(!confirm("현재 선택한 활동과 진행 중인 시간을 취소할까요?")) return;
-    currentSession=null; etcText=""; resetSubActivitySelections();
-    saveSessionToStorage(); localStorage.removeItem(LS_MEMO); el("memo-input").value="";
-    renderActivityChips(); updateActivityAreaState(); updateEtcInputVisibility(); updateSubActivityVisibility(); updateCurrentElapsedUi();
+    if(!confirm("작성 중인 방문(사례) 기록 내용을 초기화할까요?")) return;
+    currentSession=null; etcText=""; resetSubActivitySelections(); resetVisitCaseForm();
+    saveSessionToStorage(); updateActivityAreaState(); updateCurrentElapsedUi();
   }
 
   /* ── 저장 ── */
@@ -1604,16 +1679,18 @@
     const autoEndAtMs=type==="일과 시작"?tempNow+(workHours*60*60*1000):null;
     let gpsForSave=null;
 
-    // 일과 시작/종료 버튼을 누르면 먼저 GPS를 실제로 요청한 뒤 저장합니다.
-    // 기존 방식은 저장 후 백그라운드로 GPS를 갱신해서, 기록에 위치가 비어 보일 수 있었습니다.
-    if(options.requireGps&&!options.autoEnded){
+    // ✅ 일과 시작/종료는 저장 전에 GPS를 먼저 요청합니다.
+    // 자동 종료도 조용히 GPS를 시도하고, 수동 시작/종료는 실패 사유를 사용자에게 안내합니다.
+    const shouldRequestGps = options.requireGps || options.autoEnded || type==="일과 시작" || type==="일과 종료";
+    if(shouldRequestGps){
       const helper=el("work-hours-helper");
       const prevHelper=helper?helper.textContent:"";
-      if(helper) helper.textContent="GPS 위치를 확인하고 있습니다. 휴대폰 위치 권한을 허용해주세요.";
-      gpsForSave=await requestGpsOnce({timeout:15000});
+      if(helper) helper.textContent=`${type} 전 GPS 위치를 확인하고 있습니다. 휴대폰 위치 권한을 허용해주세요.`;
+      gpsForSave=await requestGpsOnce({timeout:30000});
       if(helper) helper.textContent=prevHelper;
-      if(type==="일과 시작"&&!gpsForSave){
-        const ok=confirm("GPS 위치를 읽지 못했습니다. 위치 권한 또는 실내 수신 상태를 확인해주세요. GPS 없이 일과 시작을 저장할까요?");
+      updateWorkHoursUi();
+      if(!gpsForSave && !options.silent && !options.autoEnded){
+        const ok=confirm("GPS 위치를 읽지 못했습니다.\n" + (lastGpsErrorMessage||"휴대폰 위치 권한과 위치 서비스를 확인해주세요.") + "\n\nGPS 없이 " + type + "을 저장할까요?");
         if(!ok){ updateBoundaryBtnState(); updateActivityAreaState(); updateWorkHoursUi(); return false; }
       }
     }
@@ -1622,60 +1699,125 @@
     const tempLog={id:"__temp__",userName:currentUserName,type:type,activities:type,clientTimeMs:tempNow,timestamp:{seconds:Math.floor(tempNow/1000)}};
     if(type==="일과 시작"){ tempLog.workHours=workHours; tempLog.autoEndAtMs=autoEndAtMs; }
     allLogs.unshift(tempLog);
-    updateBoundaryBtnState(); updateActivityAreaState(); updateWorkHoursUi();
+    updateBoundaryBtnState(); updateActivityAreaState(); updateWorkHoursUi(); syncGpsCheckTimer();
     const now=Date.now();
     const payload={userName:currentUserName,type:type,activities:type,memo:"",timestamp:firebase.firestore.FieldValue.serverTimestamp(),clientTimeMs:now,timeStr:new Date(now).toLocaleString("ko-KR"),lat:freshGps?.lat??null,lng:freshGps?.lng??null,accuracy:freshGps?.accuracy??null};
     if(type==="일과 시작"){ payload.workHours=workHours; payload.workHoursText=`${workHours}시간`; payload.autoEndAtMs=now+(workHours*60*60*1000); payload.autoEndAtText=new Date(payload.autoEndAtMs).toLocaleString("ko-KR"); }
     if(options.autoEnded){ payload.autoEnded=true; payload.autoEndedReason="selected-work-hours"; }
     try{
       await db.collection("attendanceLogs").add(payload);
+      if(freshGps) await saveGpsCheckSnapshot(type==="일과 시작"?"work-start":"work-end",freshGps);
       allLogs=allLogs.filter(l=>l.id!=="__temp__");
       await reloadMainData();
+      syncGpsCheckTimer();
       if(!options.silent) alert(type + "이 저장되었습니다." + (freshGps ? " GPS 위치가 함께 저장되었습니다." : ""));
       return true;
     }catch(err){
       allLogs=allLogs.filter(l=>l.id!=="__temp__");
-      updateBoundaryBtnState(); updateActivityAreaState(); updateWorkHoursUi();
+      updateBoundaryBtnState(); updateActivityAreaState(); updateWorkHoursUi(); syncGpsCheckTimer();
       if(!options.silent) alert("저장 중 오류가 발생했습니다.");
       return false;
     }
   }
 
-  async function saveActivityRecord(options={}){
-    if(!currentUserName){ alert("사용자를 먼저 선택해주세요."); return; }
-    if(!currentSession||!currentSession.activities.length){ alert("활동을 1개 이상 선택해주세요."); return; }
-    // ✅ 기타 항목 + 지역복지자원연계 하위 항목 모두 반영
-    const activities=resolveAllActivities(currentSession.activities);
-    const memo=normalizeText(el("memo-input").value);
-    const startedAt=currentSession.startedAt||Date.now(), now=Date.now();
-    const durationMs=Math.max(0,now-startedAt);
-    const checkGps=currentSession.gpsAtCheck||null;
-    const payload={
-      userName:currentUserName,type:"활동 기록",activities,activitiesText:activities.join(", "),memo,
-      timestamp:firebase.firestore.FieldValue.serverTimestamp(),clientTimeMs:now,timeStr:new Date(now).toLocaleString("ko-KR"),
-      lat:lastGps?.lat??checkGps?.lat??null,lng:lastGps?.lng??checkGps?.lng??null,accuracy:lastGps?.accuracy??checkGps?.accuracy??null,
-      activityStartedAt:startedAt,activitySavedAt:now,activityDurationMs:durationMs,activityDurationText:formatDuration(durationMs),
-      activityCheckLat:checkGps?.lat??null,activityCheckLng:checkGps?.lng??null,activityCheckAccuracy:checkGps?.accuracy??null,activityCheckCapturedAt:checkGps?.capturedAt??null,
-      activitySaveLat:lastGps?.lat??null,activitySaveLng:lastGps?.lng??null,activitySaveAccuracy:lastGps?.accuracy??null,activitySaveCapturedAt:lastGps?.capturedAt??null,
-      workHours:getCurrentWorkHours(),workHoursText:`${getCurrentWorkHours()}시간`,
-      primaryActivityName:"",secondaryActivities:[],secondaryActivitiesText:""
+  function getVisitCaseFormData(){
+    const reasonEl=document.querySelector('input[name="visit-reason"]:checked');
+    const purposes=Array.from(document.querySelectorAll('input[name="visit-purpose"]:checked')).map(x=>normalizeText(x.value)).filter(Boolean);
+    const visitDateTimeValue=normalizeText(el("visit-datetime-input").value);
+    const visitDateObj=visitDateTimeValue?new Date(visitDateTimeValue):new Date();
+    return {
+      demandOrgName:normalizeText(el("demand-org-input").value),
+      clientName:normalizeText(el("client-name-input").value),
+      gender:normalizeText(el("gender-select").value),
+      age:normalizeText(el("age-input").value),
+      address:normalizeText(el("address-input").value),
+      phone:normalizeText(el("phone-input").value),
+      visitDateTimeValue,
+      visitDateTimeMs:isNaN(visitDateObj.getTime())?Date.now():visitDateObj.getTime(),
+      visitDateTimeText:isNaN(visitDateObj.getTime())?"":visitDateObj.toLocaleString("ko-KR"),
+      visitReason:reasonEl?normalizeText(reasonEl.value):"",
+      visitReasonEtc:normalizeText(el("visit-reason-etc-input").value),
+      visitPlace:normalizeText(el("visit-place-input").value),
+      visitPurposes:purposes,
+      visitPurposeEtc:normalizeText(el("visit-purpose-etc-input").value),
+      visitSummary:normalizeText(el("memo-input").value),
+      coordinatorOpinion:normalizeText(el("coordinator-opinion-input").value)
     };
-    getGpsBackground(gps=>{
-      db.collection("attendanceLogs").where("clientTimeMs","==",now).where("userName","==",currentUserName).get()
-        .then(snap=>{ snap.forEach(doc=>doc.ref.update({lat:gps.lat,lng:gps.lng,accuracy:gps.accuracy,activitySaveLat:gps.lat,activitySaveLng:gps.lng,activitySaveAccuracy:gps.accuracy})); })
-        .catch(()=>{});
-    });
+  }
+
+  function validateVisitCaseData(data){
+    if(!data.demandOrgName) return "수요처 / 기관명을 입력해주세요.";
+    if(!data.clientName) return "대상자 성명을 입력해주세요.";
+    if(!data.visitDateTimeValue) return "방문 일시를 선택해주세요.";
+    if(!data.visitReason) return "방문 사유를 선택해주세요.";
+    if(!data.visitPlace) return "방문지를 입력해주세요.";
+    if(!data.visitPurposes.length && !data.visitPurposeEtc) return "방문 목적을 1개 이상 선택하거나 기타 내용을 입력해주세요.";
+    if(!data.visitSummary) return "방문 내용 요약을 입력해주세요.";
+    return "";
+  }
+
+  function resetVisitCaseForm(){
+    ["demand-org-input","client-name-input","age-input","address-input","phone-input","visit-datetime-input","visit-reason-etc-input","visit-place-input","visit-purpose-etc-input","memo-input","coordinator-opinion-input"].forEach(id=>{ const node=el(id); if(node) node.value=""; });
+    if(el("gender-select")) el("gender-select").value="";
+    document.querySelectorAll('input[name="visit-reason"],input[name="visit-purpose"]').forEach(x=>{ x.checked=false; });
+    localStorage.removeItem(LS_MEMO);
+  }
+
+  function makeVisitMemoText(data){
+    const lines=[];
+    if(data.visitSummary) lines.push(`요약: ${data.visitSummary}`);
+    if(data.coordinatorOpinion) lines.push(`의견: ${data.coordinatorOpinion}`);
+    if(data.demandOrgName) lines.push(`수요처: ${data.demandOrgName}`);
+    if(data.clientName) lines.push(`대상자: ${data.clientName}`);
+    return lines.join("\n");
+  }
+
+  async function saveActivityRecord(options={}){
+    if(!currentUserName){ alert("사용자를 먼저 선택해주세요."); return false; }
+    const status=getTodayWorkStatus();
+    if(status==="none"){ alert("일과 시작을 먼저 저장해주세요."); return false; }
+    if(status==="ended"){ alert("오늘 일과가 종료되었습니다."); return false; }
+
+    const data=getVisitCaseFormData();
+    const validationMessage=validateVisitCaseData(data);
+    if(validationMessage){ alert(validationMessage); return false; }
+
+    const now=Date.now();
+    let freshGps=await saveGpsCheckLog("visit-record",true);
+    if(!freshGps){
+      const ok=confirm("GPS 위치를 읽지 못했습니다.\n방문기록을 GPS 없이 저장할까요?");
+      if(!ok) return false;
+    }
+    const purposes=[...data.visitPurposes];
+    if(data.visitPurposeEtc) purposes.push(`기타/세부: ${data.visitPurposeEtc}`);
+
+    const payload={
+      userName:currentUserName,coordinatorName:currentUserName,
+      type:"방문사례기록",recordType:"visitCase",
+      activities:purposes,activitiesText:purposes.join(", "),memo:makeVisitMemoText(data),
+      timestamp:firebase.firestore.FieldValue.serverTimestamp(),clientTimeMs:now,timeStr:new Date(now).toLocaleString("ko-KR"),
+      demandOrgName:data.demandOrgName,clientName:data.clientName,gender:data.gender,age:data.age,address:data.address,phone:data.phone,
+      visitDateTimeValue:data.visitDateTimeValue,visitDateTimeMs:data.visitDateTimeMs,visitDateTimeText:data.visitDateTimeText,
+      visitReason:data.visitReason,visitReasonEtc:data.visitReasonEtc,visitPlace:data.visitPlace,visitPurposes:data.visitPurposes,visitPurposeEtc:data.visitPurposeEtc,
+      visitSummary:data.visitSummary,coordinatorOpinion:data.coordinatorOpinion,
+      lat:freshGps?.lat??lastGps?.lat??null,lng:freshGps?.lng??lastGps?.lng??null,accuracy:freshGps?.accuracy??lastGps?.accuracy??null,
+      activityStartedAt:data.visitDateTimeMs||now,activitySavedAt:now,activityDurationMs:0,activityDurationText:"방문기록",
+      activityCheckLat:freshGps?.lat??null,activityCheckLng:freshGps?.lng??null,activityCheckAccuracy:freshGps?.accuracy??null,activityCheckCapturedAt:freshGps?.capturedAt??null,
+      activitySaveLat:freshGps?.lat??lastGps?.lat??null,activitySaveLng:freshGps?.lng??lastGps?.lng??null,activitySaveAccuracy:freshGps?.accuracy??lastGps?.accuracy??null,activitySaveCapturedAt:freshGps?.capturedAt??lastGps?.capturedAt??null,
+      workHours:getCurrentWorkHours(),workHoursText:`${getCurrentWorkHours()}시간`,
+      createdAt:firebase.firestore.FieldValue.serverTimestamp(),updatedAt:firebase.firestore.FieldValue.serverTimestamp()
+    };
+
     try{
       await db.collection("attendanceLogs").add(payload);
-      currentSession=null; etcText=""; resetSubActivitySelections();
-      saveSessionToStorage(); localStorage.removeItem(LS_MEMO); el("memo-input").value="";
-      renderActivityChips(); updateActivityAreaState(); updateEtcInputVisibility(); updateSubActivityVisibility(); updateCurrentElapsedUi();
-      if(!options.silent) alert("활동 기록이 저장되었습니다.");
+      currentSession=null; etcText=""; resetSubActivitySelections(); saveSessionToStorage(); resetVisitCaseForm();
+      updateActivityAreaState(); updateCurrentElapsedUi();
       await reloadMainData();
+      if(!options.silent) alert("방문(사례) 기록이 저장되었습니다." + (freshGps ? " GPS 위치가 함께 저장되었습니다." : ""));
       return true;
     }catch(err){
-      console.error("활동 저장 중 오류:",err);
-      if(!options.silent) alert("활동 저장 중 오류가 발생했습니다.");
+      console.error("방문기록 저장 오류:",err);
+      if(!options.silent) alert("저장 중 오류가 발생했습니다.");
       return false;
     }
   }
@@ -1835,7 +1977,7 @@
   async function reloadMainData(){
     await loadAttendanceLogs();
     updateTodaySummary(); renderCalendar(); renderHistory();
-    updateActivityAreaState(); updateBoundaryBtnState();
+    updateActivityAreaState(); updateBoundaryBtnState(); syncGpsCheckTimer();
   }
 
   /* ── 초기화 ── */
@@ -1861,8 +2003,8 @@
         renderActivityChips(); updateActivityAreaState(); updateBoundaryBtnState();
         updateEtcInputVisibility(); updateSubActivityVisibility(); updateCurrentElapsedUi();
         updateTodaySummary(); renderCalendar(); renderHistory();
-        startSessionTicker(); startWorkTimer(); startAutoEndTimer();
-        document.addEventListener("visibilitychange",function(){ if(document.visibilityState==="visible"){ refreshGps(true); checkAutoWorkEnd(); } });
+        startSessionTicker(); startWorkTimer(); startAutoEndTimer(); syncGpsCheckTimer();
+        document.addEventListener("visibilitychange",function(){ if(document.visibilityState==="visible"){ if(currentUserName&&getTodayWorkStatus()==="started") saveGpsCheckLog("app-visible",true); checkAutoWorkEnd(); syncGpsCheckTimer(); } });
       } else {
         renderUserList(false, null);
         renderActivityChips(); updateCurrentElapsedUi();
@@ -1897,7 +2039,7 @@
     closeEndWorkModal();
     const saved=await saveActivityRecord();
     if(saved===false) return;
-    setTimeout(async ()=>{ await _doSaveWorkBoundaryLog("일과 종료"); }, 300);
+    setTimeout(async ()=>{ await _doSaveWorkBoundaryLog("일과 종료",{requireGps:true}); }, 300);
   });
 
   el("end-work-just-end").addEventListener("click", async function(){
@@ -1905,7 +2047,7 @@
     currentSession=null; etcText=""; resetSubActivitySelections();
     saveSessionToStorage(); localStorage.removeItem(LS_MEMO); el("memo-input").value="";
     renderActivityChips(); updateActivityAreaState(); updateEtcInputVisibility(); updateSubActivityVisibility(); updateCurrentElapsedUi();
-    await _doSaveWorkBoundaryLog("일과 종료");
+    await _doSaveWorkBoundaryLog("일과 종료",{requireGps:true});
   });
 
   el("end-work-cancel").addEventListener("click", function(){
@@ -1918,7 +2060,7 @@
   el("login-btn").addEventListener("click",loginToMain);
   el("logout-btn").addEventListener("click",logout);
   el("reload-main-btn").addEventListener("click",reloadMainData);
-  el("refresh-gps-btn").addEventListener("click",()=>refreshGps(false));
+  el("refresh-gps-btn").addEventListener("click",()=>saveGpsCheckLog("manual-refresh",false));
   if(el("work-hours-select")) el("work-hours-select").addEventListener("change",updateWorkHoursUi);
   el("start-work-btn").addEventListener("click",()=>saveWorkBoundaryLog("일과 시작"));
   el("end-work-btn").addEventListener("click",()=>saveWorkBoundaryLog("일과 종료"));
