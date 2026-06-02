@@ -34,7 +34,7 @@ jobs:
 
       - name: Init Capacitor
         run: |
-          npx cap init "노인코디네이터" "kr.nonsan.coordinator" --web-dir www
+          npx cap init "?�인코디?�이?? "kr.nonsan.coordinator" --web-dir www
 
       - name: Add Android platform
         run: npx cap add android
@@ -64,9 +64,9 @@ jobs:
           sed -i "s|classpath 'com.android.tools.build:gradle:8.0.0'|classpath 'com.android.tools.build:gradle:8.1.4'|g" build.gradle
           sed -i 's/compileSdkVersion = .*/compileSdkVersion = 35/' variables.gradle
           sed -i 's/targetSdkVersion = .*/targetSdkVersion = 35/' variables.gradle
-          sed -i 's/versionCode 1/versionCode 26/' app/build.gradle
-          sed -i 's/versionName "1.0"/versionName "3.6"/' app/build.gradle
-          echo "=== 버전 확인 ==="
+          sed -i 's/versionCode 1/versionCode 25/' app/build.gradle
+          sed -i 's/versionName "1.0"/versionName "3.5"/' app/build.gradle
+          echo "=== 버전 ?�인 ==="
           grep -n "versionCode\|versionName" app/build.gradle
 
       - name: Setup Keystore
