@@ -2,14 +2,17 @@ name: Build APK
 
 on:
   push:
-    branches: [ main ]
+    branches:
+      - main
   workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout source
+        uses: actions/checkout@v4
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -37,36 +40,40 @@ jobs:
           npx cap init "Coordinator App" "kr.nonsan.coordinator" --web-dir www
 
       - name: Add Android platform
-        run: npx cap add android
+        run: |
+          npx cap add android
 
       - name: Add Android location permissions
         run: |
           python3 - <<'PY'
           from pathlib import Path
-          p = Path('android/app/src/main/AndroidManifest.xml')
-          s = p.read_text(encoding='utf-8')
-          perms = [
+          import re
+
+          path = Path("android/app/src/main/AndroidManifest.xml")
+          text = path.read_text(encoding="utf-8")
+
+          permissions = [
               '<uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />',
               '<uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />'
           ]
-          insert = '\n'.join('    ' + x for x in perms)
-          if 'android.permission.ACCESS_FINE_LOCATION' not in s:
-              import re
-              s = re.sub(r'(<manifest[^>]*>)', r'\1\n' + insert, s, count=1)
-          p.write_text(s, encoding='utf-8')
-          print(p.read_text(encoding='utf-8'))
+
+          if "android.permission.ACCESS_FINE_LOCATION" not in text:
+              insert = "\n".join("    " + item for item in permissions)
+              text = re.sub(r"(<manifest[^>]*>)", r"\1\n" + insert, text, count=1)
+
+          path.write_text(text, encoding="utf-8")
           PY
 
-      - name: Fix Gradle and SDK versions
+      - name: Fix Gradle SDK and app version
         run: |
           cd android
-          sed -i 's|distributionUrl=.*|distributionUrl=https\\://services.gradle.org/distributions/gradle-8.4-all.zip|g' gradle/wrapper/gradle-wrapper.properties
+          sed -i 's|distributionUrl=.*|distributionUrl=https\://services.gradle.org/distributions/gradle-8.4-all.zip|g' gradle/wrapper/gradle-wrapper.properties
           sed -i "s|classpath 'com.android.tools.build:gradle:8.0.0'|classpath 'com.android.tools.build:gradle:8.1.4'|g" build.gradle
           sed -i 's/compileSdkVersion = .*/compileSdkVersion = 35/' variables.gradle
           sed -i 's/targetSdkVersion = .*/targetSdkVersion = 35/' variables.gradle
-          sed -i 's/versionCode [0-9]\+/versionCode 27/' app/build.gradle
-          sed -i 's/versionName "[^"]*"/versionName "3.7"/' app/build.gradle
-          echo "=== ?筌??????癲ル슢캉????==="
+          sed -i -E 's/versionCode [0-9]+/versionCode 27/' app/build.gradle
+          sed -i -E 's/versionName "[^"]*"/versionName "3.7"/' app/build.gradle
+          echo "Android app version"
           grep -n "versionCode\|versionName" app/build.gradle
 
       - name: Setup Keystore
@@ -106,8 +113,3 @@ jobs:
         with:
           name: coordinator-aab
           path: android/app/build/outputs/bundle/release/app-release.aab
-
-
-
-
-
