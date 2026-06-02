@@ -64,8 +64,8 @@ jobs:
           sed -i "s|classpath 'com.android.tools.build:gradle:8.0.0'|classpath 'com.android.tools.build:gradle:8.1.4'|g" build.gradle
           sed -i 's/compileSdkVersion = .*/compileSdkVersion = 35/' variables.gradle
           sed -i 's/targetSdkVersion = .*/targetSdkVersion = 35/' variables.gradle
-          sed -i 's/versionCode 27/versionCode 27/' app/build.gradle
-          sed -i 's/versionName "3.7"/versionName "3.7"/' app/build.gradle
+          sed -i 's/versionCode [0-9]\+/versionCode 27/' app/build.gradle
+          sed -i 's/versionName "[^"]*"/versionName "3.7"/' app/build.gradle
           echo "=== ?뺢퀗????筌먦끉逾?==="
           grep -n "versionCode\|versionName" app/build.gradle
 
