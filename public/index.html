@@ -455,6 +455,9 @@
   </style>
 </head>
 <body>
+<!-- GPS silent mode v31: GPS 버튼/안내/실패팝업 숨김, 위치는 관리자페이지에만 저장 -->
+<!-- break time v32: 4시간 이상 선택 시 휴게시간 30분 자동 저장 -->
+
 
 
 <!-- 스플래시 스크린 -->
@@ -555,7 +558,7 @@
         <div class="boundary-btns">
           <button id="start-work-btn" class="btn btn-start" type="button">🟢 일과 시작</button>
           <button id="end-work-btn" class="btn btn-end" type="button">🔴 일과 종료</button>
-          <button id="refresh-gps-btn" class="btn btn-ghost btn-gps" type="button">📍 GPS 새로 읽기</button>
+          <button id="refresh-gps-btn" class="btn btn-ghost btn-gps hidden" type="button" style="display:none!important;">📍 GPS 새로 읽기</button>
         </div>
       </div>
 
@@ -625,7 +628,7 @@
           <div class="visit-group"><div class="visit-group-title"><span class="visit-step">3</span>활동 내용</div><div class="visit-field"><label for="memo-input">활동 내용</label><textarea id="memo-input" class="visit-case-field" placeholder="활동 내용을 입력하세요."></textarea></div></div>
           <div class="visit-group"><div class="visit-group-title"><span class="visit-step">4</span>코디네이터 의견</div><div class="visit-field"><label for="coordinator-opinion-input">의견</label><textarea id="coordinator-opinion-input" class="visit-case-field" placeholder="대상자 상태, 특이사항, 향후 계획 등 코디네이터 의견을 입력하세요."></textarea></div></div>
 
-          <div class="visit-save-info">저장 시 GPS 위치, 활동시간, 근무시간, 작성자가 함께 저장됩니다. 관리자페이지에서 활동목적·기간별 엑셀 분류가 가능하도록 항목별로 저장됩니다.</div>
+          <div class="visit-save-info">저장 시 활동시간, 근무시간, 작성자가 함께 저장됩니다. 관리자페이지에서 활동목적·기간별 엑셀 분류가 가능하도록 항목별로 저장됩니다.</div>
           <div class="action-row"><button id="save-activity-btn" class="btn btn-primary" type="button">방문기록 저장</button><button id="cancel-session-btn" class="btn btn-danger" type="button">작성 내용 초기화</button></div>
 
           <div class="visit-hidden-legacy">
@@ -832,6 +835,47 @@
     const n=Math.round(Number(v));
     if(isNaN(n)) return DEFAULT_WORK_HOURS;
     return Math.max(1,Math.min(5,n));
+  }
+  function getBreakMinutesForWorkHours(hours){
+    const h=clampWorkHours(hours);
+    return h>=4?30:0;
+  }
+  function formatMinutesAsHourText(minutes){
+    const total=Math.max(0,Math.round(Number(minutes)||0));
+    const h=Math.floor(total/60), m=total%60;
+    if(h>0&&m>0) return `${h}시간 ${m}분`;
+    if(h>0) return `${h}시간`;
+    return `${m}분`;
+  }
+  function getActualWorkMinutesForWorkHours(hours){
+    const h=clampWorkHours(hours);
+    return Math.max(0,h*60-getBreakMinutesForWorkHours(h));
+  }
+  function buildWorkBreakFields(hours){
+    const h=clampWorkHours(hours);
+    const breakMinutes=getBreakMinutesForWorkHours(h);
+    const actualWorkMinutes=getActualWorkMinutesForWorkHours(h);
+    return {
+      workHours:h,
+      workHoursText:`${h}시간`,
+      breakMinutes,
+      breakText:breakMinutes?`${breakMinutes}분`:"0분",
+      actualWorkMinutes,
+      actualWorkText:formatMinutesAsHourText(actualWorkMinutes),
+      workHoursIncludesBreak:breakMinutes>0
+    };
+  }
+  function getBreakMinutesForLog(log){
+    const n=Number(log?.breakMinutes);
+    if(!isNaN(n)&&n>=0) return n;
+    return getBreakMinutesForWorkHours(getWorkHoursForLog(log));
+  }
+  function getActualWorkTextForLog(log){
+    const explicit=normalizeText(log?.actualWorkText);
+    if(explicit) return explicit;
+    const n=Number(log?.actualWorkMinutes);
+    if(!isNaN(n)&&n>=0) return formatMinutesAsHourText(n);
+    return formatMinutesAsHourText(getActualWorkMinutesForWorkHours(getWorkHoursForLog(log)));
   }
   function formatClockTime(ms){
     const d=toDate(ms);
@@ -1380,7 +1424,7 @@
 
     // ✅ 안드로이드 앱은 로그인 직후 위치 권한을 먼저 요청합니다.
     // 사용자가 위치 권한을 허용해야 일과 시작/종료 및 5분 자동 GPS 확인이 안정적으로 작동합니다.
-    await saveGpsCheckLog("login",false);
+    await saveGpsCheckLog("login",true);
   }
 
   function logout(){
@@ -1482,11 +1526,11 @@
     select.style.opacity=select.disabled?"0.55":"1";
     if(status==="started"){
       const info=getCurrentAutoEndInfo();
-      helper.textContent=info?`선택 근무시간 ${info.hours}시간 · 자동 종료 예정 ${formatClockTime(info.autoEndAtMs)} · GPS는 5분마다 자동 확인됩니다.`:"근무시간 확인 중입니다.";
+      helper.textContent=info?`선택 근무시간 ${info.hours}시간${getBreakMinutesForWorkHours(info.hours)?"(휴게 30분 포함)":""} · 자동 종료 예정 ${formatClockTime(info.autoEndAtMs)}`:"근무시간 확인 중입니다.";
     }else if(status==="ended"){
-      helper.textContent=`오늘 일과가 종료되었습니다. 선택 근무시간 ${getCurrentWorkHours()}시간`;
+      helper.textContent=`오늘 일과가 종료되었습니다. 선택 근무시간 ${getCurrentWorkHours()}시간${getBreakMinutesForWorkHours(getCurrentWorkHours())?"(휴게 30분 포함)":""}`;
     }else{
-      helper.textContent="일과 시작 전에 1~5시간 중 선택하세요. 시작 후에는 선택 시간이 고정되고 GPS가 5분마다 자동 확인됩니다.";
+      helper.textContent="일과 시작 전에 1~5시간 중 선택하세요. 시작 후에는 선택 시간이 고정됩니다.";
       if(!select.value) select.value=String(DEFAULT_WORK_HOURS);
     }
   }
@@ -1727,7 +1771,7 @@
     let gpsForSave=null;
 
     // ✅ 일과 시작/종료는 저장 전에 GPS를 먼저 요청합니다.
-    // 자동 종료도 조용히 GPS를 시도하고, 수동 시작/종료는 실패 사유를 사용자에게 안내합니다.
+    // 일과 시작/종료 시 GPS는 조용히 시도하고 관리자페이지에만 기록합니다.
     const shouldRequestGps = options.requireGps || options.autoEnded || type==="일과 시작" || type==="일과 종료";
     if(shouldRequestGps){
       const helper=el("work-hours-helper");
@@ -1744,12 +1788,12 @@
 
     const freshGps=gpsForSave|| (isFreshGps(lastGps)?lastGps:null);
     const tempLog={id:"__temp__",userName:currentUserName,type:type,activities:type,clientTimeMs:tempNow,timestamp:{seconds:Math.floor(tempNow/1000)}};
-    if(type==="일과 시작"){ tempLog.workHours=workHours; tempLog.autoEndAtMs=autoEndAtMs; }
+    if(type==="일과 시작"){ const wf=buildWorkBreakFields(workHours); Object.assign(tempLog,wf,{autoEndAtMs}); }
     allLogs.unshift(tempLog);
     updateBoundaryBtnState(); updateActivityAreaState(); updateWorkHoursUi(); syncGpsCheckTimer();
     const now=Date.now();
     const payload={userName:currentUserName,type:type,activities:type,memo:"",timestamp:firebase.firestore.FieldValue.serverTimestamp(),clientTimeMs:now,timeStr:new Date(now).toLocaleString("ko-KR"),lat:freshGps?.lat??null,lng:freshGps?.lng??null,accuracy:freshGps?.accuracy??null};
-    if(type==="일과 시작"){ payload.workHours=workHours; payload.workHoursText=`${workHours}시간`; payload.autoEndAtMs=now+(workHours*60*60*1000); payload.autoEndAtText=new Date(payload.autoEndAtMs).toLocaleString("ko-KR"); }
+    if(type==="일과 시작"){ const wf=buildWorkBreakFields(workHours); Object.assign(payload,wf); payload.autoEndAtMs=now+(workHours*60*60*1000); payload.autoEndAtText=new Date(payload.autoEndAtMs).toLocaleString("ko-KR"); }
     if(options.autoEnded){ payload.autoEnded=true; payload.autoEndedReason="selected-work-hours"; }
     try{
       await db.collection("attendanceLogs").add(payload);
@@ -1757,7 +1801,7 @@
       allLogs=allLogs.filter(l=>l.id!=="__temp__");
       await reloadMainData();
       syncGpsCheckTimer();
-      if(!options.silent) alert(type + "이 저장되었습니다." + (freshGps ? " GPS 위치가 함께 저장되었습니다." : ""));
+      if(!options.silent) alert(type + "이 저장되었습니다.");
       return true;
     }catch(err){
       allLogs=allLogs.filter(l=>l.id!=="__temp__");
@@ -1964,7 +2008,7 @@
       activityStartedAt:sessionStartedAt,activitySavedAt:now,activityDurationMs:durationMs,activityDurationText:formatDuration(durationMs),
       activityCheckLat:freshGps?.lat??null,activityCheckLng:freshGps?.lng??null,activityCheckAccuracy:freshGps?.accuracy??null,activityCheckCapturedAt:freshGps?.capturedAt??null,
       activitySaveLat:freshGps?.lat??lastGps?.lat??null,activitySaveLng:freshGps?.lng??lastGps?.lng??null,activitySaveAccuracy:freshGps?.accuracy??lastGps?.accuracy??null,activitySaveCapturedAt:freshGps?.capturedAt??lastGps?.capturedAt??null,
-      workHours:getCurrentWorkHours(),workHoursText:`${getCurrentWorkHours()}시간`,
+      ...buildWorkBreakFields(getCurrentWorkHours()),
       createdAt:firebase.firestore.FieldValue.serverTimestamp(),updatedAt:firebase.firestore.FieldValue.serverTimestamp()
     };
 
@@ -1973,7 +2017,7 @@
       currentSession=null; etcText=""; resetSubActivitySelections(); saveSessionToStorage(); resetVisitCaseForm();
       updateActivityAreaState(); updateCurrentElapsedUi();
       await reloadMainData();
-      if(!options.silent) alert("방문(사례) 기록이 저장되었습니다." + (freshGps ? " GPS 위치가 함께 저장되었습니다." : ""));
+      if(!options.silent) alert("방문(사례) 기록이 저장되었습니다.");
       return true;
     }catch(err){
       console.error("방문기록 저장 오류:",err);
@@ -2023,7 +2067,7 @@
       if(!checked.length){ alert("활동을 1개 이상 선택해주세요."); return; }
       updates.activities=checked; updates.activitiesText=checked.join(", ");
       const workHours=clampWorkHours(el("edit-work-hours-select").value);
-      updates.workHours=workHours; updates.workHoursText=`${workHours}시간`;
+      Object.assign(updates, buildWorkBreakFields(workHours));
     }
     try{ await db.collection("attendanceLogs").doc(editingLogId).update(updates); alert("기록이 수정되었습니다."); closeEditModal(); await reloadMainData(); }
     catch(err){ alert("수정 중 오류가 발생했습니다."); }
@@ -2125,8 +2169,10 @@
               ${activities.map(v=>`<span class="tag">${safeEscape(v)}</span>`).join("")}
             </div>
             <div style="background:#f9fafb;padding:10px;border-radius:12px;font-size:13px;line-height:1.6;">
-              <strong>근무시간:</strong> ${safeEscape(workHoursText)}<br/>
-              <strong>소요 시간:</strong> ${safeEscape(durationText)}<br/>
+              <strong>선택 근무시간:</strong> ${safeEscape(workHoursText)}<br/>
+              <strong>휴게시간:</strong> ${safeEscape(getBreakMinutesForLog(log)?`${getBreakMinutesForLog(log)}분`:"0분")}<br/>
+              <strong>실근무시간:</strong> ${safeEscape(getActualWorkTextForLog(log))}<br/>
+              <strong>활동 소요 시간:</strong> ${safeEscape(durationText)}<br/>
               <strong>메모:</strong> ${safeEscape(memo)}
             </div>`:""}
         </div>`;
@@ -2220,7 +2266,7 @@
   el("login-btn").addEventListener("click",loginToMain);
   el("logout-btn").addEventListener("click",logout);
   el("reload-main-btn").addEventListener("click",reloadMainData);
-  el("refresh-gps-btn").addEventListener("click",()=>saveGpsCheckLog("manual-refresh",false));
+  if(el("refresh-gps-btn")) el("refresh-gps-btn").addEventListener("click",()=>saveGpsCheckLog("manual-refresh",true));
   if(el("work-hours-select")) el("work-hours-select").addEventListener("change",updateWorkHoursUi);
   el("start-work-btn").addEventListener("click",()=>saveWorkBoundaryLog("일과 시작"));
   el("end-work-btn").addEventListener("click",()=>saveWorkBoundaryLog("일과 종료"));
