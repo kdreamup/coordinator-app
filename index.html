@@ -565,7 +565,7 @@
       <div class="visit-form-card">
         <div class="visit-form-head">
           <div class="visit-form-title"><span>방문(사례) 기록</span></div>
-          <p class="visit-form-helper">활동목적을 먼저 선택한 뒤 대상자 및 방문 정보, 활동 내용, 코디네이터 의견을 작성합니다. 저장된 항목은 추후 엑셀 분류에 활용됩니다.</p>
+          <p class="visit-form-helper">활동목적을 먼저 선택한 뒤 대상자 및 방문 정보와 활동 내용을 작성합니다. 저장된 항목은 추후 엑셀 분류에 활용됩니다.</p>
           <div id="activity-source-text" class="helper" style="margin-top:6px;"></div>
         </div>
         <div class="visit-form-body">
@@ -626,7 +626,6 @@
           </div>
 
           <div class="visit-group"><div class="visit-group-title"><span class="visit-step">3</span>활동 내용</div><div class="visit-field"><label for="memo-input">활동 내용</label><textarea id="memo-input" class="visit-case-field" placeholder="활동 내용을 입력하세요."></textarea></div></div>
-          <div class="visit-group"><div class="visit-group-title"><span class="visit-step">4</span>코디네이터 의견</div><div class="visit-field"><label for="coordinator-opinion-input">의견</label><textarea id="coordinator-opinion-input" class="visit-case-field" placeholder="대상자 상태, 특이사항, 향후 계획 등 코디네이터 의견을 입력하세요."></textarea></div></div>
 
           <div class="visit-save-info">저장 시 활동시간, 근무시간, 작성자가 함께 저장됩니다. 관리자페이지에서 활동목적·기간별 엑셀 분류가 가능하도록 항목별로 저장됩니다.</div>
           <div class="action-row"><button id="save-activity-btn" class="btn btn-primary" type="button">방문기록 저장</button><button id="cancel-session-btn" class="btn btn-danger" type="button">작성 내용 초기화</button></div>
@@ -1921,31 +1920,23 @@
       resourceLinkDetails:resourceDetails,
       visitPurposeDetails:{agencySupport:agencyDetails,resourceLink:resourceDetails},
       visitPurposeEtc:normalizeText(el("visit-purpose-etc-input")?.value||""),
-      visitSummary:normalizeText(el("memo-input").value),
-      coordinatorOpinion:normalizeText(el("coordinator-opinion-input").value)
+      visitSummary:normalizeText(el("memo-input").value)
     };
   }
 
+  // v34: 현장 저장은 활동목적만 필수입니다.
+  // 대상자 및 방문 정보, 활동 내용, 세부 체크리스트는 사후 보완 작성할 수 있도록 선택 입력으로 둡니다.
   function isAgencySupportInfoOptional(data){
-    const user=normalizeText(currentUserName);
-    return ["백은자","송금옥"].includes(user) && Array.isArray(data?.visitPurposes) && data.visitPurposes.includes("유관기관업무지원");
+    return true;
   }
 
   function validateVisitCaseData(data){
-    const basicVisitOptional=isAgencySupportInfoOptional(data);
-    if(!basicVisitOptional && !data.clientName) return "대상자 성함을 입력해주세요.";
-    if(!basicVisitOptional && data.housingType==="기타" && !data.housingEtc) return "기타 주거 형태를 입력해주세요.";
-    if(!basicVisitOptional && !data.visitReason) return "사유를 선택해주세요.";
     if(!data.visitPurposes.length) return "활동목적을 1개 이상 선택해주세요.";
-    if(data.visitPurposes.includes("유관기관업무지원") && !data.agencySupportDetails.length) return "유관기관업무지원 세부 체크리스트를 1개 이상 선택해주세요.";
-    if(data.visitPurposes.includes("자원연계") && !data.resourceLinkDetails.length) return "자원연계 세부 체크리스트를 1개 이상 선택해주세요.";
-    if(data.visitPurposes.includes("기타") && !data.visitPurposeEtc) return "기타 활동목적 내용을 입력해주세요.";
-    if(!data.visitSummary) return "활동 내용을 입력해주세요.";
     return "";
   }
 
   function resetVisitCaseForm(){
-    ["client-name-input","housing-etc-input","visit-purpose-etc-input","memo-input","coordinator-opinion-input"].forEach(id=>{ const node=el(id); if(node) node.value=""; });
+    ["client-name-input","housing-etc-input","visit-purpose-etc-input","memo-input"].forEach(id=>{ const node=el(id); if(node) node.value=""; });
     if(el("gender-select")) el("gender-select").value="";
     if(el("birth-year-select")) el("birth-year-select").value="";
     document.querySelectorAll('input[name="visit-reason"],input[name="housing-type"],input[name="visit-purpose"],input[name="agency-detail"],input[name="resource-detail"]').forEach(x=>{ x.checked=false; });
@@ -1957,7 +1948,6 @@
   function makeVisitMemoText(data){
     const lines=[];
     if(data.visitSummary) lines.push(`활동 내용: ${data.visitSummary}`);
-    if(data.coordinatorOpinion) lines.push(`의견: ${data.coordinatorOpinion}`);
     if(data.clientName) lines.push(`대상자: ${data.clientName}`);
     if(data.gender) lines.push(`성별: ${data.gender}`);
     if(data.birthYear) lines.push(`출생년도: ${data.birthYear}년생${data.age?` / ${data.age}세`:""}`);
@@ -1981,11 +1971,8 @@
     if(validationMessage){ alert(validationMessage); return false; }
 
     const now=Date.now();
+    // GPS는 조용히 시도하고, 실패해도 참여자 화면에는 안내하지 않고 저장을 계속합니다.
     let freshGps=await saveGpsCheckLog("visit-record",true);
-    if(!freshGps){
-      const ok=confirm("GPS 위치를 읽지 못했습니다.\n방문기록을 GPS 없이 저장할까요?");
-      if(!ok) return false;
-    }
     const purposes=[...data.visitPurposes];
     const purposeDetailText=[];
     if(data.agencySupportDetails?.length) purposeDetailText.push(`유관기관업무지원: ${data.agencySupportDetails.join(", ")}`);
@@ -2003,7 +1990,7 @@
       housingType:data.housingType,housingEtc:data.housingEtc,visitDateTimeValue:"",visitDateTimeMs:now,visitDateTimeText:new Date(now).toLocaleString("ko-KR"),
       visitReason:data.visitReason,visitReasonEtc:"",visitPlace:"",visitPurposes:data.visitPurposes,activityPurposes:data.visitPurposes,visitPurposeEtc:data.visitPurposeEtc,
       agencySupportDetails:data.agencySupportDetails,resourceLinkDetails:data.resourceLinkDetails,visitPurposeDetails:data.visitPurposeDetails,purposeDetailText:purposeDetailText.join(" / "),
-      visitSummary:data.visitSummary,activityContent:data.visitSummary,coordinatorOpinion:data.coordinatorOpinion,
+      visitSummary:data.visitSummary,activityContent:data.visitSummary,
       lat:freshGps?.lat??lastGps?.lat??null,lng:freshGps?.lng??lastGps?.lng??null,accuracy:freshGps?.accuracy??lastGps?.accuracy??null,
       activityStartedAt:sessionStartedAt,activitySavedAt:now,activityDurationMs:durationMs,activityDurationText:formatDuration(durationMs),
       activityCheckLat:freshGps?.lat??null,activityCheckLng:freshGps?.lng??null,activityCheckAccuracy:freshGps?.accuracy??null,activityCheckCapturedAt:freshGps?.capturedAt??null,
