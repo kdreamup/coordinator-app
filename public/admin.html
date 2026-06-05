@@ -6,7 +6,6 @@
   <title>노인돌봄 코디네이터 관리자 시스템</title>
 
   <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
   <style>
     :root{
@@ -113,16 +112,7 @@
     .chip{display:inline-flex;align-items:center;padding:8px 12px;border-radius:999px;background:#eef4ff;color:#2447a6;border:1px solid #dbeafe;font-size:12px;font-weight:800;}
 
     /* 차트 6개 (3×2) */
-    .charts-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-bottom:18px;}
-    .chart-card{background:#fff;border:1px solid var(--line);border-radius:24px;box-shadow:var(--shadow);overflow:hidden;}
-    .chart-head{padding:16px 16px 12px;border-bottom:1px solid #edf2f7;display:flex;justify-content:space-between;align-items:flex-start;gap:10px;}
-    .chart-title{margin:0;font-size:16px;font-weight:800;letter-spacing:-.02em;}
-    .chart-sub{margin-top:4px;color:var(--sub);font-size:12px;line-height:1.5;}
-    .chart-badge{display:inline-flex;align-items:center;padding:6px 10px;border-radius:999px;background:#eff6ff;color:#1d4ed8;border:1px solid #dbeafe;font-size:11px;font-weight:800;white-space:nowrap;}
-    .chart-badge.mint{background:var(--mint-soft);color:#065f46;border-color:#6ee7b7;}
-    .chart-badge.teal{background:var(--teal-soft);color:#134e4a;border-color:#99f6e4;}
-    .chart-body{padding:14px;}
-    .chart-canvas-wrap{height:260px;position:relative;}
+    /* 차트 영역 제거: 요약 카드 + 상세 내역 중심으로 단순화 */
 
     .mini-ranking{margin-top:10px;display:grid;gap:7px;}
     .mini-rank-item{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:9px 12px;border-radius:12px;background:#f8fafc;border:1px solid #eef2f7;font-size:13px;}
@@ -190,11 +180,9 @@
 
     @media (max-width:1300px){
       .summary-grid{grid-template-columns:repeat(3,1fr)}
-      .charts-grid{grid-template-columns:repeat(2,1fr)}
     }
     @media (max-width:900px){
       .summary-grid{grid-template-columns:repeat(2,1fr)}
-      .charts-grid{grid-template-columns:1fr}
       .filters-grid{grid-template-columns:repeat(2,1fr)}
     }
     @media (max-width:600px){
@@ -256,12 +244,12 @@
     <div class="topbar-inner">
       <div>
         <h1 class="brand-title">노인돌봄 코디네이터 관리자 시스템</h1>
-        <div class="brand-sub">회원·방문(사례) 기록 관리, 날짜/사용자/수요처/방문목적 필터, 상세 내역 확인, 엑셀/PDF 저장을 한 화면에서 제공합니다.</div>
+        <div class="brand-sub">회원·방문(사례) 기록 관리, 날짜/사용자/주거형태/활동목적 필터, 상세 내역 확인, 엑셀/PDF 저장을 한 화면에서 제공합니다.</div>
       </div>
       <div class="toolbar">
         <button id="reload-btn" class="btn btn-ghost" type="button">새로고침</button>
         <button id="export-excel-btn" class="btn btn-mint" type="button">엑셀 다운로드</button>
-        <button id="export-supply-excel-btn" class="btn btn-ghost" type="button">수요처 제출용 엑셀</button>
+        <button id="export-supply-excel-btn" class="btn btn-ghost" type="button">방문기록 제출용 엑셀</button>
         <button id="export-pdf-btn" class="btn btn-orange" type="button">PDF 저장</button>
       </div>
     </div>
@@ -464,16 +452,16 @@
             </div>
           </div>
           <div class="filters-grid" style="grid-template-columns:1fr 1fr 2fr 1fr 1fr;">
-            <div class="field"><label for="filter-demand-org">수요처</label><select id="filter-demand-org"><option value="">전체</option></select></div>
-            <div class="field"><label for="filter-visit-reason">방문사유</label><select id="filter-visit-reason"><option value="">전체</option></select></div>
-            <div class="field"><label for="filter-keyword">검색어</label><input id="filter-keyword" type="text" placeholder="수요처, 대상자, 방문내용, 의견, 사용자명 등" /></div>
+            <div class="field"><label for="filter-housing-type">주거 형태</label><select id="filter-housing-type"><option value="">전체</option></select></div>
+            <div class="field"><label for="filter-visit-reason">사유</label><select id="filter-visit-reason"><option value="">전체</option></select></div>
+            <div class="field"><label for="filter-keyword">검색어</label><input id="filter-keyword" type="text" placeholder="대상자, 활동목적, 활동내용, 의견, 사용자명 등" /></div>
             <div class="field"><label for="filter-min-duration">최소 시간(분)</label><input id="filter-min-duration" type="number" min="0" placeholder="0" /></div>
             <div class="field"><label for="filter-max-duration">최대 시간(분)</label><input id="filter-max-duration" type="number" min="0" placeholder="없음" /></div>
           </div>
           <div class="filters-grid" style="grid-template-columns:1fr 1fr 3fr;">
             <div class="field"><label>&nbsp;</label><button id="apply-filter-btn" class="btn btn-primary" type="button">필터 적용</button></div>
             <div class="field"><label>&nbsp;</label><button id="reset-filter-btn" class="btn btn-soft" type="button">필터 초기화</button></div>
-            <div class="helper" style="display:flex;align-items:end;padding-bottom:4px;">수요처 제출용 엑셀은 현재 필터 결과 중 방문(사례) 기록만 내보내며 연락처/상세주소는 제외합니다.</div>
+            <div class="helper" style="display:flex;align-items:end;padding-bottom:4px;">방문기록 제출용 엑셀은 현재 필터 결과 중 방문(사례) 기록만 내보냅니다.</div>
           </div>
           <div class="quick-range">
             <button class="btn btn-soft btn-sm" type="button" data-range="today">오늘</button>
@@ -488,80 +476,7 @@
         </div>
       </div>
     </section>
-
-    <!-- ── 차트 6개 ── -->
-    <section class="charts-grid">
-      <!-- 1. 사용자별 기록 수 -->
-      <div class="chart-card">
-        <div class="chart-head">
-          <div><h3 class="chart-title">사용자별 기록 수</h3><div class="chart-sub">전체 기록 건수 기준</div></div>
-          <div id="user-chart-badge" class="chart-badge">상위 사용자</div>
-        </div>
-        <div class="chart-body">
-          <div class="chart-canvas-wrap"><canvas id="user-chart"></canvas></div>
-          <div id="user-ranking" class="mini-ranking"></div>
-        </div>
-      </div>
-
-      <!-- 2. 사용자별 근무 시간 (일과 경계) -->
-      <div class="chart-card">
-        <div class="chart-head">
-          <div><h3 class="chart-title">사용자별 근무 시간</h3><div class="chart-sub">🟢 일과 시작 → 🔴 종료 기준</div></div>
-          <div id="user-boundary-badge" class="chart-badge mint">근무 시간</div>
-        </div>
-        <div class="chart-body">
-          <div class="chart-canvas-wrap"><canvas id="user-boundary-chart"></canvas></div>
-          <div id="user-boundary-ranking" class="mini-ranking"></div>
-        </div>
-      </div>
-
-      <!-- 3. 사용자별 활동 시간 (세션) -->
-      <div class="chart-card">
-        <div class="chart-head">
-          <div><h3 class="chart-title">사용자별 활동 시간</h3><div class="chart-sub">⚡ 활동 기록 세션 경과 기준</div></div>
-          <div id="user-session-badge" class="chart-badge teal">활동 시간</div>
-        </div>
-        <div class="chart-body">
-          <div class="chart-canvas-wrap"><canvas id="user-session-chart"></canvas></div>
-          <div id="user-session-ranking" class="mini-ranking"></div>
-        </div>
-      </div>
-
-      <!-- 4. 활동 포함 횟수 -->
-      <div class="chart-card">
-        <div class="chart-head">
-          <div><h3 class="chart-title">활동 포함 횟수</h3><div class="chart-sub">각 활동이 기록에 포함된 횟수</div></div>
-          <div id="activity-chart-badge" class="chart-badge">활동 포함</div>
-        </div>
-        <div class="chart-body">
-          <div class="chart-canvas-wrap"><canvas id="activity-chart"></canvas></div>
-          <div id="activity-ranking" class="mini-ranking"></div>
-        </div>
-      </div>
-
-      <!-- 5. 날짜별 근무 시간 (일과 경계) -->
-      <div class="chart-card">
-        <div class="chart-head">
-          <div><h3 class="chart-title">날짜별 근무 시간</h3><div class="chart-sub">🟢 일과 시작→종료 일별 합산</div></div>
-          <div id="trend-boundary-badge" class="chart-badge mint">근무 추이</div>
-        </div>
-        <div class="chart-body">
-          <div class="chart-canvas-wrap"><canvas id="trend-boundary-chart"></canvas></div>
-        </div>
-      </div>
-
-      <!-- 6. 날짜별 활동 시간 (세션) -->
-      <div class="chart-card">
-        <div class="chart-head">
-          <div><h3 class="chart-title">날짜별 활동 시간</h3><div class="chart-sub">⚡ 활동 세션 경과 일별 합산</div></div>
-          <div id="trend-session-badge" class="chart-badge teal">활동 추이</div>
-        </div>
-        <div class="chart-body">
-          <div class="chart-canvas-wrap"><canvas id="trend-session-chart"></canvas></div>
-        </div>
-      </div>
-    </section>
-
+    <!-- 차트 영역은 제거하고 상세 내역을 바로 표시합니다. -->
     <!-- ── 상세 테이블 ── -->
     <section class="table-panel">
       <div class="table-head">
@@ -569,14 +484,14 @@
           <h3 class="panel-title" style="margin:0;">상세 내역</h3>
           <div id="table-meta" class="table-meta">0건</div>
         </div>
-        <div class="helper">상세 내역에서 바로 수정/삭제할 수 있습니다.</div>
+        <div class="helper">차트 영역을 줄이고, 기록 확인과 엑셀 다운로드 중심으로 정리했습니다.</div>
       </div>
       <div class="table-wrap">
         <table>
           <thead>
             <tr>
-              <th>일시</th><th>사용자</th><th>유형</th><th>수요처/대상자</th><th>방문 정보</th>
-              <th>방문내용/의견</th><th>GPS</th><th>관리</th>
+              <th>일시</th><th>사용자</th><th>유형</th><th>대상자 정보</th><th>활동 목적</th>
+              <th>활동 내용/의견</th><th>GPS</th><th>관리</th>
             </tr>
           </thead>
           <tbody id="history-tbody"></tbody>
@@ -670,7 +585,7 @@
     if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
-    const state = { allLogs:[], filteredLogs:[], userNames:[], activityNames:[], demandOrgNames:[], visitReasonNames:[], charts:{}, editingId:null };
+    const state = { allLogs:[], filteredLogs:[], userNames:[], activityNames:[], housingTypeNames:[], visitReasonNames:[], charts:{}, editingId:null };
 
     /* ── 유틸 ── */
     function el(id){ return document.getElementById(id); }
@@ -715,19 +630,49 @@
     function getClientName(log){ return normalizeText(log.clientName||log.targetName||log.elderName||""); }
     function getClientGender(log){ return normalizeText(log.gender||log.clientGender||""); }
     function getClientAge(log){ return normalizeText(log.age||log.clientAge||""); }
+    function getClientBirthYear(log){ return normalizeText(log.birthYear||log.clientBirthYear||""); }
     function getClientAddress(log){ return normalizeText(log.address||log.clientAddress||""); }
     function getClientPhone(log){ return normalizeText(log.phone||log.clientPhone||""); }
-    function getVisitReason(log){ return normalizeText(log.visitReason||log.visitReasonEtc||""); }
+    function getHousingType(log){ return normalizeText(log.housingType||log.livingType||""); }
+    function getHousingEtc(log){ return normalizeText(log.housingEtc||log.housingTypeEtc||""); }
+    function getHousingDisplay(log){ const h=getHousingType(log); const etc=getHousingEtc(log); return h?`${h}${etc?`(${etc})`:""}`:""; }
+    function getVisitReason(log){ return normalizeText(log.visitReason||log.visitReasonEtc||log.contactType||""); }
     function getVisitPlace(log){ return normalizeText(log.visitPlace||""); }
+
+    function arrayFromValue(v){
+      if(Array.isArray(v)) return v.map(normalizeText).filter(Boolean);
+      if(normalizeText(v)) return String(v).split(/[,/]/).map(x=>x.trim()).filter(Boolean);
+      return [];
+    }
+    function getAgencySupportDetails(log){
+      const a=[];
+      a.push(...arrayFromValue(log.agencySupportDetails));
+      a.push(...arrayFromValue(log.agencySupportDetail));
+      if(log.visitPurposeDetails && Array.isArray(log.visitPurposeDetails.agencySupport)) a.push(...log.visitPurposeDetails.agencySupport);
+      return uniqueSorted(a);
+    }
+    function getResourceLinkDetails(log){
+      const a=[];
+      a.push(...arrayFromValue(log.resourceLinkDetails));
+      a.push(...arrayFromValue(log.resourceLinkDetail));
+      if(log.visitPurposeDetails && Array.isArray(log.visitPurposeDetails.resourceLink)) a.push(...log.visitPurposeDetails.resourceLink);
+      return uniqueSorted(a);
+    }
     function getVisitPurposes(log){
       let arr=[];
+      if(Array.isArray(log.activityPurposes)) arr.push(...log.activityPurposes);
+      else if(normalizeText(log.activityPurposes)) arr.push(...String(log.activityPurposes).split(",").map(v=>v.trim()));
       if(Array.isArray(log.visitPurposes)) arr.push(...log.visitPurposes);
       else if(normalizeText(log.visitPurposes)) arr.push(...String(log.visitPurposes).split(",").map(v=>v.trim()));
-      if(normalizeText(log.visitPurposeEtc)) arr.push(log.visitPurposeEtc);
-      if(normalizeText(log.agencySupportDetail)) arr.push("유관기관 업무지원 - "+normalizeText(log.agencySupportDetail));
+      if(normalizeText(log.visitPurposeEtc)) arr.push("기타: "+normalizeText(log.visitPurposeEtc));
+      const agency = getAgencySupportDetails(log);
+      const resource = getResourceLinkDetails(log);
+      if(agency.length) arr.push(...agency.map(v=>"유관기관업무지원 - "+v));
+      if(resource.length) arr.push(...resource.map(v=>"자원연계 - "+v));
+      if(normalizeText(log.purposeDetailText)) arr.push(...String(log.purposeDetailText).split("/").map(v=>v.trim()).filter(Boolean));
       return uniqueSorted(arr);
     }
-    function getVisitSummary(log){ return normalizeText(log.visitSummary||log.summary||log.memo||""); }
+    function getVisitSummary(log){ return normalizeText(log.activityContent||log.visitSummary||log.summary||log.memo||""); }
     function getCoordinatorOpinion(log){ return normalizeText(log.coordinatorOpinion||log.opinion||""); }
     function getActivities(log){
       if(!isActivityLog(log)) return [];
@@ -742,8 +687,9 @@
     }
     function getVisitCaseSummaryText(log){
       const lines=[];
-      if(getVisitPlace(log)) lines.push("방문지: "+getVisitPlace(log));
-      if(getVisitSummary(log)) lines.push("내용: "+getVisitSummary(log));
+      if(getHousingDisplay(log)) lines.push("주거 형태: "+getHousingDisplay(log));
+      if(getVisitReason(log)) lines.push("사유: "+getVisitReason(log));
+      if(getVisitSummary(log)) lines.push("활동 내용: "+getVisitSummary(log));
       if(getCoordinatorOpinion(log)) lines.push("의견: "+getCoordinatorOpinion(log));
       return lines.join("\n");
     }
@@ -1159,15 +1105,15 @@
         state.allLogs=logs;
         state.userNames=uniqueSorted([...usersFromConfig,...deriveUsersFromLogs(logs)]);
         state.activityNames=uniqueSorted([...activitiesFromConfig,...logs.flatMap(getActivities)]);
-        state.demandOrgNames=uniqueSorted(logs.map(getDemandOrgName));
-        state.visitReasonNames=uniqueSorted(["의뢰","자발적","발굴","기타",...logs.map(getVisitReason)]);
+        state.housingTypeNames=uniqueSorted(["동거","부부","기타",...logs.map(getHousingType)]);
+        state.visitReasonNames=uniqueSorted(["대면","비대면",...logs.map(getVisitReason)]);
         buildSelects(); renderMemberList(); renderActivityList(); renderAllSubItemLists(); applyFilters();
       }catch(err){ console.error(err); alert("데이터를 불러오는 중 오류가 발생했습니다."); }
     }
     function buildSelects(){
       setSelectOptions(el("filter-user"),state.userNames,"전체");
       setSelectOptions(el("filter-activity"),state.activityNames,"전체");
-      setSelectOptions(el("filter-demand-org"),state.demandOrgNames,"전체");
+      setSelectOptions(el("filter-housing-type"),state.housingTypeNames,"전체");
       setSelectOptions(el("filter-visit-reason"),state.visitReasonNames,"전체");
       setSelectOptions(el("edit-user"),state.userNames,"선택");
     }
@@ -1361,7 +1307,7 @@
       const endDate=normalizeText(el("filter-end-date").value);
       const user=normalizeText(el("filter-user").value);
       const activity=normalizeText(el("filter-activity").value);
-      const demandOrg=normalizeText(el("filter-demand-org").value);
+      const housingType=normalizeText(el("filter-housing-type").value);
       const visitReason=normalizeText(el("filter-visit-reason").value);
       const type=normalizeText(el("filter-type").value);
       const keyword=normalizeText(el("filter-keyword").value).toLowerCase();
@@ -1373,7 +1319,7 @@
         if(startDate&&day&&day<startDate) return false;
         if(endDate&&day&&day>endDate) return false;
         if(user&&getLogUserName(log)!==user) return false;
-        if(demandOrg&&getDemandOrgName(log)!==demandOrg) return false;
+        if(housingType&&getHousingType(log)!==housingType) return false;
         if(visitReason&&getVisitReason(log)!==visitReason) return false;
         if(type&&getLogType(log)!==type) return false;
         // ✅ 하위 항목 포함 매칭 (예: "지역복지자원연계" 선택 시 "지역복지자원연계1 - 떡, 빵"도 포함)
@@ -1400,7 +1346,7 @@
     function resetFilters(){
       el("filter-start-date").value=""; el("filter-end-date").value="";
       el("filter-user").value=""; el("filter-activity").value="";
-      el("filter-demand-org").value=""; el("filter-visit-reason").value="";
+      el("filter-housing-type").value=""; el("filter-visit-reason").value="";
       el("filter-type").value=""; el("filter-keyword").value="";
       el("filter-min-duration").value=""; el("filter-max-duration").value="";
       applyFilters();
@@ -1410,7 +1356,7 @@
       const chips=[];
       [["시작",el("filter-start-date").value],["종료",el("filter-end-date").value],
        ["사용자",el("filter-user").value],["활동/방문목적",el("filter-activity").value],
-       ["수요처",el("filter-demand-org").value],["방문사유",el("filter-visit-reason").value],
+       ["주거 형태",el("filter-housing-type").value],["사유",el("filter-visit-reason").value],
        ["유형",el("filter-type").value],["검색",el("filter-keyword").value],
        ["최소시간",el("filter-min-duration").value?`${el("filter-min-duration").value}분`:""],
        ["최대시간",el("filter-max-duration").value?`${el("filter-max-duration").value}분`:""]
@@ -1468,112 +1414,16 @@
       }
     }
 
-    /* ── 차트 ── */
+    /* ── 차트 영역 제거 ── */
     function destroyCharts(){
-      Object.values(state.charts).forEach(chart=>{ try{chart.destroy();}catch(e){} });
       state.charts={};
     }
     function renderMiniRanking(targetId,entries,formatter,bulletClass=""){
-      const wrap=el(targetId); if(!wrap) return; wrap.innerHTML="";
-      if(!entries.length){ wrap.innerHTML=`<div class="mini-rank-item"><strong><span class="rank-bullet${bulletClass?` ${bulletClass}`:""}">-</span>데이터 없음</strong><span class="muted">-</span></div>`; return; }
-      entries.slice(0,5).forEach((item,idx)=>{
-        const row=document.createElement("div"); row.className="mini-rank-item";
-        row.innerHTML=`
-          <strong title="${safeEscape(item.label)}">
-            <span class="rank-bullet${bulletClass?` ${bulletClass}`:""}">${idx+1}</span>
-            <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${safeEscape(item.label)}</span>
-          </strong>
-          <span>${safeEscape(formatter(item.value))}</span>`;
-        wrap.appendChild(row);
-      });
+      return;
     }
-
     function renderCharts(){
+      // 화면 단순화를 위해 가운데 차트 영역은 사용하지 않습니다.
       destroyCharts();
-      const rows=state.filteredLogs.slice();
-
-      // 기록 수
-      const userCounts=new Map();
-      const activityCounts=new Map();
-      rows.forEach(log=>{
-        const user=getLogUserName(log);
-        if(user) userCounts.set(user,(userCounts.get(user)||0)+1);
-        if(isActivityLog(log)) getActivities(log).forEach(name=>{
-          activityCounts.set(name,(activityCounts.get(name)||0)+1);
-          // ✅ 하위 항목(지역복지자원연계1 - xxx)은 부모 활동에도 카운트
-          const dashIdx = name.indexOf(" - ");
-          if(dashIdx>0){
-            const parent = name.substring(0, dashIdx);
-            // 단, 부모 활동이 이미 직접 기록된 경우 중복 방지
-            if(!getActivities(log).includes(parent)){
-              activityCounts.set(parent,(activityCounts.get(parent)||0)+1);
-            }
-          }
-        });
-      });
-
-      // 두 가지 시간
-      const boundaryMap=calcBoundaryPerUser(rows);
-      const sessionMap=calcSessionPerUser(rows);
-      const boundaryDayMap=calcBoundaryPerDay(rows);
-      const sessionDayMap=calcSessionPerDay(rows);
-
-      const userEntries=[...userCounts.entries()].map(([l,v])=>({label:l,value:v})).sort((a,b)=>b.value-a.value);
-      const activityEntries=[...activityCounts.entries()].map(([l,v])=>({label:l,value:v})).sort((a,b)=>b.value-a.value);
-      const boundaryUserEntries=[...boundaryMap.entries()].map(([l,v])=>({label:l,value:v})).sort((a,b)=>b.value-a.value);
-      const sessionUserEntries=[...sessionMap.entries()].map(([l,v])=>({label:l,value:v})).sort((a,b)=>b.value-a.value);
-      const boundaryDayEntries=[...boundaryDayMap.entries()].map(([l,v])=>({label:l,value:v})).sort((a,b)=>a.label.localeCompare(b.label));
-      const sessionDayEntries=[...sessionDayMap.entries()].map(([l,v])=>({label:l,value:v})).sort((a,b)=>a.label.localeCompare(b.label));
-
-      // 뱃지
-      el("user-chart-badge").textContent=userEntries[0]?`${userEntries[0].label} ${userEntries[0].value}건`:"데이터 없음";
-      el("user-boundary-badge").textContent=boundaryUserEntries[0]?`${boundaryUserEntries[0].label} ${formatDuration(boundaryUserEntries[0].value)}`:"데이터 없음";
-      el("user-session-badge").textContent=sessionUserEntries[0]?`${sessionUserEntries[0].label} ${formatDuration(sessionUserEntries[0].value)}`:"데이터 없음";
-      el("activity-chart-badge").textContent=activityEntries[0]?`${activityEntries[0].label} ${activityEntries[0].value}회`:"데이터 없음";
-      el("trend-boundary-badge").textContent=boundaryDayEntries.length?`${boundaryDayEntries.length}일 데이터`:"데이터 없음";
-      el("trend-session-badge").textContent=sessionDayEntries.length?`${sessionDayEntries.length}일 데이터`:"데이터 없음";
-
-      // 랭킹
-      renderMiniRanking("user-ranking",userEntries,v=>`${v}건`);
-      renderMiniRanking("user-boundary-ranking",boundaryUserEntries,v=>formatDuration(v),"mint");
-      renderMiniRanking("user-session-ranking",sessionUserEntries,v=>formatDuration(v));
-      renderMiniRanking("activity-ranking",activityEntries,v=>`${v}회`);
-
-      // 공통 옵션
-      const barOpt=(indexAxis,colorArr,unit)=>({
-        indexAxis,responsive:true,maintainAspectRatio:false,
-        plugins:{legend:{display:false}},
-        scales:{
-          x:{ beginAtZero:true, ticks:{ callback: indexAxis==="y"?v=>`${v}${unit}`:undefined, precision:0 } },
-          y:{ ticks:{ autoSkip:false } }
-        }
-      });
-      const lineOpt=(color,unit)=>({
-        responsive:true,maintainAspectRatio:false,
-        plugins:{legend:{display:false}},
-        scales:{
-          y:{ beginAtZero:true, ticks:{ callback:v=>`${v}${unit}` } },
-          x:{ ticks:{ autoSkip:true, maxTicksLimit:10 } }
-        }
-      });
-
-      // 차트 1: 사용자별 기록 수
-      state.charts.user=new Chart(el("user-chart"),{type:"bar",data:{labels:userEntries.map(v=>v.label),datasets:[{label:"기록 수",data:userEntries.map(v=>v.value),backgroundColor:colorPalette(userEntries.length),borderRadius:8,borderSkipped:false}]},options:barOpt("x",colorPalette(1),"건")});
-
-      // 차트 2: 사용자별 근무 시간 (경계)
-      state.charts.userBoundary=new Chart(el("user-boundary-chart"),{type:"bar",data:{labels:boundaryUserEntries.map(v=>v.label),datasets:[{label:"근무 시간(분)",data:boundaryUserEntries.map(v=>Math.round(v.value/60000)),backgroundColor:boundaryUserEntries.map(()=>"#10b981"),borderRadius:8,borderSkipped:false}]},options:{...barOpt("y",[],"분"),scales:{x:{beginAtZero:true,ticks:{callback:v=>`${v}분`}},y:{ticks:{autoSkip:false}}}}});
-
-      // 차트 3: 사용자별 활동 시간 (세션)
-      state.charts.userSession=new Chart(el("user-session-chart"),{type:"bar",data:{labels:sessionUserEntries.map(v=>v.label),datasets:[{label:"활동 시간(분)",data:sessionUserEntries.map(v=>Math.round(v.value/60000)),backgroundColor:sessionUserEntries.map(()=>"#14b8a6"),borderRadius:8,borderSkipped:false}]},options:{...barOpt("y",[],"분"),scales:{x:{beginAtZero:true,ticks:{callback:v=>`${v}분`}},y:{ticks:{autoSkip:false}}}}});
-
-      // 차트 4: 활동 포함 횟수
-      state.charts.activity=new Chart(el("activity-chart"),{type:"bar",data:{labels:activityEntries.slice(0,10).map(v=>v.label),datasets:[{label:"포함 횟수",data:activityEntries.slice(0,10).map(v=>v.value),backgroundColor:colorPalette(10),borderRadius:8,borderSkipped:false}]},options:{...barOpt("y",[],"회"),scales:{x:{beginAtZero:true,ticks:{precision:0}},y:{ticks:{autoSkip:false}}}}});
-
-      // 차트 5: 날짜별 근무 시간 (경계)
-      state.charts.trendBoundary=new Chart(el("trend-boundary-chart"),{type:"line",data:{labels:boundaryDayEntries.map(v=>v.label),datasets:[{label:"근무 시간",data:boundaryDayEntries.map(v=>Math.round(v.value/60000)),borderColor:"#10b981",backgroundColor:"rgba(16,185,129,.12)",fill:true,tension:.32,pointRadius:4,pointHoverRadius:6,pointBackgroundColor:"#10b981"}]},options:lineOpt("#10b981","분")});
-
-      // 차트 6: 날짜별 활동 시간 (세션)
-      state.charts.trendSession=new Chart(el("trend-session-chart"),{type:"line",data:{labels:sessionDayEntries.map(v=>v.label),datasets:[{label:"활동 시간",data:sessionDayEntries.map(v=>Math.round(v.value/60000)),borderColor:"#14b8a6",backgroundColor:"rgba(20,184,166,.12)",fill:true,tension:.32,pointRadius:4,pointHoverRadius:6,pointBackgroundColor:"#14b8a6"}]},options:lineOpt("#14b8a6","분")});
     }
 
     /* ── 테이블 ── */
@@ -1594,19 +1444,26 @@
         const gps=getRepresentativeGps(log);
         const isVisit=isVisitCaseLog(log);
         const demandOrg=getDemandOrgName(log);
-        const client=getClientName(log);
-        const gender=getClientGender(log), age=getClientAge(log);
+        const clientName=getClientName(log);
+        const gender=getClientGender(log);
+        const birthYear=getClientBirthYear(log);
+        const age=getClientAge(log);
+        const housing=getHousingDisplay(log);
         const visitReason=getVisitReason(log)||"-";
-        const visitPlace=getVisitPlace(log);
         const visitSummary=getVisitSummary(log);
         const coordinatorOpinion=getCoordinatorOpinion(log);
-        const normalMemo=normalizeText(log.memo)||"-";
+        const agencyDetails=getAgencySupportDetails(log);
+        const resourceDetails=getResourceLinkDetails(log);
 
         const caseInfo=isVisit
           ? `<div class="case-info">
-               <strong>${safeEscape(demandOrg||"수요처 미입력")}</strong>
-               <span>대상자: ${safeEscape(client||"-")}${gender?` · ${safeEscape(gender)}`:""}${age?` · ${safeEscape(age)}세`:""}</span>
-               ${visitPlace?`<span>방문지: ${safeEscape(visitPlace)}</span>`:""}
+               <strong>${safeEscape(clientName||"대상자 미입력")}</strong>
+               <div class="case-line">
+                 ${gender?`<span>성별: ${safeEscape(gender)}</span>`:""}
+                 ${birthYear?`<span>출생년도: ${safeEscape(birthYear)}</span>`:""}
+                 ${age?`<span>나이: ${safeEscape(age)}세</span>`:""}
+               </div>
+               <div class="case-sub">${housing?`주거 형태: ${safeEscape(housing)}`:"주거 형태 미입력"}</div>
              </div>`
           : `<span class="muted">-</span>`;
 
@@ -1614,6 +1471,8 @@
           ? `<div class="visit-info-block">
                <div class="visit-info-line"><span class="visit-info-label">사유</span><span class="tag">${safeEscape(visitReason)}</span></div>
                <div class="visit-info-line"><span class="visit-info-label">목적</span>${activities.length?`<div class="tag-wrap">${activities.map(v=>`<span class="tag ${getSubTagClass(v)}">${safeEscape(v)}</span>`).join("")}</div>`:`<span class="muted">-</span>`}</div>
+               ${agencyDetails.length?`<div class="visit-info-line"><span class="visit-info-label">유관</span><div class="tag-wrap">${agencyDetails.map(v=>`<span class="tag sub-type3">${safeEscape(v)}</span>`).join("")}</div></div>`:""}
+               ${resourceDetails.length?`<div class="visit-info-line"><span class="visit-info-label">자원</span><div class="tag-wrap">${resourceDetails.map(v=>`<span class="tag sub-type2">${safeEscape(v)}</span>`).join("")}</div></div>`:""}
                <div class="visit-info-line"><span class="visit-info-label">시간</span>${duration!=="-"?`<span class="tag">${safeEscape(duration)}</span>`:""}${workHours!=="-"?`<span class="work-hours-badge">🕐 ${safeEscape(workHours)}</span>`:`<span class="work-hours-badge empty">-</span>`}</div>
              </div>`
           : `<div class="visit-info-block">
@@ -1790,20 +1649,18 @@
           "일시": formatDateTime(getLogDateTime(log)),
           "사용자": getLogUserName(log),
           "유형": getLogType(log),
-          "수요처": getDemandOrgName(log),
           "대상자명": getClientName(log),
           "성별": getClientGender(log),
+          "출생년도": getClientBirthYear(log),
           "나이": getClientAge(log),
-          "주소": getClientAddress(log),
-          "연락처": getClientPhone(log),
-          "방문사유": getVisitReason(log),
-          "방문지": getVisitPlace(log),
-          "방문목적/활동": acts.join(", "),
+          "주거 형태": getHousingDisplay(log),
+          "사유": getVisitReason(log),
+          "활동목적/활동": acts.join(", "),
           "활동 (메인)": main.join(", "),
           "현금·현물": sub1.join(", "),
           "복지자원": sub2.join(", "),
           "유관기관 세부": sub3.join(", "),
-          "방문내용 요약": isVisit ? getVisitSummary(log) : "",
+          "활동 내용": isVisit ? getVisitSummary(log) : "",
           "코디네이터 의견": isVisit ? getCoordinatorOpinion(log) : "",
           "활동 시간(세션)": isActivityLog(log)
             ? (normalizeText(log.activityDurationText)||(Number(log.activityDurationMs)>0?formatDuration(Number(log.activityDurationMs)):""))
@@ -1825,14 +1682,14 @@
           "번호": idx+1,
           "방문일시": formatDateTime(getLogDateTime(log)),
           "코디네이터": getLogUserName(log),
-          "수요처": getDemandOrgName(log),
           "대상자명": getClientName(log),
           "성별": getClientGender(log),
+          "출생년도": getClientBirthYear(log),
           "나이": getClientAge(log),
-          "방문사유": getVisitReason(log),
-          "방문지": getVisitPlace(log),
-          "방문목적": getActivities(log).join(", "),
-          "방문내용 요약": getVisitSummary(log),
+          "주거 형태": getHousingDisplay(log),
+          "사유": getVisitReason(log),
+          "활동목적": getActivities(log).join(", "),
+          "활동 내용": getVisitSummary(log),
           "코디네이터 의견": getCoordinatorOpinion(log)
         };
       });
@@ -1863,7 +1720,7 @@
       try{
         const rows = buildExportRows(state.filteredLogs);
         const wb = XLSX.utils.book_new();
-        const emptyRow = {"일시":"","사용자":"","유형":"","수요처":"","대상자명":"","성별":"","나이":"","주소":"","연락처":"","방문사유":"","방문지":"","방문목적/활동":"","활동 (메인)":"","현금·현물":"","복지자원":"","유관기관 세부":"","방문내용 요약":"","코디네이터 의견":"","활동 시간(세션)":"","선택 근무시간":"","메모":"","위도":"","경도":"","정확도":"","구글맵 링크":"","카카오맵 링크":""};
+        const emptyRow = {"일시":"","사용자":"","유형":"","대상자명":"","성별":"","출생년도":"","나이":"","주거 형태":"","사유":"","활동목적/활동":"","활동 (메인)":"","현금·현물":"","복지자원":"","유관기관 세부":"","활동 내용":"","코디네이터 의견":"","활동 시간(세션)":"","선택 근무시간":"","메모":"","위도":"","경도":"","정확도":"","구글맵 링크":"","카카오맵 링크":""};
         const ws = XLSX.utils.json_to_sheet(rows.length ? rows : [emptyRow]);
         applyGpsHyperlinks(ws);
         ws["!cols"]=[
@@ -1881,9 +1738,9 @@
         const wb = XLSX.utils.book_new();
         const ws = XLSX.utils.json_to_sheet(rows);
         ws["!cols"]=[{wch:8},{wch:18},{wch:12},{wch:20},{wch:14},{wch:8},{wch:8},{wch:14},{wch:18},{wch:28},{wch:42},{wch:38}];
-        XLSX.utils.book_append_sheet(wb, ws, "수요처제출용");
-        XLSX.writeFile(wb, "방문사례기록_수요처제출용.xlsx");
-      }catch(err){ console.error(err); alert("수요처 제출용 엑셀 다운로드 중 오류가 발생했습니다."); }
+        XLSX.utils.book_append_sheet(wb, ws, "방문기록제출용");
+        XLSX.writeFile(wb, "방문사례기록_제출용.xlsx");
+      }catch(err){ console.error(err); alert("방문기록 제출용 엑셀 다운로드 중 오류가 발생했습니다."); }
     }
     function exportPdf(){ window.print(); }
 
