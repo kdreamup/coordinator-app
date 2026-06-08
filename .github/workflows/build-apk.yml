@@ -63,7 +63,8 @@ jobs:
       - name: Fix Gradle SDK and app version
         run: |
           cd android
-          sed -i 's|distributionUrl=.*|distributionUrl=https\://services.gradle.org/distributions/gradle-8.4-all.zip|g' gradle/wrapper/gradle-wrapper.properties
+          sed -i 's|distributionUrl=.*|distributionUrl=https\://services.gradle.org/distributions/gradle-8.4-bin.zip|g' gradle/wrapper/gradle-wrapper.properties
+          grep -q '^networkTimeout=' gradle/wrapper/gradle-wrapper.properties && sed -i 's/networkTimeout=.*/networkTimeout=600000/' gradle/wrapper/gradle-wrapper.properties || echo 'networkTimeout=600000' >> gradle/wrapper/gradle-wrapper.properties
           sed -i "s|classpath 'com.android.tools.build:gradle:8.0.0'|classpath 'com.android.tools.build:gradle:8.1.4'|g" build.gradle
           sed -i 's/compileSdkVersion = .*/compileSdkVersion = 35/' variables.gradle
           sed -i 's/targetSdkVersion = .*/targetSdkVersion = 35/' variables.gradle
