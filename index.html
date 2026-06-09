@@ -209,6 +209,7 @@
     textarea{min-height:80px;resize:vertical;}
 
 
+    /* step18: 대상자 및 방문 정보 항목 관리자 분리 연동 */
     /* ── 방문(사례) 기록지 입력 폼 ── */
     .visit-form-card{margin-top:12px;border:2px solid #bfdbfe;border-radius:18px;background:#ffffff;overflow:hidden;}
     .visit-form-head{padding:12px 14px;background:linear-gradient(135deg,#eff6ff 0%,#ecfdf5 100%);border-bottom:1px solid #dbeafe;}
@@ -571,7 +572,7 @@
         <div class="visit-form-body">
           <div class="visit-group">
             <div class="visit-group-title"><span class="visit-step">1</span>활동목적</div>
-            <div class="visit-checks">
+            <div id="visit-purpose-checks" class="visit-checks">
               <label class="visit-check"><input name="visit-purpose" class="visit-case-field" type="checkbox" value="대상자 홍보ㆍ발굴">대상자 홍보ㆍ발굴</label>
               <label class="visit-check"><input name="visit-purpose" class="visit-case-field" type="checkbox" value="대상자 상담">대상자 상담</label>
               <label class="visit-check"><input name="visit-purpose" class="visit-case-field" type="checkbox" value="유관기관업무지원">유관기관업무지원</label>
@@ -612,13 +613,13 @@
             <p class="visit-form-helper">성함은 개인정보 보호를 위해 가운데 글자를 *로 입력 또는 자동 변환합니다. 예: 홍길동 → 홍*동</p>
             <div class="visit-grid-2" style="margin-top:10px;">
               <div class="visit-field"><label>주거 형태</label><div class="visit-checks">
-                <label class="visit-check"><input name="housing-type" class="visit-case-field" type="radio" value="독거">독거</label>
+                <label class="visit-check"><input name="housing-type" class="visit-case-field" type="radio" value="동거">동거</label>
                 <label class="visit-check"><input name="housing-type" class="visit-case-field" type="radio" value="부부">부부</label>
                 <label class="visit-check"><input name="housing-type" class="visit-case-field" type="radio" value="기타">기타</label>
               </div>
               <input id="housing-etc-input" class="visit-case-field" type="text" placeholder="기타 주거 형태를 입력하세요" style="display:none;margin-top:8px;" />
               </div>
-              <div class="visit-field"><label>상담 방식</label><div class="visit-checks">
+              <div class="visit-field"><label>사유</label><div class="visit-checks">
                 <label class="visit-check"><input name="visit-reason" class="visit-case-field" type="radio" value="대면">대면</label>
                 <label class="visit-check"><input name="visit-reason" class="visit-case-field" type="radio" value="비대면">비대면</label>
               </div></div>
@@ -1140,7 +1141,99 @@
       masterActivities=[...new Set(arr.map(normalizeText).filter(Boolean))];
       if(!masterActivities.length){ masterActivities=[...DEFAULT_ACTIVITIES]; usingDefaultActivities=true; }
       else usingDefaultActivities=false;
-    }catch(err){ masterActivities=[...DEFAULT_ACTIVITIES]; usingDefaultActivities=true; }
+      _syncVisitPurposeChecks(masterActivities);
+    }catch(err){ masterActivities=[...DEFAULT_ACTIVITIES]; usingDefaultActivities=true; _syncVisitPurposeChecks(masterActivities); }
+  }
+
+  function _syncVisitPurposeChecks(items){
+    const wrap=el("visit-purpose-checks");
+    if(!wrap) return;
+    const selected=new Set(getCheckedValues("visit-purpose"));
+    const list=[...new Set((items&&items.length?items:DEFAULT_ACTIVITIES).map(normalizeText).filter(Boolean))];
+    wrap.innerHTML="";
+    list.forEach(name=>{
+      const label=document.createElement("label");
+      label.className="visit-check";
+      label.innerHTML=`<input name="visit-purpose" class="visit-case-field" type="checkbox" value="${safeEscape(name)}">${safeEscape(name)}`;
+      const input=label.querySelector('input');
+      if(selected.has(name)) input.checked=true;
+      input.addEventListener("change",updateVisitPurposeDetailVisibility);
+      wrap.appendChild(label);
+    });
+    updateActivityAreaState();
+    updateVisitPurposeDetailVisibility();
+  }
+
+
+  // ✅ 관리자페이지에서 분리 관리하는 대상자 및 방문 정보 항목 불러오기
+  const VISIT_FIELD_DEFAULTS_APP = {
+    genders: ["남", "여"],
+    housingTypes: ["동거", "부부", "기타"],
+    visitReasons: ["대면", "비대면"]
+  };
+
+  async function loadVisitFieldConfig(){
+    try{
+      const doc = await db.collection("settings").doc("visitFieldConfig").get();
+      const data = doc.exists ? (doc.data()||{}) : {};
+      const cfg = {
+        genders: _getVisitFieldItems(data, "genders"),
+        housingTypes: _getVisitFieldItems(data, "housingTypes"),
+        visitReasons: _getVisitFieldItems(data, "visitReasons")
+      };
+      _syncVisitFieldOptions(cfg);
+    }catch(err){
+      console.warn("[loadVisitFieldConfig] 로드 실패, 기본값 사용:", err);
+      _syncVisitFieldOptions({...VISIT_FIELD_DEFAULTS_APP});
+    }
+  }
+
+  function _getVisitFieldItems(data, key){
+    const defaults = VISIT_FIELD_DEFAULTS_APP[key] || [];
+    return Array.isArray(data?.[key]) && data[key].length
+      ? [...new Set(data[key].map(normalizeText).filter(Boolean))]
+      : [...defaults];
+  }
+
+  function _syncVisitFieldOptions(cfg){
+    // 성별 선택창
+    const genderSel = el("gender-select");
+    if(genderSel){
+      const current = normalizeText(genderSel.value);
+      genderSel.innerHTML = '<option value="">선택</option>';
+      (cfg.genders||[]).forEach(name=>{
+        const opt=document.createElement("option");
+        opt.value=name; opt.textContent=name;
+        genderSel.appendChild(opt);
+      });
+      if([...genderSel.options].some(o=>o.value===current)) genderSel.value=current;
+    }
+
+    // 주거 형태 라디오
+    _rebuildRadioGroup("housing-type", cfg.housingTypes||[], "housing-type", "visit-case-field", "visit-check");
+
+    // 방문 사유 라디오
+    _rebuildRadioGroup("visit-reason", cfg.visitReasons||[], "visit-reason", "visit-case-field", "visit-check");
+
+    // 기타 표시 이벤트 다시 연결
+    document.querySelectorAll('input[name="housing-type"]').forEach(x=>x.addEventListener("change",updateHousingEtcVisibility));
+    updateHousingEtcVisibility();
+  }
+
+  function _rebuildRadioGroup(inputName, items, nameAttr, inputClass, labelClass){
+    const firstInput = document.querySelector(`input[name="${inputName}"]`);
+    const container = firstInput?.closest(".visit-checks");
+    if(!container) return;
+    const current = normalizeText(document.querySelector(`input[name="${inputName}"]:checked`)?.value||"");
+    container.innerHTML = "";
+    [...new Set((items||[]).map(normalizeText).filter(Boolean))].forEach(name=>{
+      const label=document.createElement("label");
+      label.className=labelClass;
+      label.innerHTML=`<input name="${nameAttr}" class="${inputClass}" type="radio" value="${safeEscape(name)}">${safeEscape(name)}`;
+      container.appendChild(label);
+    });
+    const next = [...container.querySelectorAll(`input[name="${nameAttr}"]`)].find(x=>x.value===current);
+    if(next) next.checked=true;
   }
 
   // ✅ Firebase에서 세부 항목 불러와 HTML 그리드 동적 업데이트
@@ -2188,7 +2281,7 @@
     bindProfileEvents();
     renderUserList(true, null);
     try{
-      await Promise.all([loadCoordinatorList(), loadActivityConfig(), loadAttendanceLogs(), loadSubItemConfig()]);
+      await Promise.all([loadCoordinatorList(), loadActivityConfig(), loadAttendanceLogs(), loadSubItemConfig(), loadVisitFieldConfig()]);
       bindSubActivityEvents();
       console.log("[initApp] coordinatorNames:", coordinatorNames);
       console.log("[initApp] allLogs 수:", allLogs.length);
@@ -2226,7 +2319,7 @@
   el("refresh-auth-btn").addEventListener("click",async function(){
     renderUserList(true, null);
     try{
-      await Promise.all([loadCoordinatorList(), loadActivityConfig(), loadAttendanceLogs()]);
+      await Promise.all([loadCoordinatorList(), loadActivityConfig(), loadAttendanceLogs(), loadVisitFieldConfig()]);
       const derivedFromLogs = deriveUsersFromLogs(allLogs);
       coordinatorNames = uniqueSorted([...coordinatorNames, ...derivedFromLogs]);
       renderUserList(false, null);

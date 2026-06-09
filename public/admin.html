@@ -349,7 +349,8 @@
     .month-warning.show{display:block;}
     @media(max-width:900px){.month-query-controls{width:100%;}.month-query-controls input[type=month]{flex:1;min-width:170px;}}
 
-  </style>
+    /* step18: 활동목적 / 대상자 및 방문 정보 관리 분리 */
+</style>
   <!-- break time display v32: 4시간 이상 휴게시간/실근무시간 표시 -->
 </head>
 <body>
@@ -467,17 +468,56 @@
       <div class="panel">
         <div class="panel-head">
           <div>
-            <h3 class="panel-title">활동 카테고리 관리</h3>
-            <div class="panel-sub">활동 항목을 추가하거나 삭제합니다. 삭제해도 기존 기록 속 활동명은 유지됩니다.</div>
+            <h3 class="panel-title">활동목적 관리</h3>
+            <div class="panel-sub">방문(사례) 기록의 맨 위에 나오는 활동목적 항목만 별도로 관리합니다.</div>
           </div>
         </div>
         <div class="panel-body">
           <div class="member-form">
-            <input id="activity-name-input" type="text" placeholder="예: 병원 동행" />
+            <input id="activity-name-input" type="text" placeholder="예: 대상자 상담" />
             <button id="add-activity-btn" class="btn btn-mint" type="button">추가</button>
           </div>
-          <div class="helper" style="margin-bottom:12px;">※ 등록된 활동 목록은 필터 선택창과 기록 수정 모달에 반영됩니다.</div>
+          <div class="helper" style="margin-bottom:12px;">※ 등록된 활동목적은 앱 선택항목, 필터, 기록 수정 모달에 반영됩니다.</div>
           <div id="activity-list" class="member-list"></div>
+        </div>
+      </div>
+
+      <!-- ✅ 대상자 및 방문 정보 관리 -->
+      <div class="panel management-panel visit-field-management-panel">
+        <div class="panel-head">
+          <div>
+            <h3 class="panel-title">대상자 및 방문 정보 관리</h3>
+            <div class="panel-sub">성별, 주거 형태, 사유 항목을 활동목적과 분리해서 관리합니다.</div>
+          </div>
+        </div>
+        <div class="panel-body management-panel-body" style="max-height:420px;overflow-y:auto;">
+          <div class="sub-group-block">
+            <div class="sub-group-header"><div class="sub-group-title"><span class="sub-group-dot dot-indigo"></span>성별 항목</div></div>
+            <div class="helper compact-helper">앱의 성별 선택창에 표시됩니다. 예: 남 / 여</div>
+            <div id="visit-field-list-genders" class="sub-item-list"></div>
+            <div class="sub-item-add">
+              <input id="visit-field-input-genders" type="text" placeholder="항목 추가 (예: 기타)"/>
+              <button class="btn btn-soft btn-sm" type="button" onclick="addVisitFieldItem('genders')">추가</button>
+            </div>
+          </div>
+          <div class="sub-group-block">
+            <div class="sub-group-header"><div class="sub-group-title"><span class="sub-group-dot dot-green"></span>주거 형태 항목</div></div>
+            <div class="helper compact-helper">앱의 주거 형태 선택지에 표시됩니다. 예: 동거 / 부부 / 기타</div>
+            <div id="visit-field-list-housingTypes" class="sub-item-list"></div>
+            <div class="sub-item-add">
+              <input id="visit-field-input-housingTypes" type="text" placeholder="항목 추가 (예: 독거)"/>
+              <button class="btn btn-soft btn-sm" type="button" onclick="addVisitFieldItem('housingTypes')">추가</button>
+            </div>
+          </div>
+          <div class="sub-group-block">
+            <div class="sub-group-header"><div class="sub-group-title"><span class="sub-group-dot dot-orange"></span>사유 항목</div></div>
+            <div class="helper compact-helper">앱의 사유 선택지에 표시됩니다. 예: 대면 / 비대면</div>
+            <div id="visit-field-list-visitReasons" class="sub-item-list"></div>
+            <div class="sub-item-add">
+              <input id="visit-field-input-visitReasons" type="text" placeholder="항목 추가"/>
+              <button class="btn btn-soft btn-sm" type="button" onclick="addVisitFieldItem('visitReasons')">추가</button>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -485,8 +525,8 @@
       <div class="panel">
         <div class="panel-head">
           <div>
-            <h3 class="panel-title">세부 항목 관리</h3>
-            <div class="panel-sub">지역복지자원연계·유관기관업무지원의 세부 선택 항목을 추가·삭제합니다.</div>
+            <h3 class="panel-title">세부 체크리스트 관리</h3>
+            <div class="panel-sub">자원연계와 유관기관업무지원 선택 시 나타나는 하위 체크리스트를 관리합니다.</div>
           </div>
         </div>
         <div class="panel-body" style="max-height:420px;overflow-y:auto;">
@@ -496,7 +536,7 @@
             <div class="sub-group-header">
               <div class="sub-group-title">
                 <span class="sub-group-dot dot-green"></span>
-                지역복지자원연계1 <span style="font-size:11px;color:var(--sub);font-weight:400;">현금·현물</span>
+                자원연계 - 현금·현물 <span style="font-size:11px;color:var(--sub);font-weight:400;">기존: 지역복지자원연계1</span>
               </div>
             </div>
             <div id="sub-item-list-1" class="sub-item-list"></div>
@@ -511,7 +551,7 @@
             <div class="sub-group-header">
               <div class="sub-group-title">
                 <span class="sub-group-dot dot-indigo"></span>
-                지역복지자원연계2 <span style="font-size:11px;color:var(--sub);font-weight:400;">복지자원</span>
+                자원연계 - 복지자원 <span style="font-size:11px;color:var(--sub);font-weight:400;">기존: 지역복지자원연계2</span>
               </div>
             </div>
             <div id="sub-item-list-2" class="sub-item-list"></div>
@@ -813,7 +853,7 @@
     if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
-    const state = { allLogs:[], filteredLogs:[], userNames:[], activityNames:[], housingTypeNames:[], visitReasonNames:[], charts:{}, editingId:null, queryMonth:"", queryAll:false };
+    const state = { allLogs:[], filteredLogs:[], userNames:[], activityNames:[], housingTypeNames:[], visitReasonNames:[], visitFieldConfig:{genders:[],housingTypes:[],visitReasons:[]}, charts:{}, editingId:null, queryMonth:"", queryAll:false };
 
     /* ── 유틸 ── */
     function el(id){ return document.getElementById(id); }
@@ -1262,6 +1302,105 @@
       const ordered=[...new Set(activities.map(normalizeText).filter(Boolean))];
       await db.collection("settings").doc("activityConfig").set({activities:ordered,masterActivities:ordered,updatedAt:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});
     }
+
+
+    /* ── 대상자 및 방문 정보 설정 ── */
+    const VISIT_FIELD_DEFAULTS = {
+      genders: ["남", "여"],
+      housingTypes: ["동거", "부부", "기타"],
+      visitReasons: ["대면", "비대면"]
+    };
+    const VISIT_FIELD_META = {
+      genders: { title:"성별", listId:"visit-field-list-genders", inputId:"visit-field-input-genders" },
+      housingTypes: { title:"주거 형태", listId:"visit-field-list-housingTypes", inputId:"visit-field-input-housingTypes" },
+      visitReasons: { title:"사유", listId:"visit-field-list-visitReasons", inputId:"visit-field-input-visitReasons" }
+    };
+
+    async function loadVisitFieldConfig(){
+      try{
+        const doc=await db.collection("settings").doc("visitFieldConfig").get();
+        const data=doc.exists?(doc.data()||{}):{};
+        const cfg={};
+        Object.keys(VISIT_FIELD_DEFAULTS).forEach(key=>{
+          cfg[key]=Array.isArray(data[key]) && data[key].length
+            ? [...new Set(data[key].map(normalizeText).filter(Boolean))]
+            : [...VISIT_FIELD_DEFAULTS[key]];
+        });
+        return cfg;
+      }catch(err){
+        return JSON.parse(JSON.stringify(VISIT_FIELD_DEFAULTS));
+      }
+    }
+
+    async function saveVisitFieldConfig(){
+      await db.collection("settings").doc("visitFieldConfig").set({
+        ...state.visitFieldConfig,
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+      },{merge:true});
+    }
+
+    function renderVisitFieldList(key){
+      const meta=VISIT_FIELD_META[key]; if(!meta) return;
+      const wrap=el(meta.listId); if(!wrap) return;
+      const items=state.visitFieldConfig[key] || [];
+      wrap.innerHTML="";
+      if(!items.length){ wrap.innerHTML=`<div style="font-size:12px;color:var(--sub);padding:6px 0;">항목이 없습니다.</div>`; return; }
+      items.forEach((name,idx)=>{
+        const row=document.createElement("div");
+        row.className="sub-item-row";
+        row.innerHTML=`
+          <span class="sub-item-name">${safeEscape(name)}</span>
+          <button class="btn btn-soft btn-sm" type="button" data-action="up" ${idx===0?'disabled':''}>▲</button>
+          <button class="btn btn-soft btn-sm" type="button" data-action="down" ${idx===items.length-1?'disabled':''}>▼</button>
+          <button class="btn btn-soft btn-sm" type="button" data-action="rename">이름변경</button>
+          <button class="btn btn-danger btn-sm" type="button" data-action="delete">삭제</button>`;
+        row.querySelector('[data-action="up"]').addEventListener("click",()=>moveVisitFieldItem(key,idx,-1));
+        row.querySelector('[data-action="down"]').addEventListener("click",()=>moveVisitFieldItem(key,idx,1));
+        row.querySelector('[data-action="rename"]').addEventListener("click",()=>renameVisitFieldItem(key,idx));
+        row.querySelector('[data-action="delete"]').addEventListener("click",()=>deleteVisitFieldItem(key,idx));
+        wrap.appendChild(row);
+      });
+    }
+    function renderAllVisitFieldLists(){ Object.keys(VISIT_FIELD_META).forEach(renderVisitFieldList); }
+    async function addVisitFieldItem(key){
+      const meta=VISIT_FIELD_META[key]; const input=el(meta.inputId); const name=normalizeText(input?.value||"");
+      if(!name) return alert("추가할 항목명을 입력해주세요.");
+      const arr=state.visitFieldConfig[key]||[];
+      if(arr.includes(name)) return alert("이미 등록된 항목입니다.");
+      state.visitFieldConfig[key]=[...arr,name];
+      await saveVisitFieldConfig();
+      state.housingTypeNames=[...state.visitFieldConfig.housingTypes];
+      state.visitReasonNames=[...state.visitFieldConfig.visitReasons];
+      buildSelects(); renderVisitFieldList(key); if(input) input.value="";
+    }
+    async function moveVisitFieldItem(key,idx,dir){
+      const arr=[...(state.visitFieldConfig[key]||[])]; const ni=idx+dir;
+      if(ni<0||ni>=arr.length) return;
+      [arr[idx],arr[ni]]=[arr[ni],arr[idx]];
+      state.visitFieldConfig[key]=arr;
+      await saveVisitFieldConfig(); renderVisitFieldList(key);
+    }
+    async function renameVisitFieldItem(key,idx){
+      const arr=[...(state.visitFieldConfig[key]||[])];
+      const next=normalizeText(prompt("변경할 항목명을 입력하세요.",arr[idx]));
+      if(!next||next===arr[idx]) return;
+      if(arr.includes(next)) return alert("같은 이름의 항목이 이미 있습니다.");
+      arr[idx]=next; state.visitFieldConfig[key]=arr;
+      await saveVisitFieldConfig();
+      state.housingTypeNames=[...state.visitFieldConfig.housingTypes];
+      state.visitReasonNames=[...state.visitFieldConfig.visitReasons];
+      buildSelects(); renderVisitFieldList(key);
+    }
+    async function deleteVisitFieldItem(key,idx){
+      const arr=[...(state.visitFieldConfig[key]||[])]; const name=arr[idx];
+      if(!confirm(`"${name}" 항목을 삭제할까요?\n기존 저장 기록의 값은 삭제되지 않습니다.`)) return;
+      arr.splice(idx,1); state.visitFieldConfig[key]=arr;
+      await saveVisitFieldConfig();
+      state.housingTypeNames=[...state.visitFieldConfig.housingTypes];
+      state.visitReasonNames=[...state.visitFieldConfig.visitReasons];
+      buildSelects(); renderVisitFieldList(key);
+    }
+    window.addVisitFieldItem=addVisitFieldItem;
     async function loadAttendanceLogs(options={}){
       try{
         const loadAll=!!options.all;
@@ -1394,15 +1533,16 @@
         if(!state.queryMonth) state.queryMonth=monthKey(new Date());
         state.queryAll=!!options.all;
         setMonthInput(state.queryMonth);
-        const [usersFromConfig,activitiesFromConfig,logs]=await Promise.all([
-          loadUserConfig(), loadActivityConfig(), loadAttendanceLogs({month:state.queryMonth, all:state.queryAll}), loadSubItemConfig()
+        const [usersFromConfig,activitiesFromConfig,logs,visitFieldConfig]=await Promise.all([
+          loadUserConfig(), loadActivityConfig(), loadAttendanceLogs({month:state.queryMonth, all:state.queryAll}), loadVisitFieldConfig(), loadSubItemConfig()
         ]);
         state.allLogs=logs;
         state.userNames=uniqueSorted([...usersFromConfig,...deriveUsersFromLogs(logs)]);
-        state.activityNames=uniqueSorted([...activitiesFromConfig,...logs.flatMap(getActivities)]);
-        state.housingTypeNames=uniqueSorted(["동거","부부","기타",...logs.map(getHousingType)]);
-        state.visitReasonNames=uniqueSorted(["대면","비대면",...logs.map(getVisitReason)]);
-        buildSelects(); renderMemberList(); renderActivityList(); renderAllSubItemLists(); applyFilters();
+        state.activityNames=[...new Set([...activitiesFromConfig,...logs.flatMap(getActivities)].map(normalizeText).filter(Boolean))];
+        state.visitFieldConfig=visitFieldConfig;
+        state.housingTypeNames=[...(visitFieldConfig.housingTypes||[])];
+        state.visitReasonNames=[...(visitFieldConfig.visitReasons||[])];
+        buildSelects(); renderMemberList(); renderActivityList(); renderAllVisitFieldLists(); renderAllSubItemLists(); applyFilters();
       }catch(err){ console.error(err); alert("데이터를 불러오는 중 오류가 발생했습니다."); }
     }
     function buildSelects(){
