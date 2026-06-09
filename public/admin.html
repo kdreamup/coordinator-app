@@ -993,19 +993,28 @@
       if(!isNaN(n)&&n>=0) return n;
       return getBreakMinutesForWorkHours(getWorkHoursForLog(log));
     }
+    // v36: 휴게시간은 실근무에서 차감하지 않고 총 체류시간에 더해 표시합니다.
     function getActualWorkTextForLog(log){
       const explicit=normalizeText(log?.actualWorkText);
       if(explicit) return explicit;
       const n=Number(log?.actualWorkMinutes);
       if(!isNaN(n)&&n>=0) return formatMinutesAsHourText(n);
-      const total=getWorkHoursForLog(log)*60-getBreakMinutesForLog(log);
+      const total=getWorkHoursForLog(log)*60;
+      return formatMinutesAsHourText(total);
+    }
+    function getTotalScheduledTextForLog(log){
+      const explicit=normalizeText(log?.totalScheduledText);
+      if(explicit) return explicit;
+      const n=Number(log?.totalScheduledMinutes);
+      if(!isNaN(n)&&n>=0) return formatMinutesAsHourText(n);
+      const total=getWorkHoursForLog(log)*60+getBreakMinutesForLog(log);
       return formatMinutesAsHourText(total);
     }
     function getWorkHoursDisplay(log){
       const own = getOwnWorkHours(log) || getRelatedStartWorkHours(log);
       if(!own) return "-";
       const br=getBreakMinutesForLog(log);
-      return br ? `${own}시간 / 휴게 ${br}분 / 실근무 ${getActualWorkTextForLog(log)}` : `${own}시간 / 휴게 0분 / 실근무 ${getActualWorkTextForLog(log)}`;
+      return br ? `${own}시간 / 휴게 ${br}분 / 총 ${getTotalScheduledTextForLog(log)}` : `${own}시간 / 휴게 0분 / 총 ${getTotalScheduledTextForLog(log)}`;
     }
     function getRepresentativeGps(log){
       const lat=log.activitySaveLat??log.lat??log.activityCheckLat;
@@ -2050,6 +2059,7 @@
           "선택 근무시간": getWorkHoursDisplay(log),
           "휴게시간": getBreakMinutesForLog(log)?`${getBreakMinutesForLog(log)}분`:"0분",
           "실근무시간": getActualWorkTextForLog(log),
+          "총 근무시간": getTotalScheduledTextForLog(log),
           "메모": isVisit ? "" : normalizeText(log.memo),
           "위도": gps ? gps.lat : "",
           "경도": gps ? gps.lng : "",
