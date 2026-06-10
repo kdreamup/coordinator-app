@@ -576,7 +576,7 @@
               <label class="visit-check"><input name="visit-purpose" class="visit-case-field" type="checkbox" value="대상자 홍보ㆍ발굴">대상자 홍보ㆍ발굴</label>
               <label class="visit-check"><input name="visit-purpose" class="visit-case-field" type="checkbox" value="대상자 상담">대상자 상담</label>
               <label class="visit-check"><input name="visit-purpose" class="visit-case-field" type="checkbox" value="유관기관업무지원">유관기관업무지원</label>
-              <label class="visit-check"><input name="visit-purpose" class="visit-case-field" type="checkbox" value="자원연계">자원연계</label>
+              <label class="visit-check"><input name="visit-purpose" class="visit-case-field" type="checkbox" value="지역복지자원연계">지역복지자원연계</label>
               <label class="visit-check"><input name="visit-purpose" class="visit-case-field" type="checkbox" value="정서지원(말벗)">정서지원(말벗)</label>
               <label class="visit-check"><input name="visit-purpose" class="visit-case-field" type="checkbox" value="일상생활지원">일상생활지원</label>
               <label class="visit-check"><input name="visit-purpose" class="visit-case-field" type="checkbox" value="건강관리(스마케어 등)">건강관리(스마케어 등)</label>
@@ -588,17 +588,19 @@
               <label class="visit-check"><input name="agency-detail" class="visit-case-field" type="checkbox" value="응급안전안심서비스 대상자 만족도조사 및 취약계층 발굴">응급안전안심서비스 대상자 만족도조사 및 취약계층 발굴</label>
               <label class="visit-check"><input name="agency-detail" class="visit-case-field" type="checkbox" value="신입회원 복지관 안내 및 취약계층 발굴">신입회원 복지관 안내 및 취약계층 발굴</label>
             </div></div>
-            <div id="resource-detail-wrap" class="visit-field" style="display:none;margin-top:10px;"><label>자원연계 세부 체크리스트</label><div class="visit-checks detail-checks">
-              <label class="visit-check"><input name="resource-detail" class="visit-case-field" type="checkbox" value="떡, 빵">떡, 빵</label>
-              <label class="visit-check"><input name="resource-detail" class="visit-case-field" type="checkbox" value="후원금">후원금</label>
-              <label class="visit-check"><input name="resource-detail" class="visit-case-field" type="checkbox" value="반찬지원">반찬지원</label>
-              <label class="visit-check"><input name="resource-detail" class="visit-case-field" type="checkbox" value="응급벨 신청">응급벨 신청</label>
-              <label class="visit-check"><input name="resource-detail" class="visit-case-field" type="checkbox" value="맞춤돌봄">맞춤돌봄</label>
-              <label class="visit-check"><input name="resource-detail" class="visit-case-field" type="checkbox" value="요양등급신청">요양등급신청</label>
-              <label class="visit-check"><input name="resource-detail" class="visit-case-field" type="checkbox" value="급여신청(기초생활수급대상자, 차상위계층 등)">급여신청(기초생활수급대상자, 차상위계층 등)</label>
-              <label class="visit-check"><input name="resource-detail" class="visit-case-field" type="checkbox" value="통합돌봄">통합돌봄</label>
-              <label class="visit-check"><input name="resource-detail" class="visit-case-field" type="checkbox" value="사전연명의료의향서 안내">사전연명의료의향서 안내</label>
-              <label class="visit-check"><input name="resource-detail" class="visit-case-field" type="checkbox" value="생활 환경 개선">생활 환경 개선</label>
+            <div id="resource-detail-wrap-1" class="visit-field" style="display:none;margin-top:10px;"><label>지역복지자원연계1</label><div class="visit-checks detail-checks">
+              <label class="visit-check"><input name="resource-detail-1" class="visit-case-field" type="checkbox" value="떡, 빵">떡, 빵</label>
+              <label class="visit-check"><input name="resource-detail-1" class="visit-case-field" type="checkbox" value="후원금">후원금</label>
+              <label class="visit-check"><input name="resource-detail-1" class="visit-case-field" type="checkbox" value="반찬지원">반찬지원</label>
+            </div></div>
+            <div id="resource-detail-wrap-2" class="visit-field" style="display:none;margin-top:10px;"><label>지역복지자원연계2</label><div class="visit-checks detail-checks">
+              <label class="visit-check"><input name="resource-detail-2" class="visit-case-field" type="checkbox" value="응급벨 신청">응급벨 신청</label>
+              <label class="visit-check"><input name="resource-detail-2" class="visit-case-field" type="checkbox" value="맞춤돌봄">맞춤돌봄</label>
+              <label class="visit-check"><input name="resource-detail-2" class="visit-case-field" type="checkbox" value="요양등급신청">요양등급신청</label>
+              <label class="visit-check"><input name="resource-detail-2" class="visit-case-field" type="checkbox" value="급여신청(기초생활수급대상자, 차상위계층 등)">급여신청(기초생활수급대상자, 차상위계층 등)</label>
+              <label class="visit-check"><input name="resource-detail-2" class="visit-case-field" type="checkbox" value="통합돌봄">통합돌봄</label>
+              <label class="visit-check"><input name="resource-detail-2" class="visit-case-field" type="checkbox" value="사전연명의료의향서 안내">사전연명의료의향서 안내</label>
+              <label class="visit-check"><input name="resource-detail-2" class="visit-case-field" type="checkbox" value="생활 환경 개선">생활 환경 개선</label>
             </div></div>
             <div id="visit-purpose-etc-wrap" class="visit-field" style="display:none;margin-top:10px;"><label for="visit-purpose-etc-input">기타 활동목적</label><input id="visit-purpose-etc-input" class="visit-case-field" type="text" placeholder="기타 내용을 입력하세요" /></div>
           </div>
@@ -1267,15 +1269,14 @@
 
   function _syncVisitCaseDetailChecklist(data){
     // 방문(사례) 기록 폼에서도 기존 세부 체크리스트 설정을 그대로 연결한다.
-    // 유관기관업무지원 = 기존 유관기관업무지원 항목
-    // 자원연계 = 기존 지역복지자원연계1 + 지역복지자원연계2 항목
+    // 유관기관업무지원 = 유관기관업무지원 항목
+    // 지역복지자원연계 선택 시 지역복지자원연계1과 지역복지자원연계2를 합치지 않고 각각 분리 표시한다.
     const agencyItems = _getSubItems(data, "유관기관업무지원");
-    const resourceItems = [
-      ..._getSubItems(data, "지역복지자원연계1"),
-      ..._getSubItems(data, "지역복지자원연계2")
-    ];
+    const resourceItems1 = _getSubItems(data, "지역복지자원연계1");
+    const resourceItems2 = _getSubItems(data, "지역복지자원연계2");
     _rebuildVisitDetailChecks("agency-detail-wrap", "agency-detail", agencyItems);
-    _rebuildVisitDetailChecks("resource-detail-wrap", "resource-detail", resourceItems);
+    _rebuildVisitDetailChecks("resource-detail-wrap-1", "resource-detail-1", resourceItems1);
+    _rebuildVisitDetailChecks("resource-detail-wrap-2", "resource-detail-2", resourceItems2);
   }
 
   function _rebuildVisitDetailChecks(wrapId, inputName, items){
@@ -1944,13 +1945,14 @@
   function updateVisitPurposeDetailVisibility(){
     const purposes=getCheckedValues("visit-purpose");
     const showAgency=purposes.includes("유관기관업무지원");
-    const showResource=purposes.includes("자원연계");
+    const showResource=purposes.includes("지역복지자원연계") || purposes.includes("자원연계");
     const showEtc=purposes.includes("기타");
     if(el("agency-detail-wrap")) el("agency-detail-wrap").style.display=showAgency?"":"none";
-    if(el("resource-detail-wrap")) el("resource-detail-wrap").style.display=showResource?"":"none";
+    if(el("resource-detail-wrap-1")) el("resource-detail-wrap-1").style.display=showResource?"":"none";
+    if(el("resource-detail-wrap-2")) el("resource-detail-wrap-2").style.display=showResource?"":"none";
     if(el("visit-purpose-etc-wrap")) el("visit-purpose-etc-wrap").style.display=showEtc?"":"none";
     if(!showAgency) document.querySelectorAll('input[name="agency-detail"]').forEach(x=>x.checked=false);
-    if(!showResource) document.querySelectorAll('input[name="resource-detail"]').forEach(x=>x.checked=false);
+    if(!showResource) document.querySelectorAll('input[name="resource-detail-1"],input[name="resource-detail-2"],input[name="resource-detail"]').forEach(x=>x.checked=false);
     if(!showEtc && el("visit-purpose-etc-input")) el("visit-purpose-etc-input").value="";
     updateVisitActivitySession();
   }
@@ -1997,7 +1999,9 @@
     const housingEl=document.querySelector('input[name="housing-type"]:checked');
     const purposes=getCheckedValues("visit-purpose");
     const agencyDetails=getCheckedValues("agency-detail");
-    const resourceDetails=getCheckedValues("resource-detail");
+    const resourceDetails1=getCheckedValues("resource-detail-1");
+    const resourceDetails2=getCheckedValues("resource-detail-2");
+    const resourceDetails=[...resourceDetails1,...resourceDetails2];
     const birthYear=normalizeText(el("birth-year-select")?.value||"");
     const clientName=maskClientName(el("client-name-input")?.value||"");
     return {
@@ -2019,7 +2023,9 @@
       visitPurposes:purposes,
       agencySupportDetails:agencyDetails,
       resourceLinkDetails:resourceDetails,
-      visitPurposeDetails:{agencySupport:agencyDetails,resourceLink:resourceDetails},
+      resourceLinkDetails1:resourceDetails1,
+      resourceLinkDetails2:resourceDetails2,
+      visitPurposeDetails:{agencySupport:agencyDetails,resourceLink:resourceDetails,resourceLink1:resourceDetails1,resourceLink2:resourceDetails2},
       visitPurposeEtc:normalizeText(el("visit-purpose-etc-input")?.value||""),
       visitSummary:normalizeText(el("memo-input").value)
     };
@@ -2040,7 +2046,7 @@
     ["client-name-input","housing-etc-input","visit-purpose-etc-input","memo-input"].forEach(id=>{ const node=el(id); if(node) node.value=""; });
     if(el("gender-select")) el("gender-select").value="";
     if(el("birth-year-select")) el("birth-year-select").value="";
-    document.querySelectorAll('input[name="visit-reason"],input[name="housing-type"],input[name="visit-purpose"],input[name="agency-detail"],input[name="resource-detail"]').forEach(x=>{ x.checked=false; });
+    document.querySelectorAll('input[name="visit-reason"],input[name="housing-type"],input[name="visit-purpose"],input[name="agency-detail"],input[name="resource-detail"],input[name="resource-detail-1"],input[name="resource-detail-2"]').forEach(x=>{ x.checked=false; });
     updateVisitPurposeDetailVisibility();
     updateHousingEtcVisibility();
     localStorage.removeItem(LS_MEMO);
@@ -2056,7 +2062,9 @@
     if(data.visitReason) lines.push(`사유: ${data.visitReason}`);
     if(data.visitPurposes?.length) lines.push(`활동목적: ${data.visitPurposes.join(", ")}`);
     if(data.agencySupportDetails?.length) lines.push(`유관기관업무지원: ${data.agencySupportDetails.join(", ")}`);
-    if(data.resourceLinkDetails?.length) lines.push(`자원연계: ${data.resourceLinkDetails.join(", ")}`);
+    if(data.resourceLinkDetails1?.length) lines.push(`지역복지자원연계1: ${data.resourceLinkDetails1.join(", ")}`);
+    if(data.resourceLinkDetails2?.length) lines.push(`지역복지자원연계2: ${data.resourceLinkDetails2.join(", ")}`);
+    if(!data.resourceLinkDetails1?.length && !data.resourceLinkDetails2?.length && data.resourceLinkDetails?.length) lines.push(`지역복지자원연계: ${data.resourceLinkDetails.join(", ")}`);
     if(data.visitPurposeEtc) lines.push(`기타: ${data.visitPurposeEtc}`);
     return lines.join("\n");
   }
@@ -2077,7 +2085,9 @@
     const purposes=[...data.visitPurposes];
     const purposeDetailText=[];
     if(data.agencySupportDetails?.length) purposeDetailText.push(`유관기관업무지원: ${data.agencySupportDetails.join(", ")}`);
-    if(data.resourceLinkDetails?.length) purposeDetailText.push(`자원연계: ${data.resourceLinkDetails.join(", ")}`);
+    if(data.resourceLinkDetails1?.length) purposeDetailText.push(`지역복지자원연계1: ${data.resourceLinkDetails1.join(", ")}`);
+    if(data.resourceLinkDetails2?.length) purposeDetailText.push(`지역복지자원연계2: ${data.resourceLinkDetails2.join(", ")}`);
+    if(!data.resourceLinkDetails1?.length && !data.resourceLinkDetails2?.length && data.resourceLinkDetails?.length) purposeDetailText.push(`지역복지자원연계: ${data.resourceLinkDetails.join(", ")}`);
     if(data.visitPurposeEtc) purposeDetailText.push(`기타: ${data.visitPurposeEtc}`);
     const sessionStartedAt=currentSession?.startedAt||now;
     const durationMs=Math.max(0,now-sessionStartedAt);
@@ -2090,7 +2100,7 @@
       demandOrgName:"",clientName:data.clientName,gender:data.gender,birthYear:data.birthYear,age:data.age,address:"",phone:"",
       housingType:data.housingType,housingEtc:data.housingEtc,visitDateTimeValue:"",visitDateTimeMs:now,visitDateTimeText:new Date(now).toLocaleString("ko-KR"),
       visitReason:data.visitReason,visitReasonEtc:"",visitPlace:"",visitPurposes:data.visitPurposes,activityPurposes:data.visitPurposes,visitPurposeEtc:data.visitPurposeEtc,
-      agencySupportDetails:data.agencySupportDetails,resourceLinkDetails:data.resourceLinkDetails,visitPurposeDetails:data.visitPurposeDetails,purposeDetailText:purposeDetailText.join(" / "),
+      agencySupportDetails:data.agencySupportDetails,resourceLinkDetails:data.resourceLinkDetails,resourceLinkDetails1:data.resourceLinkDetails1,resourceLinkDetails2:data.resourceLinkDetails2,visitPurposeDetails:data.visitPurposeDetails,purposeDetailText:purposeDetailText.join(" / "),
       visitSummary:data.visitSummary,activityContent:data.visitSummary,
       lat:freshGps?.lat??lastGps?.lat??null,lng:freshGps?.lng??lastGps?.lng??null,accuracy:freshGps?.accuracy??lastGps?.accuracy??null,
       activityStartedAt:sessionStartedAt,activitySavedAt:now,activityDurationMs:durationMs,activityDurationText:formatDuration(durationMs),
