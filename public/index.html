@@ -615,7 +615,7 @@
             <p class="visit-form-helper">성함은 개인정보 보호를 위해 가운데 글자를 *로 입력 또는 자동 변환합니다. 예: 홍길동 → 홍*동</p>
             <div class="visit-grid-2" style="margin-top:10px;">
               <div class="visit-field"><label>주거 형태</label><div class="visit-checks">
-                <label class="visit-check"><input name="housing-type" class="visit-case-field" type="radio" value="동거">동거</label>
+                <label class="visit-check"><input name="housing-type" class="visit-case-field" type="radio" value="독거">독거</label>
                 <label class="visit-check"><input name="housing-type" class="visit-case-field" type="radio" value="부부">부부</label>
                 <label class="visit-check"><input name="housing-type" class="visit-case-field" type="radio" value="기타">기타</label>
               </div>
@@ -1170,9 +1170,16 @@
   // ✅ 관리자페이지에서 분리 관리하는 대상자 및 방문 정보 항목 불러오기
   const VISIT_FIELD_DEFAULTS_APP = {
     genders: ["남", "여"],
-    housingTypes: ["동거", "부부", "기타"],
+    housingTypes: ["독거", "부부", "기타"],
     visitReasons: ["대면", "비대면"]
   };
+
+  // step25: 주거 형태 오타 보정 - 기존 설정/기록에 남아 있는 "동거"는 "독거"로 표시
+  function normalizeVisitFieldItem(key, value){
+    const text = normalizeText(value);
+    if(key === "housingTypes" && text === "동거") return "독거";
+    return text;
+  }
 
   async function loadVisitFieldConfig(){
     try{
@@ -1193,7 +1200,7 @@
   function _getVisitFieldItems(data, key){
     const defaults = VISIT_FIELD_DEFAULTS_APP[key] || [];
     return Array.isArray(data?.[key]) && data[key].length
-      ? [...new Set(data[key].map(normalizeText).filter(Boolean))]
+      ? [...new Set(data[key].map(v=>normalizeVisitFieldItem(key, v)).filter(Boolean))]
       : [...defaults];
   }
 

@@ -301,6 +301,20 @@
     .download-guide-title{font-size:14px;font-weight:900;color:#0f172a;margin-bottom:6px;display:flex;align-items:center;gap:6px;}
     .download-guide-desc{font-size:12px;line-height:1.55;color:#475569;}
     .download-guide-desc strong{color:#1d4ed8;}
+
+    /* step21: 미사용자 확인 패널 - 요약 카드 위 상단 배치 */
+    /* step22-fixed: 미사용자/활동없음 두 분류 정상 적용 */
+    .inactive-user-panel{margin:14px 0 16px;border:1px solid #dbeafe;border-radius:20px;background:#ffffff;box-shadow:0 10px 24px rgba(15,23,42,.06);overflow:hidden;}
+    .inactive-user-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:14px 16px;background:linear-gradient(135deg,#f8fbff 0%,#eef6ff 100%);border-bottom:1px solid #e2e8f0;}
+    .inactive-user-title{font-size:16px;font-weight:900;color:#0f172a;display:flex;align-items:center;gap:7px;}
+    .inactive-user-sub{margin-top:5px;font-size:12px;line-height:1.5;color:#64748b;font-weight:700;}
+    .inactive-user-count{min-width:86px;text-align:center;background:#fff;border:1px solid #bfdbfe;border-radius:14px;padding:9px 10px;color:#1d4ed8;font-weight:900;}
+    .inactive-user-count strong{display:block;font-size:22px;line-height:1.1;}
+    .inactive-user-body{padding:13px 16px;}
+    .inactive-user-list{display:flex;flex-wrap:wrap;gap:7px;min-height:36px;align-items:center;}
+    .inactive-user-chip{display:inline-flex;align-items:center;gap:5px;padding:7px 10px;border-radius:999px;background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;font-size:13px;font-weight:900;}
+    .inactive-user-empty{font-size:13px;font-weight:800;color:#047857;background:#ecfdf5;border:1px solid #bbf7d0;border-radius:12px;padding:10px 12px;}
+    .inactive-user-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;}
     .filter-redesign-panel.step19 .panel-body{padding:16px 18px;}
     .filter-redesign-panel.step19 .filter-main-grid{grid-template-columns:1fr 1fr !important;gap:14px;}
     .filter-redesign-panel.step19 .search-card{grid-column:1/-1;}
@@ -390,6 +404,26 @@
       <p>일과 시작~종료 근무 시간과 활동 세션 시간을 각각 확인하고, 필터 기간에 연동된 개인별 시간 비교까지 한 화면에서 제공합니다.</p>
     </section>
 
+
+    <!-- step21: 앱 미사용자 확인을 상단으로 이동 -->
+<!-- 앱 미사용자 확인 -->
+    <section class="inactive-user-panel step20 step21" id="inactive-user-panel">
+      <div class="inactive-user-head">
+        <div>
+          <div class="inactive-user-title">🚫 앱 미사용자 확인</div>
+          <div id="inactive-user-period" class="inactive-user-sub">현재 조회 월 기준으로 등록 회원 중 기록이 없는 사람을 보여줍니다.</div>
+        </div>
+        <div class="inactive-user-count"><strong id="inactive-user-count">0</strong><span>명</span></div>
+      </div>
+      <div class="inactive-user-body">
+        <div id="inactive-user-list" class="inactive-user-list"></div>
+        <div class="inactive-user-actions">
+          <button id="copy-inactive-users-btn" class="btn btn-soft btn-sm" type="button">명단 복사</button>
+          <button id="export-inactive-users-btn" class="btn btn-ghost btn-sm" type="button">미사용자 엑셀</button>
+        </div>
+      </div>
+    </section>
+
     <!-- ── 요약 카드 6개 ── -->
     <section class="summary-grid">
       <div class="summary-card">
@@ -460,6 +494,7 @@
       </div>
     </section>
 
+
     <section class="three-col">
       <!-- 회원 관리 -->
       <div class="panel">
@@ -517,7 +552,7 @@
           </div>
           <div class="sub-group-block">
             <div class="sub-group-header"><div class="sub-group-title"><span class="sub-group-dot dot-green"></span>주거 형태 항목</div></div>
-            <div class="helper compact-helper">앱의 주거 형태 선택지에 표시됩니다. 예: 동거 / 부부 / 기타</div>
+            <div class="helper compact-helper">앱의 주거 형태 선택지에 표시됩니다. 예: 독거 / 부부 / 기타</div>
             <div id="visit-field-list-housingTypes" class="sub-item-list"></div>
             <div class="sub-item-add">
               <input id="visit-field-input-housingTypes" type="text" placeholder="항목 추가 (예: 독거)"/>
@@ -1332,9 +1367,16 @@
     /* ── 대상자 및 방문 정보 설정 ── */
     const VISIT_FIELD_DEFAULTS = {
       genders: ["남", "여"],
-      housingTypes: ["동거", "부부", "기타"],
+      housingTypes: ["독거", "부부", "기타"],
       visitReasons: ["대면", "비대면"]
     };
+
+    // step25: 주거 형태 오타 보정 - 기존 설정에 남아 있는 "동거"는 "독거"로 표시
+    function normalizeVisitFieldItem(key, value){
+      const text = normalizeText(value);
+      if(key === "housingTypes" && text === "동거") return "독거";
+      return text;
+    }
     const VISIT_FIELD_META = {
       genders: { title:"성별", listId:"visit-field-list-genders", inputId:"visit-field-input-genders" },
       housingTypes: { title:"주거 형태", listId:"visit-field-list-housingTypes", inputId:"visit-field-input-housingTypes" },
@@ -1348,7 +1390,7 @@
         const cfg={};
         Object.keys(VISIT_FIELD_DEFAULTS).forEach(key=>{
           cfg[key]=Array.isArray(data[key]) && data[key].length
-            ? [...new Set(data[key].map(normalizeText).filter(Boolean))]
+            ? [...new Set(data[key].map(v=>normalizeVisitFieldItem(key, v)).filter(Boolean))]
             : [...VISIT_FIELD_DEFAULTS[key]];
         });
         return cfg;
@@ -1802,6 +1844,7 @@
       renderCharts();
       renderTable();
       renderMemberList(); // 필터 변경 시 회원 목록도 갱신
+      renderInactiveUsers();
     }
     function resetFilters(){
       el("filter-start-date").value=""; el("filter-end-date").value="";
@@ -1825,7 +1868,205 @@
       chips.forEach(text=>{ const span=document.createElement("span"); span.className="chip"; span.textContent=text; wrap.appendChild(span); });
     }
 
-    /* ── 요약 ── */
+
+
+    /* step22: 앱 미사용자 두 분류 표시
+       1) 완전 미사용자: 조회 범위 기록 없음
+       2) 활동 없음 대상자: 기록은 있으나 근무 0시간 + 활동 0시간
+    */
+    function getLoadedRangeLabel(){
+      if(state.queryAll) return "전체 기간";
+      return state.queryMonth ? state.queryMonth : monthKey(new Date());
+    }
+
+    function getInactiveUserGroupsForLoadedRange(){
+      const registered = uniqueSorted((state.userNames || []).map(normalizeText).filter(Boolean));
+      const boundaryMap = calcBoundaryPerUser(state.allLogs);
+      const sessionMap = calcSessionPerUser(state.allLogs);
+
+      const noRecordUsers = [];
+      const zeroActivityUsers = [];
+
+      registered.forEach(name => {
+        const userLogs = state.allLogs.filter(log => getLogUserName(log) === name);
+
+        if(!userLogs.length){
+          noRecordUsers.push(name);
+          return;
+        }
+
+        const boundaryMs = boundaryMap.get(name) || 0;
+        const sessionMs = sessionMap.get(name) || 0;
+
+        if(boundaryMs <= 0 && sessionMs <= 0){
+          zeroActivityUsers.push({
+            name,
+            logCount: userLogs.length,
+            workText: formatDuration(boundaryMs),
+            activityText: formatDuration(sessionMs)
+          });
+        }
+      });
+
+      return {
+        noRecordUsers: uniqueSorted(noRecordUsers),
+        zeroActivityUsers: zeroActivityUsers.sort((a,b)=>a.name.localeCompare(b.name,"ko"))
+      };
+    }
+
+    function getInactiveUsersForLoadedRange(){
+      const groups = getInactiveUserGroupsForLoadedRange();
+      return [
+        ...groups.noRecordUsers,
+        ...groups.zeroActivityUsers.map(v => v.name)
+      ];
+    }
+
+    function renderInactiveUsers(){
+      const listEl = el("inactive-user-list");
+      const countEl = el("inactive-user-count");
+      const periodEl = el("inactive-user-period");
+      if(!listEl || !countEl || !periodEl) return;
+
+      const { noRecordUsers, zeroActivityUsers } = getInactiveUserGroupsForLoadedRange();
+      const total = noRecordUsers.length + zeroActivityUsers.length;
+
+      countEl.textContent = String(total);
+      periodEl.textContent =
+        `${getLoadedRangeLabel()} 기준 · 등록 회원 ${state.userNames.length}명 중 미사용 또는 활동 없음 대상자`;
+
+      if(!total){
+        listEl.innerHTML = `<div class="inactive-user-empty">현재 조회 범위에서 미사용자와 활동 없음 대상자가 없습니다.</div>`;
+        return;
+      }
+
+      const noRecordHtml = noRecordUsers.length
+        ? `
+          <div style="width:100%;margin-bottom:12px;">
+            <div style="font-size:13px;font-weight:900;color:#9a3412;margin-bottom:7px;">
+              ① 완전 미사용자 ${noRecordUsers.length}명
+            </div>
+            <div style="display:flex;flex-wrap:wrap;gap:7px;">
+              ${noRecordUsers.map(name=>`<span class="inactive-user-chip">${safeEscape(name)}</span>`).join("")}
+            </div>
+          </div>
+        `
+        : `
+          <div style="width:100%;margin-bottom:12px;">
+            <div class="inactive-user-empty">① 완전 미사용자 없음</div>
+          </div>
+        `;
+
+      const zeroActivityHtml = zeroActivityUsers.length
+        ? `
+          <div style="width:100%;">
+            <div style="font-size:13px;font-weight:900;color:#1d4ed8;margin-bottom:7px;">
+              ② 활동 없음 대상자 ${zeroActivityUsers.length}명
+            </div>
+            <div style="display:flex;flex-wrap:wrap;gap:7px;">
+              ${zeroActivityUsers.map(item=>`
+                <span class="inactive-user-chip" style="background:#eff6ff;border-color:#bfdbfe;color:#1d4ed8;">
+                  ${safeEscape(item.name)}
+                  <small style="font-size:11px;font-weight:800;opacity:.8;">
+                    · 근무 ${safeEscape(item.workText)} / 활동 ${safeEscape(item.activityText)}
+                  </small>
+                </span>
+              `).join("")}
+            </div>
+          </div>
+        `
+        : `
+          <div style="width:100%;">
+            <div class="inactive-user-empty">② 활동 없음 대상자 없음</div>
+          </div>
+        `;
+
+      listEl.innerHTML = noRecordHtml + zeroActivityHtml;
+    }
+
+    function exportInactiveUsersExcel(){
+      try{
+        const { noRecordUsers, zeroActivityUsers } = getInactiveUserGroupsForLoadedRange();
+        const rows = [];
+
+        noRecordUsers.forEach(name=>{
+          rows.push({
+            "번호": rows.length + 1,
+            "조회 기준": getLoadedRangeLabel(),
+            "구분": "완전 미사용자",
+            "대상자": name,
+            "기록 수": 0,
+            "근무시간": "0초",
+            "활동시간": "0초",
+            "비고": "현재 조회 범위 기록 없음"
+          });
+        });
+
+        zeroActivityUsers.forEach(item=>{
+          rows.push({
+            "번호": rows.length + 1,
+            "조회 기준": getLoadedRangeLabel(),
+            "구분": "활동 없음 대상자",
+            "대상자": item.name,
+            "기록 수": item.logCount,
+            "근무시간": item.workText,
+            "활동시간": item.activityText,
+            "비고": "기록은 있으나 근무시간과 활동시간이 0"
+          });
+        });
+
+        if(!rows.length){
+          rows.push({
+            "번호": "",
+            "조회 기준": getLoadedRangeLabel(),
+            "구분": "",
+            "대상자": "",
+            "기록 수": "",
+            "근무시간": "",
+            "활동시간": "",
+            "비고": "미사용자 및 활동 없음 대상자 없음"
+          });
+        }
+
+        const wb = XLSX.utils.book_new();
+        const ws = XLSX.utils.json_to_sheet(rows);
+        ws["!cols"] = [
+          {wch:8}, {wch:16}, {wch:18}, {wch:18},
+          {wch:10}, {wch:14}, {wch:14}, {wch:34}
+        ];
+        XLSX.utils.book_append_sheet(wb, ws, "미사용자_활동없음");
+        XLSX.writeFile(wb, `미사용자_활동없음_${getLoadedRangeLabel()}.xlsx`);
+      }catch(err){
+        console.error(err);
+        alert("미사용자 엑셀 다운로드 중 오류가 발생했습니다.");
+      }
+    }
+
+    async function copyInactiveUsers(){
+      const { noRecordUsers, zeroActivityUsers } = getInactiveUserGroupsForLoadedRange();
+      const lines = [];
+      lines.push(`[${getLoadedRangeLabel()} 앱 사용 확인]`);
+      lines.push("");
+      lines.push(`① 완전 미사용자 ${noRecordUsers.length}명`);
+      lines.push(noRecordUsers.length ? noRecordUsers.join(", ") : "없음");
+      lines.push("");
+      lines.push(`② 활동 없음 대상자 ${zeroActivityUsers.length}명`);
+      lines.push(
+        zeroActivityUsers.length
+          ? zeroActivityUsers.map(v=>`${v.name}(근무 ${v.workText}, 활동 ${v.activityText})`).join(", ")
+          : "없음"
+      );
+
+      const text = lines.join("\n");
+      try{
+        await navigator.clipboard.writeText(text);
+        alert("미사용자 및 활동 없음 대상자 명단을 복사했습니다.");
+      }catch(err){
+        prompt("아래 명단을 복사하세요.", text);
+      }
+    }
+
+        /* ── 요약 ── */
     function renderSummary(){
       const today=getTodayKey();
       const now=new Date();
@@ -2338,6 +2579,8 @@
     el("close-gps-modal-btn").addEventListener("click",closeGpsModal);
     el("gps-map-modal").addEventListener("click",function(e){ if(e.target===this) closeGpsModal(); });
 
+    if(el("copy-inactive-users-btn")) el("copy-inactive-users-btn").addEventListener("click",copyInactiveUsers);
+    if(el("export-inactive-users-btn")) el("export-inactive-users-btn").addEventListener("click",exportInactiveUsersExcel);
     window.addEventListener("load",function(){ state.queryMonth=monthKey(new Date()); setMonthInput(state.queryMonth); loadAllData({all:false}); });
   </script>
 
