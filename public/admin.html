@@ -378,6 +378,7 @@
     .month-warning.show{display:block;}
     @media(max-width:900px){.month-query-controls{width:100%;}.month-query-controls input[type=month]{flex:1;min-width:170px;}}
 
+    /* step28: 활동목적 기타 마지막 / 사유 명칭 상담 형태 변경 */
     /* step18: 활동목적 / 대상자 및 방문 정보 관리 분리 */
 </style>
   <!-- break time display v32: 4시간 이상 휴게시간/실근무시간 표시 -->
@@ -537,7 +538,7 @@
         <div class="panel-head">
           <div>
             <h3 class="panel-title">대상자 및 방문 정보 관리</h3>
-            <div class="panel-sub">성별, 주거 형태, 사유 항목을 활동목적과 분리해서 관리합니다.</div>
+            <div class="panel-sub">성별, 주거 형태, 상담 형태 항목을 활동목적과 분리해서 관리합니다.</div>
           </div>
         </div>
         <div class="panel-body management-panel-body" style="max-height:420px;overflow-y:auto;">
@@ -560,8 +561,8 @@
             </div>
           </div>
           <div class="sub-group-block">
-            <div class="sub-group-header"><div class="sub-group-title"><span class="sub-group-dot dot-orange"></span>사유 항목</div></div>
-            <div class="helper compact-helper">앱의 사유 선택지에 표시됩니다. 예: 대면 / 비대면</div>
+            <div class="sub-group-header"><div class="sub-group-title"><span class="sub-group-dot dot-orange"></span>상담 형태 항목</div></div>
+            <div class="helper compact-helper">앱의 상담 형태 선택지에 표시됩니다. 예: 대면 / 비대면</div>
             <div id="visit-field-list-visitReasons" class="sub-item-list"></div>
             <div class="sub-item-add">
               <input id="visit-field-input-visitReasons" type="text" placeholder="항목 추가"/>
@@ -576,7 +577,7 @@
         <div class="panel-head">
           <div>
             <h3 class="panel-title">세부 체크리스트 관리</h3>
-            <div class="panel-sub">자원연계와 유관기관업무지원 선택 시 나타나는 하위 체크리스트를 관리합니다.</div>
+            <div class="panel-sub">지역복지자원연계와 유관기관업무지원 선택 시 나타나는 하위 체크리스트를 관리합니다.</div>
           </div>
         </div>
         <div class="panel-body" style="max-height:420px;overflow-y:auto;">
@@ -586,7 +587,7 @@
             <div class="sub-group-header">
               <div class="sub-group-title">
                 <span class="sub-group-dot dot-green"></span>
-                자원연계 - 현금·현물 <span style="font-size:11px;color:var(--sub);font-weight:400;">기존: 지역복지자원연계1</span>
+                지역복지자원연계1 <span style="font-size:11px;color:var(--sub);font-weight:400;">기존: 지역복지자원연계1</span>
               </div>
             </div>
             <div id="sub-item-list-1" class="sub-item-list"></div>
@@ -601,7 +602,7 @@
             <div class="sub-group-header">
               <div class="sub-group-title">
                 <span class="sub-group-dot dot-indigo"></span>
-                자원연계 - 복지자원 <span style="font-size:11px;color:var(--sub);font-weight:400;">기존: 지역복지자원연계2</span>
+                지역복지자원연계2 <span style="font-size:11px;color:var(--sub);font-weight:400;">기존: 지역복지자원연계2</span>
               </div>
             </div>
             <div id="sub-item-list-2" class="sub-item-list"></div>
@@ -688,7 +689,7 @@
                 <div class="condition-grid">
                   <div class="field compact wide"><label for="filter-activity">활동목적</label><select id="filter-activity"><option value="">전체</option></select></div>
                   <div class="field compact"><label for="filter-housing-type">주거 형태</label><select id="filter-housing-type"><option value="">전체</option></select></div>
-                  <div class="field compact"><label for="filter-visit-reason">사유</label><select id="filter-visit-reason"><option value="">전체</option></select></div>
+                  <div class="field compact"><label for="filter-visit-reason">상담 형태</label><select id="filter-visit-reason"><option value="">전체</option></select></div>
                   <div class="field compact wide">
                     <label for="filter-type">기록 유형</label>
                     <select id="filter-type">
@@ -1034,7 +1035,7 @@
     function getVisitCaseSummaryText(log){
       const lines=[];
       if(getHousingDisplay(log)) lines.push("주거 형태: "+getHousingDisplay(log));
-      if(getVisitReason(log)) lines.push("사유: "+getVisitReason(log));
+      if(getVisitReason(log)) lines.push("상담 형태: "+getVisitReason(log));
       if(getVisitSummary(log)) lines.push("활동 내용: "+getVisitSummary(log));
       return lines.join("\n");
     }
@@ -1380,7 +1381,7 @@
     const VISIT_FIELD_META = {
       genders: { title:"성별", listId:"visit-field-list-genders", inputId:"visit-field-input-genders" },
       housingTypes: { title:"주거 형태", listId:"visit-field-list-housingTypes", inputId:"visit-field-input-housingTypes" },
-      visitReasons: { title:"사유", listId:"visit-field-list-visitReasons", inputId:"visit-field-input-visitReasons" }
+      visitReasons: { title:"상담 형태", listId:"visit-field-list-visitReasons", inputId:"visit-field-input-visitReasons" }
     };
 
     async function loadVisitFieldConfig(){
@@ -1859,7 +1860,7 @@
       const chips=[];
       [["시작",el("filter-start-date").value],["종료",el("filter-end-date").value],
        ["사용자",el("filter-user").value],["활동/방문목적",el("filter-activity").value],
-       ["주거 형태",el("filter-housing-type").value],["사유",el("filter-visit-reason").value],
+       ["주거 형태",el("filter-housing-type").value],["상담 형태",el("filter-visit-reason").value],
        ["유형",el("filter-type").value],["검색",el("filter-keyword").value],
        ["최소시간",el("filter-min-duration").value?`${el("filter-min-duration").value}분`:""],
        ["최대시간",el("filter-max-duration").value?`${el("filter-max-duration").value}분`:""]
@@ -2266,7 +2267,7 @@
 
         const visitInfo=isVisit
           ? `<div class="visit-info-block">
-               <div class="visit-info-line"><span class="visit-info-label">사유</span><span class="tag">${safeEscape(visitReason)}</span></div>
+               <div class="visit-info-line"><span class="visit-info-label">상담 형태</span><span class="tag">${safeEscape(visitReason)}</span></div>
                <div class="visit-info-line"><span class="visit-info-label">목적</span>${activities.length?`<div class="tag-wrap">${activities.map(v=>`<span class="tag ${getSubTagClass(v)}">${safeEscape(v)}</span>`).join("")}</div>`:`<span class="muted">-</span>`}</div>
                ${agencyDetails.length?`<div class="visit-info-line"><span class="visit-info-label">유관</span><div class="tag-wrap">${agencyDetails.map(v=>`<span class="tag sub-type3">${safeEscape(v)}</span>`).join("")}</div></div>`:""}
                ${resourceDetails.length?`<div class="visit-info-line"><span class="visit-info-label">자원</span><div class="tag-wrap">${resourceDetails.map(v=>`<span class="tag sub-type2">${safeEscape(v)}</span>`).join("")}</div></div>`:""}
@@ -2452,7 +2453,7 @@
           "출생년도": getClientBirthYear(log),
           "나이": getClientAge(log),
           "주거 형태": getHousingDisplay(log),
-          "사유": getVisitReason(log),
+          "상담 형태": getVisitReason(log),
           "활동목적/활동": acts.join(", "),
           "활동 (메인)": main.join(", "),
           "현금·현물": sub1.join(", "),
@@ -2487,7 +2488,7 @@
           "출생년도": getClientBirthYear(log),
           "나이": getClientAge(log),
           "주거 형태": getHousingDisplay(log),
-          "사유": getVisitReason(log),
+          "상담 형태": getVisitReason(log),
           "활동목적": getActivities(log).join(", "),
           "활동 내용": getVisitSummary(log)
         };
@@ -2519,7 +2520,7 @@
       try{
         const rows = buildExportRows(state.filteredLogs);
         const wb = XLSX.utils.book_new();
-        const emptyRow = {"일시":"","사용자":"","유형":"","대상자명":"","성별":"","출생년도":"","나이":"","주거 형태":"","사유":"","활동목적/활동":"","활동 (메인)":"","현금·현물":"","복지자원":"","유관기관 세부":"","활동 내용":"","활동 시간(세션)":"","선택 근무시간":"","휴게시간":"","실근무시간":"","총 근무시간":"","메모":"","위도":"","경도":"","정확도":"","구글맵 링크":"","카카오맵 링크":""};
+        const emptyRow = {"일시":"","사용자":"","유형":"","대상자명":"","성별":"","출생년도":"","나이":"","주거 형태":"","상담 형태":"","활동목적/활동":"","활동 (메인)":"","현금·현물":"","복지자원":"","유관기관 세부":"","활동 내용":"","활동 시간(세션)":"","선택 근무시간":"","휴게시간":"","실근무시간":"","총 근무시간":"","메모":"","위도":"","경도":"","정확도":"","구글맵 링크":"","카카오맵 링크":""};
         const ws = XLSX.utils.json_to_sheet(rows.length ? rows : [emptyRow]);
         applyGpsHyperlinks(ws);
         ws["!cols"]=[
