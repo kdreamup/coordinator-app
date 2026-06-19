@@ -380,6 +380,35 @@
 
     /* step28: 활동목적 기타 마지막 / 사유 명칭 상담 형태 변경 */
     /* step18: 활동목적 / 대상자 및 방문 정보 관리 분리 */
+
+    /* step29: 관리 카테고리 4개를 2:2 배치로 정리 */
+    .three-col{
+      display:grid !important;
+      grid-template-columns:repeat(2,minmax(0,1fr)) !important;
+      gap:14px !important;
+      align-items:stretch !important;
+      margin-top:16px !important;
+    }
+    .three-col > .panel{
+      min-width:0;
+      height:100%;
+    }
+    .three-col .panel-head{
+      min-height:86px;
+    }
+    .three-col .panel-body{
+      max-height:360px;
+      overflow:auto;
+    }
+    .three-col .visit-field-management-panel .panel-body{
+      max-height:360px !important;
+    }
+    @media (max-width:900px){
+      .three-col{grid-template-columns:1fr !important;}
+      .three-col .panel-head{min-height:auto;}
+      .three-col .panel-body{max-height:none;}
+    }
+
 </style>
   <!-- break time display v32: 4시간 이상 휴게시간/실근무시간 표시 -->
 </head>
