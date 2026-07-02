@@ -718,12 +718,12 @@
 <!-- 일과 종료 확인 모달 -->
 <div id="end-work-modal" class="end-work-modal-overlay">
   <div class="end-work-modal-box">
-    <div class="end-work-modal-title">⚠️ 선택된 활동이 있습니다</div>
-    <div class="end-work-modal-desc">일과 종료 전에 진행 중인 활동을 어떻게 처리할까요?</div>
+    <div class="end-work-modal-title">⚠️ 저장되지 않은 방문기록이 있습니다</div>
+    <div class="end-work-modal-desc">방문기록 저장을 누르지 않은 활동시간이 진행 중입니다. 일과 종료 전에 저장 여부를 선택해주세요.</div>
     <div id="end-work-activity-preview" class="end-work-activity-preview"></div>
     <div class="end-work-modal-btns">
-      <button id="end-work-save-and-end" class="btn btn-primary" type="button">✅ 활동 저장 후 일과 종료</button>
-      <button id="end-work-just-end" class="btn btn-end" style="background:#fed7aa;color:#9a3412;border:2px solid #fdba74;" type="button">🔴 활동 저장 없이 일과 종료</button>
+      <button id="end-work-save-and-end" class="btn btn-primary" type="button">✅ 방문기록 저장 후 일과 종료</button>
+      <button id="end-work-just-end" class="btn btn-end" style="background:#fed7aa;color:#9a3412;border:2px solid #fdba74;" type="button">🔴 저장하지 않고 일과 종료</button>
       <button id="end-work-cancel" class="btn btn-soft" type="button">취소 (돌아가기)</button>
     </div>
   </div>
@@ -1674,11 +1674,9 @@
     autoEndInProgress=true;
     try{
       if(currentSession&&currentSession.activities&&currentSession.activities.length){
-        const saved=await saveActivityRecord({silent:true});
-        if(!saved){
-          alert("자동 일과종료 전에 진행 중인 활동 저장에 실패했습니다. 수동으로 확인해주세요.");
-          return;
-        }
+        // 자동 일과 종료 시에는 입력이 미완성일 수 있으므로 방문기록을 강제 저장하지 않습니다.
+        // 대신 활동시간 세션만 종료하여 시간이 계속 누적되는 문제를 막습니다.
+        discardCurrentActivitySession();
       }
       if(getTodayWorkStatus()==="started"){
         const ended=await _doSaveWorkBoundaryLog("일과 종료",{autoEnded:true,silent:true});
@@ -1878,6 +1876,22 @@
   }
   function closeEndWorkModal(){
     el("end-work-modal").classList.remove("show");
+  }
+
+  // step30: 방문기록 저장을 누르지 않은 활동 세션을 안전하게 종료합니다.
+  // 이 함수는 방문기록을 자동 저장하지 않고 활동시간 누적만 멈춥니다.
+  function discardCurrentActivitySession(){
+    currentSession=null;
+    etcText="";
+    resetSubActivitySelections();
+    saveSessionToStorage();
+    localStorage.removeItem(LS_MEMO);
+    if(el("memo-input")) el("memo-input").value="";
+    renderActivityChips();
+    updateActivityAreaState();
+    updateEtcInputVisibility();
+    updateSubActivityVisibility();
+    updateCurrentElapsedUi();
   }
 
   async function saveWorkBoundaryLog(type){
@@ -2384,9 +2398,7 @@
 
   el("end-work-just-end").addEventListener("click", async function(){
     closeEndWorkModal();
-    currentSession=null; etcText=""; resetSubActivitySelections();
-    saveSessionToStorage(); localStorage.removeItem(LS_MEMO); el("memo-input").value="";
-    renderActivityChips(); updateActivityAreaState(); updateEtcInputVisibility(); updateSubActivityVisibility(); updateCurrentElapsedUi();
+    discardCurrentActivitySession();
     await _doSaveWorkBoundaryLog("일과 종료",{requireGps:true});
   });
 

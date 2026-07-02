@@ -381,7 +381,7 @@
     /* step28: 활동목적 기타 마지막 / 사유 명칭 상담 형태 변경 */
     /* step18: 활동목적 / 대상자 및 방문 정보 관리 분리 */
 
-    /* step29: 관리 카테고리 4개를 2:2 배치로 정리 */
+    /* step30: 관리 카테고리 4개를 2:2 배치로 정리 */
     .three-col{
       display:grid !important;
       grid-template-columns:repeat(2,minmax(0,1fr)) !important;
@@ -417,7 +417,7 @@
     <div class="topbar-inner">
       <div>
         <h1 class="brand-title">노인돌봄 코디네이터 관리자 시스템</h1>
-        <div class="brand-sub">회원·방문(사례) 기록 관리, 월별/사용자/활동목적 필터, 상세 내역 확인, 전체 기록 엑셀과 방문기록만 엑셀을 제공합니다.</div>
+        <div class="brand-sub">회원·방문(사례) 기록 관리, 월별/사용자/활동목적 필터, 상세 내역 확인, 전체 기록 엑셀과 방문기록만 엑셀을 활동목적별로 분리하여 제공합니다.</div>
       </div>
       <div class="toolbar">
         <button id="reload-btn" class="btn btn-ghost" type="button">새로고침</button>
@@ -2465,63 +2465,111 @@
       return { main, sub1, sub2, sub3 };
     }
 
+    // step30: 엑셀에서는 활동목적을 1개 행씩 분리하여 나중에 활동목적별 필터/피벗이 가능하게 합니다.
+    function getExportPurposeRows(log){
+      const acts = getActivities(log).map(normalizeText).filter(Boolean);
+      if(!acts.length) return [{ purpose:"", sub1:[], sub2:[], sub3:[] }];
+
+      const mainPurposes=[];
+      const sub1=[];
+      const sub2=[];
+      const sub3=[];
+
+      acts.forEach(function(name){
+        if(name.startsWith("지역복지자원연계1 - ")) sub1.push(name.replace("지역복지자원연계1 - ",""));
+        else if(name.startsWith("지역복지자원연계2 - ")) sub2.push(name.replace("지역복지자원연계2 - ",""));
+        else if(name.startsWith("유관기관업무지원 - ")) sub3.push(name.replace("유관기관업무지원 - ",""));
+        else if(name.startsWith("자원연계 - ")) sub2.push(name.replace("자원연계 - ",""));
+        else if(name.includes("유관기관업무지원:")) sub3.push(name.replace("유관기관업무지원:","").trim());
+        else if(name.includes("지역복지자원연계1:")) sub1.push(name.replace("지역복지자원연계1:","").trim());
+        else if(name.includes("지역복지자원연계2:")) sub2.push(name.replace("지역복지자원연계2:","").trim());
+        else mainPurposes.push(name);
+      });
+
+      const rows=[];
+      uniqueSorted(mainPurposes).forEach(function(purpose){
+        rows.push({
+          purpose: purpose,
+          sub1: purpose==="지역복지자원연계" ? uniqueSorted(sub1) : [],
+          sub2: purpose==="지역복지자원연계" ? uniqueSorted(sub2) : [],
+          sub3: purpose==="유관기관업무지원" ? uniqueSorted(sub3) : []
+        });
+      });
+
+      if(!rows.length && (sub1.length||sub2.length)){
+        rows.push({purpose:"지역복지자원연계",sub1:uniqueSorted(sub1),sub2:uniqueSorted(sub2),sub3:[]});
+      }
+      if(!rows.length && sub3.length){
+        rows.push({purpose:"유관기관업무지원",sub1:[],sub2:[],sub3:uniqueSorted(sub3)});
+      }
+      return rows.length ? rows : [{ purpose:acts.join(", "), sub1:uniqueSorted(sub1), sub2:uniqueSorted(sub2), sub3:uniqueSorted(sub3) }];
+    }
+
     function buildExportRows(rows){
       // ✅ 엑셀 다운로드에서는 일과 시작/일과 종료 기록 제외
       // 실제 기록 데이터는 삭제하지 않고, 엑셀 출력에서만 제외합니다.
-      return rows.filter(log => !isStartLog(log) && !isEndLog(log)).map(function(log){
+      return rows.filter(log => !isStartLog(log) && !isEndLog(log)).flatMap(function(log){
         const gps = getRepresentativeGps(log);
         const acts = getActivities(log);
-        const { main, sub1, sub2, sub3 } = classifyActivities(acts);
         const isVisit = isVisitCaseLog(log);
-        return {
-          "일시": formatDateTime(getLogDateTime(log)),
-          "사용자": getLogUserName(log),
-          "유형": getLogType(log),
-          "대상자명": getClientName(log),
-          "성별": getClientGender(log),
-          "출생년도": getClientBirthYear(log),
-          "나이": getClientAge(log),
-          "주거 형태": getHousingDisplay(log),
-          "상담 형태": getVisitReason(log),
-          "활동목적/활동": acts.join(", "),
-          "활동 (메인)": main.join(", "),
-          "현금·현물": sub1.join(", "),
-          "복지자원": sub2.join(", "),
-          "유관기관 세부": sub3.join(", "),
-          "활동 내용": isVisit ? getVisitSummary(log) : "",
-          "활동 시간(세션)": isActivityLog(log)
-            ? (normalizeText(log.activityDurationText)||(Number(log.activityDurationMs)>0?formatDuration(Number(log.activityDurationMs)):""))
-            : "-",
-          "선택 근무시간": getWorkHoursDisplay(log),
-          "휴게시간": getBreakMinutesForLog(log)?`${getBreakMinutesForLog(log)}분`:"0분",
-          "실근무시간": getActualWorkTextForLog(log),
-          "총 근무시간": getTotalScheduledTextForLog(log),
-          "메모": isVisit ? "" : normalizeText(log.memo),
-          "위도": gps ? gps.lat : "",
-          "경도": gps ? gps.lng : "",
-          "정확도": gps && gps.accuracy!=null ? Math.round(gps.accuracy)+"m" : "",
-          "구글맵 링크": gps ? `https://www.google.com/maps?q=${Number(gps.lat).toFixed(6)},${Number(gps.lng).toFixed(6)}` : "",
-          "카카오맵 링크": gps ? `https://map.kakao.com/link/map/${encodeURIComponent(getLogUserName(log)||"위치")},${Number(gps.lat).toFixed(6)},${Number(gps.lng).toFixed(6)}` : ""
-        };
+        const purposeRows = getExportPurposeRows(log);
+        return purposeRows.map(function(purposeItem){
+          return {
+            "일시": formatDateTime(getLogDateTime(log)),
+            "사용자": getLogUserName(log),
+            "유형": getLogType(log),
+            "대상자명": getClientName(log),
+            "성별": getClientGender(log),
+            "출생년도": getClientBirthYear(log),
+            "나이": getClientAge(log),
+            "주거 형태": getHousingDisplay(log),
+            "상담 형태": getVisitReason(log),
+            "활동목적": purposeItem.purpose,
+            "현금·현물": (purposeItem.sub1||[]).join(", "),
+            "복지자원": (purposeItem.sub2||[]).join(", "),
+            "유관기관 세부": (purposeItem.sub3||[]).join(", "),
+            "전체 선택 활동": acts.join(", "),
+            "활동 내용": isVisit ? getVisitSummary(log) : "",
+            "활동 시간(세션)": isActivityLog(log)
+              ? (normalizeText(log.activityDurationText)||(Number(log.activityDurationMs)>0?formatDuration(Number(log.activityDurationMs)):""))
+              : "-",
+            "선택 근무시간": getWorkHoursDisplay(log),
+            "휴게시간": getBreakMinutesForLog(log)?`${getBreakMinutesForLog(log)}분`:"0분",
+            "실근무시간": getActualWorkTextForLog(log),
+            "총 근무시간": getTotalScheduledTextForLog(log),
+            "메모": isVisit ? "" : normalizeText(log.memo),
+            "위도": gps ? gps.lat : "",
+            "경도": gps ? gps.lng : "",
+            "정확도": gps && gps.accuracy!=null ? Math.round(gps.accuracy)+"m" : "",
+            "구글맵 링크": gps ? `https://www.google.com/maps?q=${Number(gps.lat).toFixed(6)},${Number(gps.lng).toFixed(6)}` : "",
+            "카카오맵 링크": gps ? `https://map.kakao.com/link/map/${encodeURIComponent(getLogUserName(log)||"위치")},${Number(gps.lat).toFixed(6)},${Number(gps.lng).toFixed(6)}` : ""
+          };
+        });
       });
     }
 
     function buildSupplyExportRows(rows){
-      return rows.filter(isVisitCaseLog).map(function(log,idx){
-        return {
-          "번호": idx+1,
-          "방문일시": formatDateTime(getLogDateTime(log)),
-          "코디네이터": getLogUserName(log),
-          "대상자명": getClientName(log),
-          "성별": getClientGender(log),
-          "출생년도": getClientBirthYear(log),
-          "나이": getClientAge(log),
-          "주거 형태": getHousingDisplay(log),
-          "상담 형태": getVisitReason(log),
-          "활동목적": getActivities(log).join(", "),
-          "활동 내용": getVisitSummary(log)
-        };
-      });
+      return rows.filter(isVisitCaseLog).flatMap(function(log){
+        const purposeRows = getExportPurposeRows(log);
+        return purposeRows.map(function(purposeItem){
+          return {
+            "번호": "",
+            "방문일시": formatDateTime(getLogDateTime(log)),
+            "코디네이터": getLogUserName(log),
+            "대상자명": getClientName(log),
+            "성별": getClientGender(log),
+            "출생년도": getClientBirthYear(log),
+            "나이": getClientAge(log),
+            "주거 형태": getHousingDisplay(log),
+            "상담 형태": getVisitReason(log),
+            "활동목적": purposeItem.purpose,
+            "현금·현물": (purposeItem.sub1||[]).join(", "),
+            "복지자원": (purposeItem.sub2||[]).join(", "),
+            "유관기관 세부": (purposeItem.sub3||[]).join(", "),
+            "활동 내용": getVisitSummary(log)
+          };
+        });
+      }).map(function(row,idx){ row["번호"] = idx+1; return row; });
     }
 
     function applyGpsHyperlinks(ws){
@@ -2549,11 +2597,11 @@
       try{
         const rows = buildExportRows(state.filteredLogs);
         const wb = XLSX.utils.book_new();
-        const emptyRow = {"일시":"","사용자":"","유형":"","대상자명":"","성별":"","출생년도":"","나이":"","주거 형태":"","상담 형태":"","활동목적/활동":"","활동 (메인)":"","현금·현물":"","복지자원":"","유관기관 세부":"","활동 내용":"","활동 시간(세션)":"","선택 근무시간":"","휴게시간":"","실근무시간":"","총 근무시간":"","메모":"","위도":"","경도":"","정확도":"","구글맵 링크":"","카카오맵 링크":""};
+        const emptyRow = {"일시":"","사용자":"","유형":"","대상자명":"","성별":"","출생년도":"","나이":"","주거 형태":"","상담 형태":"","활동목적":"","현금·현물":"","복지자원":"","유관기관 세부":"","전체 선택 활동":"","활동 내용":"","활동 시간(세션)":"","선택 근무시간":"","휴게시간":"","실근무시간":"","총 근무시간":"","메모":"","위도":"","경도":"","정확도":"","구글맵 링크":"","카카오맵 링크":""};
         const ws = XLSX.utils.json_to_sheet(rows.length ? rows : [emptyRow]);
         applyGpsHyperlinks(ws);
         ws["!cols"]=[
-          {wch:18},{wch:12},{wch:12},{wch:18},{wch:14},{wch:8},{wch:8},{wch:28},{wch:16},{wch:14},{wch:18},{wch:28},{wch:28},{wch:18},{wch:22},{wch:30},{wch:36},{wch:34},{wch:14},{wch:14},{wch:30},{wch:12},{wch:12},{wch:10},{wch:16},{wch:16}
+          {wch:18},{wch:12},{wch:12},{wch:18},{wch:14},{wch:8},{wch:8},{wch:14},{wch:14},{wch:22},{wch:22},{wch:22},{wch:22},{wch:34},{wch:42},{wch:18},{wch:14},{wch:14},{wch:14},{wch:14},{wch:30},{wch:12},{wch:12},{wch:10},{wch:16},{wch:16}
         ];
         XLSX.utils.book_append_sheet(wb, ws, "전체기록");
         XLSX.writeFile(wb, `전체기록_${state.queryAll?"전체기간":(state.queryMonth||monthKey(new Date()))}.xlsx`);
@@ -2566,7 +2614,7 @@
         if(!rows.length) return alert("현재 필터 결과에 방문(사례) 기록이 없습니다.");
         const wb = XLSX.utils.book_new();
         const ws = XLSX.utils.json_to_sheet(rows);
-        ws["!cols"]=[{wch:8},{wch:18},{wch:12},{wch:20},{wch:14},{wch:8},{wch:8},{wch:14},{wch:18},{wch:28},{wch:42},{wch:38}];
+        ws["!cols"]=[{wch:8},{wch:18},{wch:12},{wch:20},{wch:14},{wch:8},{wch:8},{wch:14},{wch:14},{wch:22},{wch:22},{wch:22},{wch:22},{wch:42}];
         XLSX.utils.book_append_sheet(wb, ws, "방문기록제출용");
         XLSX.writeFile(wb, `방문기록만_${state.queryAll?"전체기간":(state.queryMonth||monthKey(new Date()))}.xlsx`);
       }catch(err){ console.error(err); alert("방문기록 제출용 엑셀 다운로드 중 오류가 발생했습니다."); }
