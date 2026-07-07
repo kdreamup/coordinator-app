@@ -49,6 +49,8 @@
     /* 요약 카드 6개 */
     .summary-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:14px;margin-bottom:18px;}
     .summary-card{background:#fff;border:1px solid var(--line);border-radius:24px;box-shadow:var(--shadow);padding:16px;min-height:130px;display:flex;flex-direction:column;justify-content:space-between;}
+    .summary-card.clickable{cursor:pointer;transition:.15s ease;}
+    .summary-card.clickable:hover{transform:translateY(-2px);border-color:#93c5fd;box-shadow:0 16px 42px rgba(37,99,235,.12);}
     .summary-head{display:flex;justify-content:space-between;align-items:center;gap:8px;}
     .summary-title{font-size:13px;color:var(--sub);font-weight:700;line-height:1.4;}
     .summary-icon{width:38px;height:38px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:800;flex-shrink:0;}
@@ -490,14 +492,14 @@
         </div>
       </div>
 
-      <div class="summary-card">
+      <div class="summary-card clickable" id="active-users-card" role="button" tabindex="0" title="클릭하면 현재 필터 기준 사용자 명단을 확인합니다.">
         <div class="summary-head">
           <div class="summary-title">필터 기준 사용자 수</div>
           <div class="summary-icon icon-orange">👥</div>
         </div>
         <div>
           <div id="sum-active-users" class="summary-value">0명</div>
-          <div class="summary-sub">현재 필터에 포함되는 사용자 수</div>
+          <div class="summary-sub">클릭하면 현재 필터 기준 사용자 명단을 확인합니다.</div>
         </div>
       </div>
 
@@ -2132,6 +2134,8 @@
       el("sum-session-duration").textContent=formatDuration(totalSessionMs);
       el("sum-session-duration-sub").textContent=`${thisMonthPrefix} 기준 · 활동 세션 경과 합산`;
       el("sum-active-users").textContent=`${filteredUsers.length}명`;
+      const activeUsersCard=el("active-users-card");
+      if(activeUsersCard) activeUsersCard.title=filteredUsers.length?filteredUsers.join(", "):"현재 필터 기준 사용자가 없습니다.";
       el("sum-top-activity").textContent=topActivity||"-";
       el("sum-top-activity-sub").textContent=topActivityCount>0?`${topActivityCount}건에 포함됨`:"활동 기록이 없습니다";
 
@@ -2142,6 +2146,31 @@
       } else {
         el("sum-today-boundary").textContent="-";
         el("sum-today-boundary-sub").textContent=`${thisMonthPrefix} 이번 달 근무 데이터 없음`;
+      }
+    }
+
+    // step31: 필터 기준 사용자 수 카드를 눌렀을 때 명단 확인
+    function getFilteredActiveUserNames(){
+      return uniqueSorted(state.filteredLogs.map(getLogUserName).filter(Boolean));
+    }
+
+    async function showFilteredActiveUsers(){
+      const users=getFilteredActiveUserNames();
+      const label=getLoadedRangeLabel ? getLoadedRangeLabel() : "현재 조회 범위";
+      const lines=[];
+      lines.push(`[${label} 필터 기준 사용자 ${users.length}명]`);
+      lines.push("");
+      if(users.length){
+        users.forEach((name,idx)=>lines.push(`${idx+1}. ${name}`));
+      }else{
+        lines.push("현재 필터 조건에 포함되는 사용자가 없습니다.");
+      }
+      const text=lines.join("\n");
+      try{
+        await navigator.clipboard.writeText(text);
+        alert(text + "\n\n명단을 클립보드에 복사했습니다.");
+      }catch(err){
+        prompt("현재 필터 기준 사용자 명단입니다. 필요하면 복사하세요.", text);
       }
     }
 
@@ -2659,6 +2688,10 @@
 
     if(el("copy-inactive-users-btn")) el("copy-inactive-users-btn").addEventListener("click",copyInactiveUsers);
     if(el("export-inactive-users-btn")) el("export-inactive-users-btn").addEventListener("click",exportInactiveUsersExcel);
+    if(el("active-users-card")){
+      el("active-users-card").addEventListener("click",showFilteredActiveUsers);
+      el("active-users-card").addEventListener("keydown",function(e){ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); showFilteredActiveUsers(); } });
+    }
     window.addEventListener("load",function(){ state.queryMonth=monthKey(new Date()); setMonthInput(state.queryMonth); loadAllData({all:false}); });
   </script>
 

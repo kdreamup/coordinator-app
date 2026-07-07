@@ -813,6 +813,10 @@
   let coordinatorNames = [], masterActivities = [], usingDefaultActivities = false;
   let allLogs = [], lastGps = null, currentSession = null, sessionTicker = null;
   let workTimerTicker = null, autoEndTicker = null, autoEndInProgress = false, gpsCheckTicker = null;
+  // step31: 저장 지연 중 중복 클릭을 막기 위한 잠금 상태
+  let savingWorkBoundary = false;
+  let savingVisitRecord = false;
+  let lastSaveClickAt = 0;
   let lastGpsErrorMessage = "";
   let etcText = ""; // ✅ 기타 입력 내용
 
@@ -833,6 +837,25 @@
   function normalizeText(v){ return String(v==null?"":v).trim(); }
   function safeEscape(v){ return normalizeText(v).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;"); }
   function uniqueSorted(arr){ return Array.from(new Set((arr||[]).map(normalizeText).filter(Boolean))).sort((a,b)=>a.localeCompare(b,"ko")); }
+  function setButtonBusy(button, busy, busyText){
+    if(!button) return function(){};
+    const prevText=button.textContent;
+    const prevDisabled=button.disabled;
+    button.disabled=!!busy;
+    button.classList.toggle("saving",!!busy);
+    if(busy&&busyText) button.textContent=busyText;
+    return function(){
+      button.disabled=prevDisabled;
+      button.classList.toggle("saving",false);
+      button.textContent=prevText;
+    };
+  }
+  function isRapidDuplicateClick(){
+    const now=Date.now();
+    if(now-lastSaveClickAt<1200) return true;
+    lastSaveClickAt=now;
+    return false;
+  }
   function toDate(v){
     if(!v) return null;
     if(v instanceof Date) return v;
@@ -1742,11 +1765,14 @@
   }
 
   async function requestGpsOnce(options={}){
-    const timeout=Number(options.timeout)||30000;
+    // step31: 저장 버튼 반응이 늦어 중복 클릭되는 문제를 줄이기 위해 빠른 저장 모드 지원
+    const fast=!!options.fast;
+    const timeout=Number(options.timeout)||(fast?6000:30000);
     const first=await requestGpsSingle({enableHighAccuracy:true,timeout,maximumAge:0});
     if(first) return first;
     // 실내에서 고정밀 GPS가 실패하는 경우를 대비해 일반 위치로 한 번 더 시도합니다.
-    const second=await requestGpsSingle({enableHighAccuracy:false,timeout:Math.max(15000,Math.floor(timeout/2)),maximumAge:60000});
+    const secondTimeout=fast?4000:Math.max(15000,Math.floor(timeout/2));
+    const second=await requestGpsSingle({enableHighAccuracy:false,timeout:secondTimeout,maximumAge:60000});
     return second;
   }
 
@@ -1895,6 +1921,8 @@
   }
 
   async function saveWorkBoundaryLog(type){
+    if(savingWorkBoundary) return;
+    if(isRapidDuplicateClick()) return;
     if(!currentUserName){ alert("사용자를 먼저 선택해주세요."); return; }
     const status=getTodayWorkStatus();
     if(type==="일과 시작"&&status==="started"){ alert("이미 일과가 시작되어 있습니다."); return; }
@@ -1906,7 +1934,15 @@
       return;
     }
 
-    await _doSaveWorkBoundaryLog(type,type==="일과 시작"?{workHours:getSelectedWorkHours(),requireGps:true}:{requireGps:true});
+    const btn=type==="일과 시작"?el("start-work-btn"):el("end-work-btn");
+    const restoreBtn=setButtonBusy(btn,true,type==="일과 시작"?"일과 시작 처리 중...":"일과 종료 처리 중...");
+    savingWorkBoundary=true;
+    try{
+      return await _doSaveWorkBoundaryLog(type,type==="일과 시작"?{workHours:getSelectedWorkHours(),requireGps:true,fastGps:true}:{requireGps:true,fastGps:true});
+    }finally{
+      savingWorkBoundary=false;
+      restoreBtn();
+    }
   }
 
   async function _doSaveWorkBoundaryLog(type,options={}){
@@ -1922,7 +1958,7 @@
       const helper=el("work-hours-helper");
       const prevHelper=helper?helper.textContent:"";
       if(helper) helper.textContent=`${type} 전 GPS 위치를 확인하고 있습니다. 휴대폰 위치 권한을 허용해주세요.`;
-      gpsForSave=await requestGpsOnce({timeout:30000});
+      gpsForSave=await requestGpsOnce({timeout:options.fastGps?6000:30000,fast:!!options.fastGps});
       if(helper) helper.textContent=prevHelper;
       updateWorkHoursUi();
       if(!gpsForSave && !options.silent && !options.autoEnded){
@@ -2120,6 +2156,8 @@
   }
 
   async function saveActivityRecord(options={}){
+    if(savingVisitRecord) return false;
+    if(!options.silent && isRapidDuplicateClick()) return false;
     if(!currentUserName){ alert("사용자를 먼저 선택해주세요."); return false; }
     const status=getTodayWorkStatus();
     if(status==="none"){ alert("일과 시작을 먼저 저장해주세요."); return false; }
@@ -2129,9 +2167,14 @@
     const validationMessage=validateVisitCaseData(data);
     if(validationMessage){ alert(validationMessage); return false; }
 
+    const saveBtn=el("save-activity-btn");
+    const restoreBtn=setButtonBusy(saveBtn,true,"방문기록 저장 중...");
+    savingVisitRecord=true;
+
     const now=Date.now();
-    // GPS는 조용히 시도하고, 실패해도 참여자 화면에는 안내하지 않고 저장을 계속합니다.
-    let freshGps=await saveGpsCheckLog("visit-record",true);
+    // GPS는 조용히 빠르게 시도하고, 실패해도 참여자 화면에는 안내하지 않고 저장을 계속합니다.
+    let freshGps=null;
+    try{ freshGps=await requestGpsOnce({timeout:6000,fast:true}); if(freshGps) await saveGpsCheckSnapshot("visit-record",freshGps); }catch(e){ freshGps=null; }
     const purposes=[...data.visitPurposes];
     const purposeDetailText=[];
     if(data.agencySupportDetails?.length) purposeDetailText.push(`유관기관업무지원: ${data.agencySupportDetails.join(", ")}`);
@@ -2171,6 +2214,9 @@
       console.error("방문기록 저장 오류:",err);
       if(!options.silent) alert("저장 중 오류가 발생했습니다.");
       return false;
+    }finally{
+      savingVisitRecord=false;
+      restoreBtn();
     }
   }
 
@@ -2390,16 +2436,32 @@
 
   // ✅ 일과 종료 확인 모달 버튼
   el("end-work-save-and-end").addEventListener("click", async function(){
-    closeEndWorkModal();
-    const saved=await saveActivityRecord();
-    if(saved===false) return;
-    setTimeout(async ()=>{ await _doSaveWorkBoundaryLog("일과 종료",{requireGps:true}); }, 300);
+    if(savingVisitRecord||savingWorkBoundary) return;
+    const restore=setButtonBusy(el("end-work-save-and-end"),true,"저장 후 종료 중...");
+    try{
+      closeEndWorkModal();
+      const saved=await saveActivityRecord({silent:true});
+      if(saved===false) return;
+      savingWorkBoundary=true;
+      await _doSaveWorkBoundaryLog("일과 종료",{requireGps:true,fastGps:true});
+    }finally{
+      savingWorkBoundary=false;
+      restore();
+    }
   });
 
   el("end-work-just-end").addEventListener("click", async function(){
-    closeEndWorkModal();
-    discardCurrentActivitySession();
-    await _doSaveWorkBoundaryLog("일과 종료",{requireGps:true});
+    if(savingWorkBoundary) return;
+    const restore=setButtonBusy(el("end-work-just-end"),true,"일과 종료 중...");
+    savingWorkBoundary=true;
+    try{
+      closeEndWorkModal();
+      discardCurrentActivitySession();
+      await _doSaveWorkBoundaryLog("일과 종료",{requireGps:true,fastGps:true});
+    }finally{
+      savingWorkBoundary=false;
+      restore();
+    }
   });
 
   el("end-work-cancel").addEventListener("click", function(){
