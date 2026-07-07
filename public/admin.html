@@ -381,6 +381,23 @@
     @media(max-width:900px){.month-query-controls{width:100%;}.month-query-controls input[type=month]{flex:1;min-width:170px;}}
 
     /* step28: 활동목적 기타 마지막 / 사유 명칭 상담 형태 변경 */
+
+
+    /* step33: 앱 미사용 기간과 오늘 근무/활동 명단 확인 */
+    .usage-status-grid{display:grid;grid-template-columns:1.15fr .85fr;gap:14px;align-items:stretch;margin:14px 0 16px;}
+    .today-active-panel{border:1px solid #bbf7d0;border-radius:20px;background:#ffffff;box-shadow:0 10px 24px rgba(15,23,42,.06);overflow:hidden;}
+    .today-active-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:14px 16px;background:linear-gradient(135deg,#f0fdf4 0%,#eff6ff 100%);border-bottom:1px solid #e2e8f0;}
+    .today-active-title{font-size:16px;font-weight:900;color:#0f172a;display:flex;align-items:center;gap:7px;}
+    .today-active-sub{margin-top:5px;font-size:12px;line-height:1.5;color:#64748b;font-weight:700;}
+    .today-active-count{min-width:86px;text-align:center;background:#fff;border:1px solid #bbf7d0;border-radius:14px;padding:9px 10px;color:#047857;font-weight:900;}
+    .today-active-count strong{display:block;font-size:22px;line-height:1.1;}
+    .today-active-body{padding:13px 16px;}
+    .today-active-list{display:flex;flex-wrap:wrap;gap:7px;min-height:36px;align-items:center;}
+    .today-active-chip{display:inline-flex;align-items:center;gap:5px;padding:7px 10px;border-radius:999px;background:#ecfdf5;border:1px solid #bbf7d0;color:#047857;font-size:13px;font-weight:900;}
+    .today-active-empty{font-size:13px;font-weight:800;color:#64748b;background:#f8fafc;border:1px dashed #cbd5e1;border-radius:12px;padding:10px 12px;}
+    .usage-mini-note{font-size:11px;font-weight:800;color:#64748b;margin-left:4px;}
+    @media (max-width:900px){.usage-status-grid{grid-template-columns:1fr;}}
+
     /* step18: 활동목적 / 대상자 및 방문 정보 관리 분리 */
 
     /* step30: 관리 카테고리 4개를 2:2 배치로 정리 */
@@ -411,6 +428,22 @@
       .three-col .panel-body{max-height:none;}
     }
 
+    /* step32: 필터 기준 사용자 명단을 팝업형 목록으로 명확하게 표시 */
+    .active-users-modal{position:fixed;inset:0;background:rgba(15,23,42,.52);display:none;align-items:center;justify-content:center;z-index:320;padding:20px;}
+    .active-users-modal.show{display:flex;}
+    .active-users-card{width:min(760px,100%);max-height:86vh;background:#fff;border-radius:24px;box-shadow:0 24px 60px rgba(15,23,42,.3);border:1px solid #e2e8f0;overflow:hidden;display:flex;flex-direction:column;}
+    .active-users-head{padding:16px 18px;border-bottom:1px solid #eef2f7;display:flex;align-items:flex-start;justify-content:space-between;gap:12px;background:linear-gradient(135deg,#fff7ed 0%,#eff6ff 100%);}
+    .active-users-title{margin:0;font-size:18px;font-weight:900;color:#0f172a;letter-spacing:-.02em;}
+    .active-users-sub{margin-top:5px;font-size:13px;color:#64748b;line-height:1.55;font-weight:700;}
+    .active-users-body{padding:14px 18px;overflow:auto;}
+    .active-users-toolbar{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;padding:12px 18px;border-top:1px solid #eef2f7;background:#f8fafc;}
+    .active-users-table{width:100%;border-collapse:separate;border-spacing:0;min-width:0;}
+    .active-users-table th{position:sticky;top:0;background:#f8fafc;color:#334155;font-size:12px;font-weight:900;text-align:left;padding:10px 9px;border-bottom:1px solid #e2e8f0;white-space:nowrap;}
+    .active-users-table td{font-size:13px;padding:10px 9px;border-bottom:1px solid #edf2f7;vertical-align:middle;}
+    .active-users-name{font-weight:900;color:#0f172a;}
+    .active-users-empty{padding:22px;text-align:center;color:#64748b;background:#f8fafc;border:1px dashed #cbd5e1;border-radius:16px;font-weight:800;}
+    .summary-card.clickable .summary-sub:after{content:" · 명단 보기";color:#2563eb;font-weight:900;}
+
 </style>
   <!-- break time display v32: 4시간 이상 휴게시간/실근무시간 표시 -->
 </head>
@@ -437,7 +470,8 @@
     </section>
 
 
-    <!-- step21: 앱 미사용자 확인을 상단으로 이동 -->
+    <!-- step33: 앱 미사용자와 오늘 근무/활동자 확인 -->
+    <div class="usage-status-grid step33">
 <!-- 앱 미사용자 확인 -->
     <section class="inactive-user-panel step20 step21" id="inactive-user-panel">
       <div class="inactive-user-head">
@@ -455,6 +489,24 @@
         </div>
       </div>
     </section>
+
+    <!-- 오늘 근무/활동자 확인 -->
+    <section class="today-active-panel step33" id="today-active-panel">
+      <div class="today-active-head">
+        <div>
+          <div class="today-active-title">✅ 오늘 근무·활동자</div>
+          <div id="today-active-period" class="today-active-sub">오늘 일과 시작 또는 활동기록이 있는 사람을 보여줍니다.</div>
+        </div>
+        <div class="today-active-count"><strong id="today-active-count">0</strong><span>명</span></div>
+      </div>
+      <div class="today-active-body">
+        <div id="today-active-list" class="today-active-list"></div>
+        <div class="inactive-user-actions">
+          <button id="copy-today-active-users-btn" class="btn btn-soft btn-sm" type="button">오늘 명단 복사</button>
+        </div>
+      </div>
+    </section>
+    </div>
 
     <!-- ── 요약 카드 6개 ── -->
     <section class="summary-grid">
@@ -492,7 +544,7 @@
         </div>
       </div>
 
-      <div class="summary-card clickable" id="active-users-card" role="button" tabindex="0" title="클릭하면 현재 필터 기준 사용자 명단을 확인합니다.">
+      <div class="summary-card clickable step32" id="active-users-card" role="button" tabindex="0" title="클릭하면 현재 필터 기준 사용자 명단을 확인합니다.">
         <div class="summary-head">
           <div class="summary-title">필터 기준 사용자 수</div>
           <div class="summary-icon icon-orange">👥</div>
@@ -912,6 +964,26 @@
       <div class="modal-actions">
         <button id="delete-from-modal-btn" class="btn btn-danger" type="button">삭제</button>
         <button id="save-edit-btn" class="btn btn-primary" type="button">수정 저장</button>
+      </div>
+    </div>
+  </div>
+
+
+
+  <!-- step32: 필터 기준 사용자 명단 모달 -->
+  <div id="active-users-modal" class="active-users-modal" aria-hidden="true">
+    <div class="active-users-card" role="dialog" aria-modal="true" aria-labelledby="active-users-modal-title">
+      <div class="active-users-head">
+        <div>
+          <h3 id="active-users-modal-title" class="active-users-title">👥 필터 기준 사용자 명단</h3>
+          <div id="active-users-modal-sub" class="active-users-sub">현재 필터에 포함된 사용자 명단입니다.</div>
+        </div>
+        <button id="close-active-users-modal-btn" class="btn btn-soft btn-sm" type="button">닫기</button>
+      </div>
+      <div class="active-users-body" id="active-users-modal-body"></div>
+      <div class="active-users-toolbar">
+        <button id="copy-active-users-btn" class="btn btn-ghost btn-sm" type="button">명단 복사</button>
+        <button id="close-active-users-modal-btn2" class="btn btn-soft btn-sm" type="button">닫기</button>
       </div>
     </div>
   </div>
@@ -1877,6 +1949,7 @@
       renderTable();
       renderMemberList(); // 필터 변경 시 회원 목록도 갱신
       renderInactiveUsers();
+      renderTodayActiveUsers();
     }
     function resetFilters(){
       el("filter-start-date").value=""; el("filter-end-date").value="";
@@ -1902,6 +1975,94 @@
 
 
 
+    /* step33: 조회 기준과 오늘 근무/활동자 확인 보조 */
+    function getLoadedRangeEndDate(){
+      if(state.queryAll) return new Date();
+      if(state.queryMonth){
+        const parts=state.queryMonth.split("-");
+        const y=Number(parts[0]), m=Number(parts[1]);
+        if(y&&m){
+          const end=new Date(y,m,0,23,59,59,999);
+          const today=new Date();
+          return end>today ? today : end;
+        }
+      }
+      return new Date();
+    }
+    function diffDaysFromDate(dateValue, endDate){
+      const d=toDate(dateValue);
+      const end=toDate(endDate)||new Date();
+      if(!d) return null;
+      const a=new Date(d.getFullYear(),d.getMonth(),d.getDate()).getTime();
+      const b=new Date(end.getFullYear(),end.getMonth(),end.getDate()).getTime();
+      return Math.max(0, Math.floor((b-a)/86400000));
+    }
+    function getLastMeaningfulLogDateInLoadedRange(name){
+      const logs=(state.allLogs||[]).filter(log=>getLogUserName(log)===name);
+      let last=null;
+      logs.forEach(log=>{
+        if(isStartLog(log) || isEndLog(log) || isActivityLog(log)){
+          const d=getLogDateTime(log);
+          if(d && (!last || d>last)) last=d;
+        }
+      });
+      return last;
+    }
+    function getTodayActiveUserRows(){
+      const today=getTodayKey();
+      const todayLogs=(state.allLogs||[]).filter(log=>dateKey(getLogDateTime(log))===today);
+      const map=new Map();
+      todayLogs.forEach(log=>{
+        const name=getLogUserName(log);
+        if(!name) return;
+        if(!map.has(name)) map.set(name,{name,startCount:0,activityCount:0,visitCount:0,workMs:0,activityMs:0});
+        const row=map.get(name);
+        if(isStartLog(log)) row.startCount++;
+        if(isVisitCaseLog(log)) row.visitCount++;
+        if(isActivityLog(log)){ row.activityCount++; row.activityMs += getDurationMs(log); }
+      });
+      const boundaryMap=calcBoundaryPerUser(todayLogs);
+      map.forEach(row=>{ row.workMs=boundaryMap.get(row.name)||0; });
+      return Array.from(map.values())
+        .filter(row=>row.startCount>0 || row.activityCount>0)
+        .sort((a,b)=>a.name.localeCompare(b.name,"ko"));
+    }
+    function renderTodayActiveUsers(){
+      const listEl=el("today-active-list");
+      const countEl=el("today-active-count");
+      const periodEl=el("today-active-period");
+      if(!listEl || !countEl || !periodEl) return;
+      const rows=getTodayActiveUserRows();
+      countEl.textContent=String(rows.length);
+      periodEl.textContent=`${getTodayKey()} 기준 · 일과 시작 또는 활동기록이 있는 사람`;
+      if(!rows.length){
+        listEl.innerHTML=`<div class="today-active-empty">오늘 일과 시작 또는 활동기록이 있는 사람이 없습니다.</div>`;
+        return;
+      }
+      listEl.innerHTML=rows.map(row=>`
+        <span class="today-active-chip">
+          ${safeEscape(row.name)}
+          <small class="usage-mini-note">시작 ${row.startCount} · 활동 ${row.activityCount} · 근무 ${safeEscape(formatDuration(row.workMs))}</small>
+        </span>
+      `).join("");
+    }
+    async function copyTodayActiveUsers(){
+      const rows=getTodayActiveUserRows();
+      const lines=[];
+      lines.push(`[${getTodayKey()} 오늘 근무·활동자 ${rows.length}명]`);
+      lines.push("번호	이름	일과시작	활동기록	방문기록	근무시간	활동시간");
+      if(rows.length){
+        rows.forEach((row,idx)=>{
+          lines.push(`${idx+1}	${row.name}	${row.startCount}	${row.activityCount}	${row.visitCount}	${formatDuration(row.workMs)}	${formatDuration(row.activityMs)}`);
+        });
+      }else{
+        lines.push("오늘 일과 시작 또는 활동기록이 있는 사람이 없습니다.");
+      }
+      const text=lines.join("\n");
+      try{ await navigator.clipboard.writeText(text); alert("오늘 근무·활동자 명단을 복사했습니다."); }
+      catch(err){ prompt("아래 명단을 복사하세요.", text); }
+    }
+
     /* step22: 앱 미사용자 두 분류 표시
        1) 완전 미사용자: 조회 범위 기록 없음
        2) 활동 없음 대상자: 기록은 있으나 근무 0시간 + 활동 0시간
@@ -1918,12 +2079,17 @@
 
       const noRecordUsers = [];
       const zeroActivityUsers = [];
+      const rangeEnd = getLoadedRangeEndDate();
 
       registered.forEach(name => {
         const userLogs = state.allLogs.filter(log => getLogUserName(log) === name);
 
         if(!userLogs.length){
-          noRecordUsers.push(name);
+          noRecordUsers.push({
+            name,
+            lastDateText: "조회 범위 기록 없음",
+            gapText: state.queryAll ? "전체 기간 기록 없음" : `${getLoadedRangeLabel()} 기록 없음`
+          });
           return;
         }
 
@@ -1931,17 +2097,21 @@
         const sessionMs = sessionMap.get(name) || 0;
 
         if(boundaryMs <= 0 && sessionMs <= 0){
+          const lastDate=getLastMeaningfulLogDateInLoadedRange(name);
+          const gap=diffDaysFromDate(lastDate, rangeEnd);
           zeroActivityUsers.push({
             name,
             logCount: userLogs.length,
             workText: formatDuration(boundaryMs),
-            activityText: formatDuration(sessionMs)
+            activityText: formatDuration(sessionMs),
+            lastDateText: lastDate ? dateKey(lastDate) : "기록일 확인 불가",
+            gapText: gap==null ? "미사용 기간 확인 불가" : (gap===0 ? "오늘 기록 있음" : `${gap}일 전 마지막 기록`)
           });
         }
       });
 
       return {
-        noRecordUsers: uniqueSorted(noRecordUsers),
+        noRecordUsers: noRecordUsers.sort((a,b)=>a.name.localeCompare(b.name,"ko")),
         zeroActivityUsers: zeroActivityUsers.sort((a,b)=>a.name.localeCompare(b.name,"ko"))
       };
     }
@@ -1949,7 +2119,7 @@
     function getInactiveUsersForLoadedRange(){
       const groups = getInactiveUserGroupsForLoadedRange();
       return [
-        ...groups.noRecordUsers,
+        ...groups.noRecordUsers.map(v => v.name),
         ...groups.zeroActivityUsers.map(v => v.name)
       ];
     }
@@ -1979,7 +2149,12 @@
               ① 완전 미사용자 ${noRecordUsers.length}명
             </div>
             <div style="display:flex;flex-wrap:wrap;gap:7px;">
-              ${noRecordUsers.map(name=>`<span class="inactive-user-chip">${safeEscape(name)}</span>`).join("")}
+              ${noRecordUsers.map(item=>`
+                <span class="inactive-user-chip">
+                  ${safeEscape(item.name)}
+                  <small style="font-size:11px;font-weight:800;opacity:.8;">· ${safeEscape(item.gapText)}</small>
+                </span>
+              `).join("")}
             </div>
           </div>
         `
@@ -2000,7 +2175,7 @@
                 <span class="inactive-user-chip" style="background:#eff6ff;border-color:#bfdbfe;color:#1d4ed8;">
                   ${safeEscape(item.name)}
                   <small style="font-size:11px;font-weight:800;opacity:.8;">
-                    · 근무 ${safeEscape(item.workText)} / 활동 ${safeEscape(item.activityText)}
+                    · 근무 ${safeEscape(item.workText)} / 활동 ${safeEscape(item.activityText)} / ${safeEscape(item.gapText)}
                   </small>
                 </span>
               `).join("")}
@@ -2021,15 +2196,17 @@
         const { noRecordUsers, zeroActivityUsers } = getInactiveUserGroupsForLoadedRange();
         const rows = [];
 
-        noRecordUsers.forEach(name=>{
+        noRecordUsers.forEach(item=>{
           rows.push({
             "번호": rows.length + 1,
             "조회 기준": getLoadedRangeLabel(),
             "구분": "완전 미사용자",
-            "대상자": name,
+            "대상자": item.name,
             "기록 수": 0,
             "근무시간": "0초",
             "활동시간": "0초",
+            "마지막 기록일": item.lastDateText || "조회 범위 기록 없음",
+            "미사용 상태": item.gapText || "조회 범위 기록 없음",
             "비고": "현재 조회 범위 기록 없음"
           });
         });
@@ -2043,6 +2220,8 @@
             "기록 수": item.logCount,
             "근무시간": item.workText,
             "활동시간": item.activityText,
+            "마지막 기록일": item.lastDateText || "-",
+            "미사용 상태": item.gapText || "-",
             "비고": "기록은 있으나 근무시간과 활동시간이 0"
           });
         });
@@ -2064,7 +2243,7 @@
         const ws = XLSX.utils.json_to_sheet(rows);
         ws["!cols"] = [
           {wch:8}, {wch:16}, {wch:18}, {wch:18},
-          {wch:10}, {wch:14}, {wch:14}, {wch:34}
+          {wch:10}, {wch:14}, {wch:14}, {wch:16}, {wch:22}, {wch:34}
         ];
         XLSX.utils.book_append_sheet(wb, ws, "미사용자_활동없음");
         XLSX.writeFile(wb, `미사용자_활동없음_${getLoadedRangeLabel()}.xlsx`);
@@ -2080,12 +2259,12 @@
       lines.push(`[${getLoadedRangeLabel()} 앱 사용 확인]`);
       lines.push("");
       lines.push(`① 완전 미사용자 ${noRecordUsers.length}명`);
-      lines.push(noRecordUsers.length ? noRecordUsers.join(", ") : "없음");
+      lines.push(noRecordUsers.length ? noRecordUsers.map(v=>`${v.name}(${v.gapText})`).join(", ") : "없음");
       lines.push("");
       lines.push(`② 활동 없음 대상자 ${zeroActivityUsers.length}명`);
       lines.push(
         zeroActivityUsers.length
-          ? zeroActivityUsers.map(v=>`${v.name}(근무 ${v.workText}, 활동 ${v.activityText})`).join(", ")
+          ? zeroActivityUsers.map(v=>`${v.name}(근무 ${v.workText}, 활동 ${v.activityText}, ${v.gapText})`).join(", ")
           : "없음"
       );
 
@@ -2149,26 +2328,102 @@
       }
     }
 
-    // step31: 필터 기준 사용자 수 카드를 눌렀을 때 명단 확인
+    // step33: 필터 기준 설명을 더 명확하게 표시
+    function getCurrentFilterSummaryText(){
+      const parts=[];
+      const base=state.queryAll ? "전체 기간" : `${getLoadedRangeLabel()} 조회`;
+      parts.push(base);
+      [["시작",el("filter-start-date")?.value],["종료",el("filter-end-date")?.value],["사용자",el("filter-user")?.value],["활동목적",el("filter-activity")?.value],["주거 형태",el("filter-housing-type")?.value],["상담 형태",el("filter-visit-reason")?.value],["유형",el("filter-type")?.value],["검색",el("filter-keyword")?.value]].forEach(([label,value])=>{
+        value=normalizeText(value);
+        if(value) parts.push(`${label}: ${value}`);
+      });
+      return parts.join(" · ");
+    }
+
+    // step32: 필터 기준 사용자 수 카드를 눌렀을 때 명단을 팝업형 목록으로 명확하게 표시
     function getFilteredActiveUserNames(){
       return uniqueSorted(state.filteredLogs.map(getLogUserName).filter(Boolean));
     }
 
-    async function showFilteredActiveUsers(){
+    function getFilteredActiveUserRows(){
       const users=getFilteredActiveUserNames();
-      const label=getLoadedRangeLabel ? getLoadedRangeLabel() : "현재 조회 범위";
+      const boundaryMap=calcBoundaryPerUser(state.filteredLogs||[]);
+      const sessionMap=calcSessionPerUser(state.filteredLogs||[]);
+      return users.map(name=>{
+        const userLogs=(state.filteredLogs||[]).filter(log=>getLogUserName(log)===name);
+        return {
+          name,
+          logCount:userLogs.length,
+          workMs:boundaryMap.get(name)||0,
+          activityMs:sessionMap.get(name)||0
+        };
+      });
+    }
+
+    function getFilteredActiveUsersText(){
+      const rows=getFilteredActiveUserRows();
+      const label=(typeof getLoadedRangeLabel==="function") ? getLoadedRangeLabel() : "현재 조회 범위";
       const lines=[];
-      lines.push(`[${label} 필터 기준 사용자 ${users.length}명]`);
-      lines.push("");
-      if(users.length){
-        users.forEach((name,idx)=>lines.push(`${idx+1}. ${name}`));
+      lines.push(`[필터 기준 사용자 ${rows.length}명]`);
+      lines.push(getCurrentFilterSummaryText());
+      lines.push("번호	이름	기록 수	근무시간	활동시간");
+      if(rows.length){
+        rows.forEach((row,idx)=>{
+          lines.push(`${idx+1}	${row.name}	${row.logCount}	${formatDuration(row.workMs)}	${formatDuration(row.activityMs)}`);
+        });
       }else{
         lines.push("현재 필터 조건에 포함되는 사용자가 없습니다.");
       }
-      const text=lines.join("\n");
+      return lines.join("\n");
+    }
+
+    function closeFilteredActiveUsers(){
+      const modal=el("active-users-modal");
+      if(modal){ modal.classList.remove("show"); modal.setAttribute("aria-hidden","true"); }
+    }
+
+    function showFilteredActiveUsers(){
+      const rows=getFilteredActiveUserRows();
+      const label=(typeof getLoadedRangeLabel==="function") ? getLoadedRangeLabel() : "현재 조회 범위";
+      const modal=el("active-users-modal");
+      const sub=el("active-users-modal-sub");
+      const body=el("active-users-modal-body");
+      if(!modal || !body){
+        alert(getFilteredActiveUsersText());
+        return;
+      }
+      if(sub) sub.textContent=`${getCurrentFilterSummaryText()} · 사용자 ${rows.length}명`;
+      if(!rows.length){
+        body.innerHTML=`<div class="active-users-empty">현재 필터 조건에 포함되는 사용자가 없습니다.</div>`;
+      }else{
+        body.innerHTML=`
+          <table class="active-users-table">
+            <thead>
+              <tr><th>번호</th><th>이름</th><th>기록 수</th><th>근무시간</th><th>활동시간</th></tr>
+            </thead>
+            <tbody>
+              ${rows.map((row,idx)=>`
+                <tr>
+                  <td>${idx+1}</td>
+                  <td class="active-users-name">${safeEscape(row.name)}</td>
+                  <td>${row.logCount}건</td>
+                  <td>${safeEscape(formatDuration(row.workMs))}</td>
+                  <td>${safeEscape(formatDuration(row.activityMs))}</td>
+                </tr>
+              `).join("")}
+            </tbody>
+          </table>
+        `;
+      }
+      modal.classList.add("show");
+      modal.setAttribute("aria-hidden","false");
+    }
+
+    async function copyFilteredActiveUsers(){
+      const text=getFilteredActiveUsersText();
       try{
         await navigator.clipboard.writeText(text);
-        alert(text + "\n\n명단을 클립보드에 복사했습니다.");
+        alert("필터 기준 사용자 명단을 복사했습니다.");
       }catch(err){
         prompt("현재 필터 기준 사용자 명단입니다. 필요하면 복사하세요.", text);
       }
@@ -2688,10 +2943,15 @@
 
     if(el("copy-inactive-users-btn")) el("copy-inactive-users-btn").addEventListener("click",copyInactiveUsers);
     if(el("export-inactive-users-btn")) el("export-inactive-users-btn").addEventListener("click",exportInactiveUsersExcel);
+    if(el("copy-today-active-users-btn")) el("copy-today-active-users-btn").addEventListener("click",copyTodayActiveUsers);
     if(el("active-users-card")){
       el("active-users-card").addEventListener("click",showFilteredActiveUsers);
       el("active-users-card").addEventListener("keydown",function(e){ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); showFilteredActiveUsers(); } });
     }
+    if(el("copy-active-users-btn")) el("copy-active-users-btn").addEventListener("click",copyFilteredActiveUsers);
+    if(el("close-active-users-modal-btn")) el("close-active-users-modal-btn").addEventListener("click",closeFilteredActiveUsers);
+    if(el("close-active-users-modal-btn2")) el("close-active-users-modal-btn2").addEventListener("click",closeFilteredActiveUsers);
+    if(el("active-users-modal")) el("active-users-modal").addEventListener("click",function(e){ if(e.target===this) closeFilteredActiveUsers(); });
     window.addEventListener("load",function(){ state.queryMonth=monthKey(new Date()); setMonthInput(state.queryMonth); loadAllData({all:false}); });
   </script>
 

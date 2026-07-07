@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>노인돌봄 코디네이터 활동 기록</title>
+  <!-- step34: 근무 시작 전 활동시간 자동 초기화 -->
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <style>
@@ -826,7 +827,25 @@
 
   /* ── localStorage ── */
   function saveSessionToStorage(){ if(currentSession) localStorage.setItem(LS_SESSION,JSON.stringify(currentSession)); else localStorage.removeItem(LS_SESSION); }
-  function loadSessionFromStorage(){ try{ const r=localStorage.getItem(LS_SESSION); if(!r) return null; const s=JSON.parse(r); if(s.userName&&s.userName!==currentUserName) return null; return s; }catch(e){ return null; } }
+  // step34: 이전에 저장하지 못한 활동 세션이 며칠 뒤까지 이어지는 문제 방지
+  function loadSessionFromStorage(){
+    try{
+      const r=localStorage.getItem(LS_SESSION);
+      if(!r) return null;
+      const s=JSON.parse(r);
+      if(s.userName&&s.userName!==currentUserName) return null;
+      if(!s.startedAt || isNaN(Number(s.startedAt))) return null;
+      // 활동시간은 당일 근무 중에만 이어지도록 제한합니다.
+      if(formatDateKey(Number(s.startedAt)) !== formatDateKey(new Date())){
+        localStorage.removeItem(LS_SESSION);
+        return null;
+      }
+      return s;
+    }catch(e){
+      localStorage.removeItem(LS_SESSION);
+      return null;
+    }
+  }
   function saveMemoToStorage(){ const v=normalizeText(el("memo-input").value); if(v) localStorage.setItem(LS_MEMO,v); else localStorage.removeItem(LS_MEMO); }
   function loadMemoFromStorage(){ return localStorage.getItem(LS_MEMO)||""; }
   function saveGpsToStorage(gps){ if(gps) localStorage.setItem(LS_GPS,JSON.stringify(gps)); }
@@ -1570,7 +1589,8 @@
     currentUserName=finalUser; localStorage.setItem(LS_LAST_USER,currentUserName);
     updateMainUserUi(); showScreen("main");
     const saved=loadSessionFromStorage(); if(saved) currentSession=saved;
-    el("memo-input").value=loadMemoFromStorage();
+    enforceActivitySessionWorkState();
+    el("memo-input").value=currentSession ? loadMemoFromStorage() : "";
     const savedGps=loadGpsFromStorage(); if(savedGps) lastGps=savedGps;
     renderActivityChips(); updateActivityAreaState(); updateEtcInputVisibility(); updateSubActivityVisibility(); updateCurrentElapsedUi();
     updateTodaySummary(); renderCalendar(); renderHistory();
@@ -1728,8 +1748,18 @@
   function startSessionTicker(){ stopSessionTicker(); sessionTicker=setInterval(function(){ updateCurrentElapsedUi(); },1000); }
   function stopSessionTicker(){ if(sessionTicker) clearInterval(sessionTicker); sessionTicker=null; }
   function updateCurrentElapsedUi(){
-    if(!currentSession||!currentSession.startedAt){ el("stat-current-elapsed").textContent="-"; return; }
-    el("stat-current-elapsed").textContent=formatDuration(Date.now()-currentSession.startedAt);
+    const node=el("stat-current-elapsed");
+    if(!node) return;
+    if(!currentSession||!currentSession.startedAt){ node.textContent="0초"; return; }
+    // step34: 근무 시작 상태가 아니거나 날짜가 지난 세션은 활동시간으로 표시하지 않습니다.
+    const startedAt=Number(currentSession.startedAt||0);
+    const isTodaySession=startedAt && formatDateKey(startedAt)===formatDateKey(new Date());
+    if(!currentUserName || getTodayWorkStatus()!=="started" || !isTodaySession){
+      clearCurrentActivitySessionSilently();
+      node.textContent="0초";
+      return;
+    }
+    node.textContent=formatDuration(Date.now()-startedAt);
   }
 
   /* ── GPS ── */
@@ -1904,6 +1934,33 @@
     el("end-work-modal").classList.remove("show");
   }
 
+  // step34: 활동시간은 근무 시작 상태에서만 유지합니다. 근무가 아니면 조용히 초기화합니다.
+  function clearCurrentActivitySessionSilently(){
+    currentSession=null;
+    etcText="";
+    resetSubActivitySelections();
+    saveSessionToStorage();
+    localStorage.removeItem(LS_MEMO);
+    if(el("memo-input")) el("memo-input").value="";
+    renderActivityChips();
+    updateActivityAreaState();
+    updateEtcInputVisibility();
+    updateSubActivityVisibility();
+    updateCurrentElapsedUi();
+  }
+
+  function enforceActivitySessionWorkState(){
+    if(!currentSession) return false;
+    const status=getTodayWorkStatus();
+    const startedAt=Number(currentSession.startedAt||0);
+    const isTodaySession=startedAt && formatDateKey(startedAt)===formatDateKey(new Date());
+    if(!currentUserName || status!=="started" || !isTodaySession){
+      clearCurrentActivitySessionSilently();
+      return true;
+    }
+    return false;
+  }
+
   // step30: 방문기록 저장을 누르지 않은 활동 세션을 안전하게 종료합니다.
   // 이 함수는 방문기록을 자동 저장하지 않고 활동시간 누적만 멈춥니다.
   function discardCurrentActivitySession(){
@@ -1923,6 +1980,8 @@
   async function saveWorkBoundaryLog(type){
     if(savingWorkBoundary) return;
     if(isRapidDuplicateClick()) return;
+    if(type==="일과 시작") clearCurrentActivitySessionSilently();
+    else enforceActivitySessionWorkState();
     if(!currentUserName){ alert("사용자를 먼저 선택해주세요."); return; }
     const status=getTodayWorkStatus();
     if(type==="일과 시작"&&status==="started"){ alert("이미 일과가 시작되어 있습니다."); return; }
@@ -1978,6 +2037,7 @@
     if(options.autoEnded){ payload.autoEnded=true; payload.autoEndedReason="selected-work-hours"; }
     try{
       await db.collection("attendanceLogs").add(payload);
+      if(type==="일과 종료") clearCurrentActivitySessionSilently();
       if(freshGps) await saveGpsCheckSnapshot(type==="일과 시작"?"work-start":"work-end",freshGps);
       allLogs=allLogs.filter(l=>l.id!=="__temp__");
       await reloadMainData();
@@ -2043,9 +2103,12 @@
   }
 
   function updateVisitActivitySession(){
-    if(!currentUserName) return;
+    if(!currentUserName){ clearCurrentActivitySessionSilently(); return; }
     const status=getTodayWorkStatus();
-    if(status!=="started") return;
+    if(status!=="started"){
+      if(currentSession) clearCurrentActivitySessionSilently();
+      return;
+    }
     const purposes=getCheckedValues("visit-purpose");
     if(purposes.length){
       if(!currentSession || !currentSession.startedAt){
@@ -2054,6 +2117,9 @@
         currentSession.activities=[...purposes];
       }
       saveSessionToStorage();
+    }else if(currentSession){
+      clearCurrentActivitySessionSilently();
+      return;
     }
     updateCurrentElapsedUi();
   }
@@ -2398,7 +2464,8 @@
       if(recent && allNames.includes(recent)){
         currentUserName=recent; updateMainUserUi(); showScreen("main");
         const saved=loadSessionFromStorage(); if(saved) currentSession=saved;
-        el("memo-input").value=loadMemoFromStorage();
+        enforceActivitySessionWorkState();
+        el("memo-input").value=currentSession ? loadMemoFromStorage() : "";
         const savedGps=loadGpsFromStorage(); if(savedGps) lastGps=savedGps;
         renderActivityChips(); updateActivityAreaState(); updateBoundaryBtnState();
         updateEtcInputVisibility(); updateSubActivityVisibility(); updateCurrentElapsedUi();
