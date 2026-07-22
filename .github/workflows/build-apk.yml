@@ -62,14 +62,19 @@ jobs:
 
       - name: Fix Gradle SDK and app version
         run: |
+          yes | sdkmanager --licenses >/dev/null || true
+          sdkmanager "platforms;android-36" "build-tools;36.0.0"
           cd android
           sed -i 's|distributionUrl=.*|distributionUrl=https\://services.gradle.org/distributions/gradle-8.4-bin.zip|g' gradle/wrapper/gradle-wrapper.properties
           grep -q '^networkTimeout=' gradle/wrapper/gradle-wrapper.properties && sed -i 's/networkTimeout=.*/networkTimeout=600000/' gradle/wrapper/gradle-wrapper.properties || echo 'networkTimeout=600000' >> gradle/wrapper/gradle-wrapper.properties
+          echo 'android.suppressUnsupportedCompileSdk=36' >> gradle.properties
           sed -i "s|classpath 'com.android.tools.build:gradle:8.0.0'|classpath 'com.android.tools.build:gradle:8.1.4'|g" build.gradle
-          sed -i 's/compileSdkVersion = .*/compileSdkVersion = 35/' variables.gradle
-          sed -i 's/targetSdkVersion = .*/targetSdkVersion = 35/' variables.gradle
-          sed -i -E 's/versionCode [0-9]+/versionCode 47/' app/build.gradle
-          sed -i -E 's/versionName "[^"]*"/versionName "5.7"/' app/build.gradle
+          sed -i 's/compileSdkVersion = .*/compileSdkVersion = 36/' variables.gradle
+          sed -i 's/targetSdkVersion = .*/targetSdkVersion = 36/' variables.gradle
+          sed -i -E 's/versionCode [0-9]+/versionCode 48/' app/build.gradle
+          sed -i -E 's/versionName "[^"]*"/versionName "5.8"/' app/build.gradle
+          echo "Android SDK versions"
+          grep -n "compileSdkVersion\|targetSdkVersion" variables.gradle
           echo "Android app version"
           grep -n "versionCode\|versionName" app/build.gradle
 
