@@ -25,6 +25,9 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
       - name: Prepare www folder
         run: |
           mkdir -p www
@@ -62,8 +65,16 @@ jobs:
 
       - name: Fix Gradle SDK and app version
         run: |
-          yes | sdkmanager --licenses >/dev/null || true
-          sdkmanager "platforms;android-36" "build-tools;36.0.0"
+          SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          if [ ! -x "$SDKMANAGER" ]; then
+            SDKMANAGER="$(find "$ANDROID_HOME" -path '*/cmdline-tools/*/bin/sdkmanager' | head -n 1)"
+          fi
+          if [ -z "$SDKMANAGER" ]; then
+            echo "sdkmanager not found"
+            exit 1
+          fi
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" "platforms;android-36" "build-tools;36.0.0"
           cd android
           sed -i 's|distributionUrl=.*|distributionUrl=https\://services.gradle.org/distributions/gradle-8.4-bin.zip|g' gradle/wrapper/gradle-wrapper.properties
           grep -q '^networkTimeout=' gradle/wrapper/gradle-wrapper.properties && sed -i 's/networkTimeout=.*/networkTimeout=600000/' gradle/wrapper/gradle-wrapper.properties || echo 'networkTimeout=600000' >> gradle/wrapper/gradle-wrapper.properties
