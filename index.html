@@ -822,6 +822,7 @@
   let savingVisitRecord = false;
   let lastSaveClickAt = 0;
   let lastGpsErrorMessage = "";
+  let lastGpsErrorCode = "";
   let etcText = ""; // ✅ 기타 입력 내용
 
   let calYear = new Date().getFullYear();
@@ -1788,34 +1789,70 @@
     return err.message || "위치 정보를 가져오지 못했습니다.";
   }
 
+  function getGpsFailureCode(err){
+    if(!navigator.geolocation) return "unsupported";
+    if(!err) return "unknown";
+    if(err.code===1) return "permission-denied";
+    if(err.code===2) return "position-unavailable";
+    if(err.code===3) return "timeout";
+    return "unknown";
+  }
+
   function requestGpsSingle(options={}){
     const timeout=Number(options.timeout)||30000;
     const enableHighAccuracy=options.enableHighAccuracy!==false;
-    const maximumAge=Number(options.maximumAge)||0;
+    // 근태/방문 기록에는 브라우저 캐시 위치를 허용하지 않습니다.
+    const maxPositionAgeMs=Math.max(0,Number(options.maxPositionAgeMs)||30000);
     lastGpsErrorMessage="";
+    lastGpsErrorCode="";
     return new Promise(resolve=>{
-      if(!navigator.geolocation){ lastGpsErrorMessage=getGpsErrorMessage(null); resolve(null); return; }
+      if(!navigator.geolocation){
+        lastGpsErrorCode=getGpsFailureCode(null);
+        lastGpsErrorMessage=getGpsErrorMessage(null);
+        resolve(null); return;
+      }
       navigator.geolocation.getCurrentPosition(
         pos=>{
-          const gps={lat:pos.coords.latitude,lng:pos.coords.longitude,accuracy:pos.coords.accuracy,capturedAt:Date.now()};
-          lastGps=gps; saveGpsToStorage(gps); lastGpsErrorMessage=""; resolve(gps);
+          // Date.now()로 새 위치처럼 덮지 않고 브라우저가 제공한 실제 취득시각을 사용합니다.
+          const capturedAt=Number(pos.timestamp)||Date.now();
+          const positionAgeMs=Math.max(0,Date.now()-capturedAt);
+          if(maxPositionAgeMs>0 && positionAgeMs>maxPositionAgeMs){
+            lastGpsErrorCode="stale-position";
+            lastGpsErrorMessage=`기기에서 약 ${Math.round(positionAgeMs/1000)}초 전 위치를 반환하여 현재 위치로 사용하지 않았습니다.`;
+            resolve(null); return;
+          }
+          const gps={lat:pos.coords.latitude,lng:pos.coords.longitude,accuracy:pos.coords.accuracy,capturedAt,positionAgeMs};
+          lastGps=gps; saveGpsToStorage(gps); lastGpsErrorMessage=""; lastGpsErrorCode=""; resolve(gps);
         },
-        err=>{ console.warn("GPS 오류:",err); lastGpsErrorMessage=getGpsErrorMessage(err); resolve(null); },
-        {enableHighAccuracy,timeout,maximumAge}
+        err=>{
+          console.warn("GPS 오류:",err);
+          lastGpsErrorCode=getGpsFailureCode(err);
+          lastGpsErrorMessage=getGpsErrorMessage(err);
+          resolve(null);
+        },
+        // maximumAge:0 = 매 기록 시점에 새 위치를 요청. 과거 캐시 허용 안 함.
+        {enableHighAccuracy,timeout,maximumAge:0}
       );
     });
   }
 
   async function requestGpsOnce(options={}){
-    // step31: 저장 버튼 반응이 늦어 중복 클릭되는 문제를 줄이기 위해 빠른 저장 모드 지원
+    // step31 유지: 저장 버튼 반응이 늦어 중복 클릭되는 문제를 줄이기 위해 빠른 저장 모드 지원
     const fast=!!options.fast;
     const timeout=Number(options.timeout)||(fast?6000:30000);
-    const first=await requestGpsSingle({enableHighAccuracy:true,timeout,maximumAge:0});
+    const maxPositionAgeMs=fast?15000:30000;
+    const first=await requestGpsSingle({enableHighAccuracy:true,timeout,maxPositionAgeMs});
     if(first) return first;
-    // 실내에서 고정밀 GPS가 실패하는 경우를 대비해 일반 위치로 한 번 더 시도합니다.
+    // 고정밀 실패 시 일반 위치로 한 번 더 시도하되, 두 번째 시도도 캐시 위치는 허용하지 않습니다.
     const secondTimeout=fast?4000:Math.max(15000,Math.floor(timeout/2));
-    const second=await requestGpsSingle({enableHighAccuracy:false,timeout:secondTimeout,maximumAge:60000});
+    const second=await requestGpsSingle({enableHighAccuracy:false,timeout:secondTimeout,maxPositionAgeMs});
     return second;
+  }
+
+  // 기록에는 이번 저장 과정에서 실제로 취득한 위치만 사용합니다.
+  function selectGpsForRecord(freshGps){
+    if(freshGps) return {gps:freshGps,status:"fresh",usedCached:false};
+    return {gps:null,status:"failed",usedCached:false};
   }
 
   function getGpsSourceText(source){
@@ -1825,9 +1862,13 @@
     return map[source]||source||"GPS 확인";
   }
 
-  async function saveGpsCheckSnapshot(source,gps){
-    if(!gps||!currentUserName) return false;
+  async function saveGpsCheckSnapshot(source,gps,meta={}){
+    if(!currentUserName) return false;
     const now=Date.now();
+    const hasGps=!!(gps&&gps.lat!=null&&gps.lng!=null);
+    const status=meta.status||(hasGps?"fresh":"failed");
+    const failureCode=meta.failureCode||(hasGps?"":(lastGpsErrorCode||"unknown"));
+    const failureReason=meta.failureReason||(hasGps?"":(lastGpsErrorMessage||"위치 정보를 가져오지 못했습니다."));
     try{
       await db.collection("gpsCheckLogs").add({
         userName:currentUserName,
@@ -1836,7 +1877,16 @@
         timestamp:firebase.firestore.FieldValue.serverTimestamp(),
         clientTimeMs:now,
         timeStr:new Date(now).toLocaleString("ko-KR"),
-        lat:gps.lat,lng:gps.lng,accuracy:gps.accuracy??null,capturedAt:gps.capturedAt??now,
+        lat:hasGps?gps.lat:null,
+        lng:hasGps?gps.lng:null,
+        accuracy:hasGps?(gps.accuracy??null):null,
+        capturedAt:hasGps?(gps.capturedAt??null):null,
+        gpsStatus:status,
+        gpsFailureCode:failureCode,
+        gpsFailureReason:failureReason,
+        gpsAttemptedAt:meta.attemptedAt??now,
+        gpsCapturedAt:hasGps?(gps.capturedAt??null):null,
+        gpsUsedCached:!!meta.usedCached,
         workStatus:getTodayWorkStatus()
       });
       return true;
@@ -1848,14 +1898,16 @@
     const helper=el("work-hours-helper");
     const prevHelper=helper?helper.textContent:"";
     if(helper) helper.textContent=`GPS 위치를 확인하고 있습니다. (${getGpsSourceText(source)})`;
+    const attemptedAt=Date.now();
     const gps=await requestGpsOnce({timeout:30000});
     if(helper) helper.textContent=prevHelper;
     updateWorkHoursUi();
     if(!gps){
+      await saveGpsCheckSnapshot(source,null,{status:"failed",attemptedAt});
       if(!silent) alert("GPS를 읽지 못했습니다.\n" + (lastGpsErrorMessage||"휴대폰 위치 권한과 위치 서비스가 켜져 있는지 확인해주세요."));
       return null;
     }
-    await saveGpsCheckSnapshot(source,gps);
+    await saveGpsCheckSnapshot(source,gps,{status:"fresh",attemptedAt});
     if(!silent) alert("GPS 위치를 확인하고 저장했습니다.");
     return gps;
   }
@@ -2021,6 +2073,8 @@
     const workHours=type==="일과 시작"?clampWorkHours(options.workHours):null;
     const autoEndAtMs=type==="일과 시작"?tempNow+(getTotalScheduledMinutesForWorkHours(workHours)*60*1000):null;
     let gpsForSave=null;
+    const gpsAttemptedAt=Date.now();
+    let gpsAttemptStatus="not-attempted", gpsAttemptCode="", gpsAttemptReason="";
 
     // ✅ 일과 시작/종료는 저장 전에 GPS를 먼저 요청합니다.
     // 일과 시작/종료 시 GPS는 조용히 시도하고 관리자페이지에만 기록합니다.
@@ -2030,6 +2084,10 @@
       const prevHelper=helper?helper.textContent:"";
       if(helper) helper.textContent=`${type} 전 GPS 위치를 확인하고 있습니다. 휴대폰 위치 권한을 허용해주세요.`;
       gpsForSave=await requestGpsOnce({timeout:options.fastGps?6000:30000,fast:!!options.fastGps});
+      // 요청 직후 실패 정보를 고정해 이후 UI/타이머가 전역 GPS 상태를 바꿔도 사라지지 않게 합니다.
+      gpsAttemptStatus=gpsForSave?"fresh":"failed";
+      gpsAttemptCode=gpsForSave?"":(lastGpsErrorCode||"unknown");
+      gpsAttemptReason=gpsForSave?"":(lastGpsErrorMessage||"위치 확인 실패");
       if(helper) helper.textContent=prevHelper;
       updateWorkHoursUi();
       if(!gpsForSave && !options.silent && !options.autoEnded){
@@ -2038,19 +2096,34 @@
       }
     }
 
-    const freshGps=gpsForSave|| (isFreshGps(lastGps)?lastGps:null);
+    const gpsChoice=selectGpsForRecord(gpsForSave);
+    const selectedGps=gpsChoice.gps;
+    const gpsStatus=gpsAttemptStatus==="not-attempted"?gpsChoice.status:gpsAttemptStatus;
+    const gpsFailureCode=gpsForSave?"":(gpsAttemptCode||"unknown");
+    const gpsFailureReason=gpsForSave?"":(gpsAttemptReason||"위치 확인 실패");
     const tempLog={id:"__temp__",userName:currentUserName,type:type,activities:type,clientTimeMs:tempNow,timestamp:{seconds:Math.floor(tempNow/1000)}};
     if(type==="일과 시작"){ const wf=buildWorkBreakFields(workHours); Object.assign(tempLog,wf,{autoEndAtMs}); }
     allLogs.unshift(tempLog);
     updateBoundaryBtnState(); updateActivityAreaState(); updateWorkHoursUi(); syncGpsCheckTimer();
     const now=Date.now();
-    const payload={userName:currentUserName,type:type,activities:type,memo:"",timestamp:firebase.firestore.FieldValue.serverTimestamp(),clientTimeMs:now,timeStr:new Date(now).toLocaleString("ko-KR"),lat:freshGps?.lat??null,lng:freshGps?.lng??null,accuracy:freshGps?.accuracy??null};
+    const payload={userName:currentUserName,type:type,activities:type,memo:"",timestamp:firebase.firestore.FieldValue.serverTimestamp(),clientTimeMs:now,timeStr:new Date(now).toLocaleString("ko-KR"),lat:selectedGps?.lat??null,lng:selectedGps?.lng??null,accuracy:selectedGps?.accuracy??null,gpsStatus,gpsSource:type==="일과 시작"?"work-start":"work-end",gpsFailureCode,gpsFailureReason,gpsAttemptedAt,gpsCapturedAt:selectedGps?.capturedAt??null,gpsUsedCached:gpsChoice.usedCached};
     if(type==="일과 시작"){ const wf=buildWorkBreakFields(workHours); Object.assign(payload,wf); payload.autoEndAtMs=now+(getTotalScheduledMinutesForWorkHours(workHours)*60*1000); payload.autoEndAtText=new Date(payload.autoEndAtMs).toLocaleString("ko-KR"); }
     if(options.autoEnded){ payload.autoEnded=true; payload.autoEndedReason="selected-work-hours"; }
     try{
-      await db.collection("attendanceLogs").add(payload);
+      // step65: Firestore update 권한/실행 순서와 무관하게 최초 create에 GPS 감사정보를 원자적으로 포함
+    Object.assign(payload,{
+      gpsStatus:gpsStatus||((selectedGps)?"fresh":"failed"),
+      gpsFailureCode:selectedGps?"":(gpsFailureCode||"unknown"),
+      gpsFailureReason:selectedGps?"":(gpsFailureReason||"위치 확인 실패"),
+      gpsAttemptedAt:gpsAttemptedAt,
+      gpsCapturedAt:selectedGps?.capturedAt??null,
+      gpsUsedCached:false,
+      gpsMetaVersion:"gps-v2",
+      appBuildVersion:"6.0"
+    });
+    await db.collection("attendanceLogs").add(payload);
       if(type==="일과 종료") clearCurrentActivitySessionSilently();
-      if(freshGps) await saveGpsCheckSnapshot(type==="일과 시작"?"work-start":"work-end",freshGps);
+      await saveGpsCheckSnapshot(type==="일과 시작"?"work-start":"work-end",selectedGps,{status:gpsStatus,usedCached:false,failureCode:gpsFailureCode,failureReason:gpsFailureReason,attemptedAt:gpsAttemptedAt});
       allLogs=allLogs.filter(l=>l.id!=="__temp__");
       await reloadMainData();
       syncGpsCheckTimer();
@@ -2259,9 +2332,26 @@
     savingVisitRecord=true;
 
     const now=Date.now();
-    // GPS는 조용히 빠르게 시도하고, 실패해도 참여자 화면에는 안내하지 않고 저장을 계속합니다.
+    // 최신 UX 유지: GPS는 조용히 빠르게 시도하고, 실패해도 참여자 화면의 방문기록 저장은 계속합니다.
+    const gpsAttemptedAt=Date.now();
     let freshGps=null;
-    try{ freshGps=await requestGpsOnce({timeout:6000,fast:true}); if(freshGps) await saveGpsCheckSnapshot("visit-record",freshGps); }catch(e){ freshGps=null; }
+    let visitAttemptCode="", visitAttemptReason="";
+    try{
+      freshGps=await requestGpsOnce({timeout:6000,fast:true});
+      if(!freshGps){
+        visitAttemptCode=lastGpsErrorCode||"unknown";
+        visitAttemptReason=lastGpsErrorMessage||"위치 확인 실패";
+      }
+    }catch(e){
+      freshGps=null;
+      visitAttemptCode="exception";
+      visitAttemptReason=e?.message||"위치 확인 중 오류가 발생했습니다.";
+    }
+    const visitGpsChoice=selectGpsForRecord(freshGps);
+    const gpsForVisit=visitGpsChoice.gps;
+    const visitGpsStatus=visitGpsChoice.status;
+    const visitGpsFailureCode=freshGps?"":(visitAttemptCode||"unknown");
+    const visitGpsFailureReason=freshGps?"":(visitAttemptReason||"위치 확인 실패");
     const purposes=[...data.visitPurposes];
     const purposeDetailText=[];
     if(data.agencySupportDetails?.length) purposeDetailText.push(`유관기관업무지원: ${data.agencySupportDetails.join(", ")}`);
@@ -2283,16 +2373,29 @@
       visitReason:data.visitReason,visitReasonEtc:"",visitPlace:"",visitPurposes:data.visitPurposes,activityPurposes:data.visitPurposes,visitPurposeEtc:data.visitPurposeEtc,
       agencySupportDetails:data.agencySupportDetails,resourceLinkDetails:data.resourceLinkDetails,resourceLinkDetails1:data.resourceLinkDetails1,resourceLinkDetails2:data.resourceLinkDetails2,visitPurposeDetails:data.visitPurposeDetails,purposeDetailText:purposeDetailText.join(" / "),
       visitSummary:data.visitSummary,activityContent:data.visitSummary,
-      lat:freshGps?.lat??lastGps?.lat??null,lng:freshGps?.lng??lastGps?.lng??null,accuracy:freshGps?.accuracy??lastGps?.accuracy??null,
+      lat:gpsForVisit?.lat??null,lng:gpsForVisit?.lng??null,accuracy:gpsForVisit?.accuracy??null,
+      gpsStatus:visitGpsStatus,gpsSource:"visit-record",gpsFailureCode:visitGpsFailureCode,gpsFailureReason:visitGpsFailureReason,gpsAttemptedAt,gpsCapturedAt:gpsForVisit?.capturedAt??null,gpsUsedCached:visitGpsChoice.usedCached,
       activityStartedAt:sessionStartedAt,activitySavedAt:now,activityDurationMs:durationMs,activityDurationText:formatDuration(durationMs),
       activityCheckLat:freshGps?.lat??null,activityCheckLng:freshGps?.lng??null,activityCheckAccuracy:freshGps?.accuracy??null,activityCheckCapturedAt:freshGps?.capturedAt??null,
-      activitySaveLat:freshGps?.lat??lastGps?.lat??null,activitySaveLng:freshGps?.lng??lastGps?.lng??null,activitySaveAccuracy:freshGps?.accuracy??lastGps?.accuracy??null,activitySaveCapturedAt:freshGps?.capturedAt??lastGps?.capturedAt??null,
+      activitySaveLat:gpsForVisit?.lat??null,activitySaveLng:gpsForVisit?.lng??null,activitySaveAccuracy:gpsForVisit?.accuracy??null,activitySaveCapturedAt:gpsForVisit?.capturedAt??null,
       ...buildWorkBreakFields(getCurrentWorkHours()),
       createdAt:firebase.firestore.FieldValue.serverTimestamp(),updatedAt:firebase.firestore.FieldValue.serverTimestamp()
     };
 
     try{
+      // step65: 방문기록도 최초 create에 GPS 감사정보를 원자적으로 포함
+      Object.assign(payload,{
+        gpsStatus:visitGpsStatus||((gpsForVisit)?"fresh":"failed"),
+        gpsFailureCode:gpsForVisit?"":(visitGpsFailureCode||"unknown"),
+        gpsFailureReason:gpsForVisit?"":(visitGpsFailureReason||"위치 확인 실패"),
+        gpsAttemptedAt:gpsAttemptedAt,
+        gpsCapturedAt:gpsForVisit?.capturedAt??null,
+        gpsUsedCached:false,
+        gpsMetaVersion:"gps-v2",
+      appBuildVersion:"6.0"
+      });
       await db.collection("attendanceLogs").add(payload);
+      await saveGpsCheckSnapshot("visit-record",gpsForVisit,{status:visitGpsStatus,usedCached:false,failureCode:visitGpsFailureCode,failureReason:visitGpsFailureReason,attemptedAt:gpsAttemptedAt});
       currentSession=null; etcText=""; resetSubActivitySelections(); saveSessionToStorage(); resetVisitCaseForm();
       updateActivityAreaState(); updateCurrentElapsedUi();
       await reloadMainData();
@@ -2576,5 +2679,9 @@
   window.addEventListener("beforeunload",function(e){ if(currentSession&&currentSession.activities.length){ e.preventDefault(); e.returnValue=""; } });
   document.addEventListener("DOMContentLoaded",initApp);
 </script>
+  <!-- step62 GPS fresh-only: latest index preserved / no cached fallback / real position timestamp -->
+  <!-- step64b GPS audit guarantee: robust function-scoped patch -->
+  <!-- step65 GPS atomic audit: metadata in initial Firestore create / no post-create merge -->
+  <!-- release 6.0 / API 36 / GPS fresh-only audit -->
 </body>
 </html>
