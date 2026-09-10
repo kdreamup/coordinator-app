@@ -90,7 +90,7 @@ jobs:
 
           app = Path("android/app/build.gradle")
           a = app.read_text(encoding="utf-8")
-          a, c1 = re.subn(r"versionCode\s+\d+", "versionCode 50", a, count=1)
+          a, c1 = re.subn(r"versionCode\s+\d+", "versionCode 51", a, count=1)
           a, c2 = re.subn(r'versionName\s+"[^"]+"', 'versionName "6.0"', a, count=1)
           if c1 != 1 or c2 != 1:
               raise SystemExit("versionCode/versionName update failed")
