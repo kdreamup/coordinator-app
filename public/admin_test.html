@@ -272,10 +272,10 @@ td{font-size:10px!important;padding:7px!important;line-height:1.35!important}
 .table-section th:nth-child(5),.table-section td:nth-child(5){width:8%!important}
 .table-section th:nth-child(6),.table-section td:nth-child(6){width:6%!important}
 .table-section th:nth-child(7),.table-section td:nth-child(7){width:17%!important}
-.table-section th:nth-child(8),.table-section td:nth-child(8){width:28%!important}
+.table-section th:nth-child(8),.table-section td:nth-child(8){width:26%!important}
 .table-section th:nth-child(9),.table-section td:nth-child(9),
 .table-section th:nth-child(10),.table-section td:nth-child(10){width:6%!important;text-align:center!important;white-space:nowrap!important}
-.table-section th:nth-child(11),.table-section td:nth-child(11){width:6%!important;text-align:center!important}
+.table-section th:nth-child(11),.table-section td:nth-child(11){width:8%!important;text-align:center!important}
 .table-section td:nth-child(3) b{font-size:13.5px!important;color:#0f2748!important}
 .table-section .badge{font-size:10.5px!important;line-height:1.25!important;padding:4px 7px!important;margin:2px 2px 2px 0!important;white-space:normal!important;text-align:center!important}
 .table-section td:nth-child(7){padding-right:11px!important}
@@ -313,11 +313,570 @@ td{font-size:10px!important;padding:7px!important;line-height:1.35!important}
 .gps-text{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;font-size:9.5px;line-height:1.3;color:#475569;word-break:break-all}
 .gps-none{color:#94a3b8}
 .gps-fail{display:inline-flex;align-items:center;padding:4px 7px;border-radius:7px;border:1px solid #fed7aa;background:#fff7ed;color:#c2410c;font-size:9.5px;font-weight:900;white-space:nowrap}
-.gps-fail-reason{display:block;margin-top:3px;max-width:120px;white-space:normal;line-height:1.25;font-size:8.5px;color:#9a3412;word-break:keep-all;overflow-wrap:anywhere}
+.gps-fail-reason{display:block;margin:4px auto 0;max-width:160px;white-space:normal;line-height:1.35;font-size:9.5px;font-weight:700;color:#9a3412;word-break:keep-all;overflow-wrap:break-word}
 .gps-fail-legacy{border-color:#e2e8f0;background:#f8fafc;color:#64748b}
 .gps-fail-reason-legacy{color:#64748b}
 .gps-cached{display:block;margin-top:3px;font-size:8.5px;color:#7c3aed;white-space:nowrap}
 </style>
+
+
+<style id="step71-mobile-responsive">
+/* step72: 관리자 모바일 실사용형 레이아웃
+   - 820px 이하에서만 적용
+   - PC 화면 및 기존 데이터/필터/GPS/엑셀 로직은 그대로 유지 */
+.mobile-only{display:none}
+
+@media (max-width:820px){
+  html,body{overflow-x:hidden!important}
+  body{background:#f4f8fc!important;font-size:15px!important}
+  .mobile-only{display:block!important}
+
+  .top{position:static!important}
+  .topin,.wrap{
+    width:100%!important;
+    max-width:none!important;
+    padding-left:12px!important;
+    padding-right:12px!important
+  }
+  .wrap{padding-bottom:34px!important}
+  .topin{
+    padding-top:12px!important;
+    padding-bottom:12px!important;
+    gap:10px!important;
+    flex-direction:column!important;
+    align-items:stretch!important
+  }
+  .brand{gap:10px!important;align-items:center!important}
+  .logo{width:40px!important;height:40px!important;flex:0 0 40px!important;border-radius:14px 14px 14px 5px!important}
+  .brand h1{font-size:20px!important;line-height:1.25!important}
+  .brand p{display:none!important}
+  .topright{width:100%!important;display:block!important}
+  .today{font-size:13px!important;line-height:1.4!important;text-align:left!important;margin:2px 0 9px!important}
+  .actions{
+    width:100%!important;
+    display:grid!important;
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;
+    gap:8px!important
+  }
+  .actions .btn{
+    width:100%!important;
+    min-height:48px!important;
+    padding:11px 9px!important;
+    border-radius:13px!important;
+    font-size:14px!important;
+    line-height:1.3!important;
+    white-space:normal!important
+  }
+
+  /* 모바일에서는 소개 배너보다 현황을 우선 */
+  .hero{display:none!important}
+
+  .grid2,.mid,.workspace,.filter-grid,.manage-grid,
+  .two-cols,.menu-grid,.fields,.downloads{
+    grid-template-columns:1fr!important
+  }
+  .workspace{display:grid!important;width:100%!important;gap:10px!important;margin-bottom:10px!important}
+  .workspace-left{display:block!important;width:100%!important;min-width:0!important}
+
+  .status,.section,.card,.manage-panel{
+    border-radius:17px!important;
+    box-shadow:0 5px 16px rgba(31,74,125,.06)!important
+  }
+  .grid2{gap:10px!important;margin-top:12px!important}
+  .status-head{
+    padding:14px!important;
+    flex-direction:row!important;
+    align-items:center!important;
+    gap:10px!important
+  }
+  .st-title{font-size:19px!important}
+  .st-sub{font-size:12px!important;line-height:1.4!important;margin-top:4px!important}
+  .countbox{min-width:70px!important;padding:9px 10px!important;border-radius:14px!important;text-align:center!important}
+  .countbox strong{font-size:26px!important}
+  .status-body{min-height:0!important;padding:12px 14px!important}
+  .mini-box{padding:12px!important;border-radius:14px!important}
+  .mini-title{font-size:14px!important;margin-bottom:8px!important}
+  .chips{gap:6px!important}
+  .chip{padding:7px 10px!important;font-size:12.5px!important;line-height:1.35!important}
+
+  .summary{
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;
+    gap:9px!important;
+    margin:10px 0!important
+  }
+  .card{min-height:118px!important;padding:13px!important}
+  .card .icon{width:35px!important;height:35px!important;border-radius:11px!important;font-size:17px!important;margin-bottom:9px!important}
+  .card label{font-size:12.5px!important;line-height:1.35!important}
+  .val{font-size:22px!important;line-height:1.2!important;margin-top:7px!important}
+  .note{font-size:11.5px!important;line-height:1.35!important;margin-top:5px!important}
+
+  .section-head,.tabletop{padding:13px 14px!important;gap:8px!important}
+  .section-title{font-size:18px!important}
+  .section-sub{font-size:11.5px!important;line-height:1.4!important}
+  .monthbar,.filter-body,.menu-grid{padding:13px!important}
+  .monthbar{display:grid!important;grid-template-columns:1fr 1fr!important;gap:8px!important}
+  .monthbar input{grid-column:1/-1!important}
+  .monthbar .btn{width:100%!important;min-height:46px!important;font-size:13.5px!important}
+  .monthbar #loadMonth,.monthbar #loadAll{grid-column:1/-1!important}
+
+  /* 모바일에서 상세필터/관리메뉴는 필요할 때만 펼침 */
+  .mobile-collapse-toggle{
+    width:100%!important;
+    min-height:46px!important;
+    margin:0!important;
+    padding:10px 13px!important;
+    border:1px solid #cfe0f2!important;
+    border-radius:13px!important;
+    background:#f7fbff!important;
+    color:#1d4ed8!important;
+    font-size:14px!important;
+    font-weight:900!important;
+    cursor:pointer!important
+  }
+  .mobile-collapsible.is-mobile-collapsed{display:none!important}
+
+  .quick{
+    padding:11px!important;
+    margin-bottom:10px!important;
+    border-radius:14px!important;
+    gap:8px!important
+  }
+  .quick strong{font-size:15px!important}
+  .quick div:last-child{
+    width:100%!important;
+    display:grid!important;
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;
+    gap:7px!important
+  }
+  .quick .btn{width:100%!important;min-height:44px!important}
+  .fcard{padding:12px!important;border-radius:14px!important}
+  .fcard h4{font-size:15px!important;margin-bottom:10px!important}
+  .field label{font-size:12px!important}
+  input,select,textarea{
+    font-size:16px!important;
+    min-height:46px!important;
+    border-radius:12px!important
+  }
+  .search-actions{gap:8px!important}
+  .search-actions .btn,.download .btn{min-height:46px!important;font-size:14px!important}
+  .download{padding:11px!important;border-radius:13px!important;font-size:12px!important}
+
+  /* 기존 가로 표는 모바일에서 숨기고 전용 카드 목록 사용 */
+  .table-section .tablewrap{display:none!important}
+  .mobile-record-list{
+    display:grid!important;
+    gap:10px!important;
+    padding:10px!important;
+    background:#f4f8fc!important
+  }
+  .mobile-record-card{
+    border:1px solid #dbe6f0!important;
+    border-radius:16px!important;
+    background:#fff!important;
+    overflow:hidden!important;
+    box-shadow:0 5px 16px rgba(31,74,125,.055)!important
+  }
+  .mobile-record-head{
+    display:grid!important;
+    grid-template-columns:1fr auto!important;
+    gap:10px!important;
+    align-items:start!important;
+    padding:13px 14px!important;
+    background:#f7fbff!important;
+    border-bottom:1px solid #e8f0f6!important
+  }
+  .mobile-record-user{
+    font-size:17px!important;
+    line-height:1.25!important;
+    font-weight:950!important;
+    color:#0f2748!important
+  }
+  .mobile-record-date{
+    margin-top:4px!important;
+    font-size:12px!important;
+    color:#6b7a90!important;
+    line-height:1.35!important
+  }
+  .mobile-record-type{
+    text-align:right!important;
+    max-width:130px!important
+  }
+  .mobile-record-main{
+    display:grid!important;
+    gap:10px!important;
+    padding:12px 14px!important
+  }
+  .mobile-record-line{
+    display:grid!important;
+    grid-template-columns:78px 1fr!important;
+    gap:8px!important;
+    align-items:start!important
+  }
+  .mobile-record-label{
+    font-size:11.5px!important;
+    font-weight:900!important;
+    color:#6b7a90!important;
+    line-height:1.4!important
+  }
+  .mobile-record-value{
+    min-width:0!important;
+    font-size:14px!important;
+    line-height:1.5!important;
+    color:#1e293b!important;
+    word-break:keep-all!important;
+    overflow-wrap:anywhere!important
+  }
+  .mobile-record-value .badge{
+    font-size:11.5px!important;
+    padding:5px 8px!important;
+    margin:0 4px 4px 0!important
+  }
+  .mobile-record-value .gps-fail,
+  .mobile-record-value .gps-accuracy,
+  .mobile-record-value .gps-text,
+  .mobile-record-value .gps-fail-reason,
+  .mobile-record-value .gps-cached{
+    max-width:none!important;
+    white-space:normal!important;
+    font-size:11.5px!important;
+    line-height:1.4!important
+  }
+  .mobile-record-more{
+    border-top:1px solid #eef3f7!important;
+    background:#fbfdff!important
+  }
+  .mobile-record-more summary{
+    cursor:pointer!important;
+    padding:11px 14px!important;
+    font-size:13px!important;
+    font-weight:900!important;
+    color:#1d4ed8!important;
+    list-style:none!important
+  }
+  .mobile-record-more summary::-webkit-details-marker{display:none!important}
+  .mobile-record-more summary::after{content:' ▼';font-size:10px!important}
+  .mobile-record-more[open] summary::after{content:' ▲'}
+  .mobile-record-extra{
+    display:grid!important;
+    gap:9px!important;
+    padding:0 14px 13px!important
+  }
+  .mobile-record-empty{
+    padding:18px!important;
+    text-align:center!important;
+    color:#64748b!important;
+    background:#fff!important;
+    border:1px dashed #cbd5e1!important;
+    border-radius:14px!important;
+    font-size:14px!important
+  }
+
+  .pager{flex-wrap:wrap!important;gap:6px!important;padding:10px!important}
+  .pager .btn,.pager button{min-width:42px!important;min-height:42px!important;padding:8px!important;font-size:13px!important}
+
+  .details>summary{padding:13px 14px!important;border-radius:15px!important;font-size:14px!important}
+  .manage-panel{padding:12px!important}
+  .addrow{flex-direction:column!important}
+  .addrow .btn,.addrow button{width:100%!important;min-height:46px!important}
+  .list-row{align-items:flex-start!important}
+  .toast{left:12px!important;right:12px!important;bottom:12px!important;font-size:13px!important}
+  .watermark{display:none!important}
+}
+
+@media (max-width:390px){
+  .wrap,.topin{padding-left:10px!important;padding-right:10px!important}
+  .brand h1{font-size:18px!important}
+  .mobile-record-line{grid-template-columns:70px 1fr!important}
+}
+</style>
+
+
+
+
+<style id="step75b-mobile-balanced">
+/* step75B: 모바일 관리자 최종 균형 보정
+   - step72의 모바일 구조는 유지
+   - step73/74 확대 보정은 제거
+   - 가로 넘침 없이 기본 접속 크기에서 읽기 편한 중간 크기 */
+@media (max-width:900px){
+  html,body{
+    width:100%!important;
+    max-width:100%!important;
+    min-width:0!important;
+    overflow-x:hidden!important;
+    -webkit-text-size-adjust:100%!important;
+    text-size-adjust:100%!important
+  }
+  body{font-size:16px!important}
+
+  .top,.topin,.wrap,.workspace,.workspace-left,.grid2,.summary,
+  .section,.status,.month-section,.filter,.table-section,.details,
+  .actions,.topright{
+    width:100%!important;
+    max-width:100%!important;
+    min-width:0!important
+  }
+
+  .topin,.wrap{
+    padding-left:12px!important;
+    padding-right:12px!important
+  }
+  .topin{
+    padding-top:11px!important;
+    padding-bottom:11px!important
+  }
+
+  .brand{min-width:0!important}
+  .logo{
+    width:36px!important;
+    height:36px!important;
+    flex:0 0 36px!important
+  }
+  .brand h1{
+    font-size:20px!important;
+    line-height:1.25!important;
+    white-space:normal!important;
+    overflow-wrap:anywhere!important
+  }
+  .today{
+    font-size:13px!important;
+    line-height:1.4!important
+  }
+
+  .actions{
+    display:grid!important;
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;
+    gap:7px!important
+  }
+  .actions .btn{
+    width:100%!important;
+    max-width:100%!important;
+    min-width:0!important;
+    min-height:46px!important;
+    padding:10px 7px!important;
+    font-size:13.5px!important;
+    line-height:1.25!important;
+    white-space:normal!important;
+    overflow-wrap:anywhere!important
+  }
+
+  .hero{display:none!important}
+
+  .grid2,.workspace,.filter-grid,.manage-grid,
+  .two-cols,.menu-grid,.fields,.downloads{
+    grid-template-columns:1fr!important
+  }
+  .workspace{
+    display:grid!important;
+    gap:9px!important;
+    margin-bottom:9px!important
+  }
+  .workspace-left{
+    display:block!important;
+    min-width:0!important
+  }
+
+  .status,.section,.card,.manage-panel{
+    border-radius:16px!important;
+    box-shadow:0 5px 16px rgba(31,74,125,.055)!important
+  }
+  .grid2{gap:9px!important}
+  .status-head{
+    padding:13px!important;
+    gap:8px!important
+  }
+  .st-title{font-size:18px!important}
+  .st-sub{font-size:11.5px!important}
+  .countbox{
+    min-width:66px!important;
+    padding:8px 9px!important
+  }
+  .countbox strong{font-size:25px!important}
+  .status-body{padding:11px 13px!important}
+  .mini-title{font-size:13.5px!important}
+  .status-body .chips{
+    display:grid!important;
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;
+    gap:6px!important
+  }
+  .status-body .chip{
+    width:100%!important;
+    min-width:0!important;
+    justify-content:center!important;
+    padding:7px 8px!important;
+    font-size:12px!important;
+    line-height:1.25!important;
+    white-space:normal!important
+  }
+
+  .summary{
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;
+    gap:8px!important;
+    margin:9px 0!important
+  }
+  .card{
+    display:block!important;
+    min-width:0!important;
+    min-height:112px!important;
+    padding:12px!important
+  }
+  .card .icon{
+    width:32px!important;
+    height:32px!important;
+    margin:0 0 7px!important;
+    font-size:16px!important
+  }
+  .card label{
+    display:block!important;
+    font-size:12px!important;
+    line-height:1.3!important
+  }
+  .val{
+    font-size:21px!important;
+    line-height:1.2!important;
+    margin-top:5px!important
+  }
+  .note{
+    font-size:10.8px!important;
+    line-height:1.3!important;
+    margin-top:4px!important
+  }
+
+  .section-head,.tabletop{padding:11px 12px!important}
+  .section-title,.tabletop .section-title{font-size:17px!important}
+  .section-sub{font-size:11px!important}
+
+  /* 기존 데스크톱의 max-width 제한을 모바일에서 확실히 해제 */
+  .month-section{min-width:0!important}
+  .month-deco{display:none!important}
+  .monthbar{
+    width:100%!important;
+    max-width:none!important;
+    display:grid!important;
+    grid-template-columns:1fr 1fr!important;
+    gap:7px!important;
+    padding:11px 12px!important
+  }
+  .monthbar input{
+    grid-column:1/-1!important
+  }
+  .monthbar #loadMonth,.monthbar #loadAll{
+    grid-column:1/-1!important
+  }
+  .monthbar input,.monthbar select,.monthbar .btn{
+    width:100%!important;
+    max-width:100%!important;
+    min-width:0!important;
+    min-height:44px!important;
+    font-size:13.5px!important
+  }
+
+  .mobile-collapse-toggle{
+    width:100%!important;
+    min-height:44px!important;
+    padding:10px 12px!important;
+    font-size:13.5px!important
+  }
+
+  .quick strong{font-size:14px!important}
+  .quick div:last-child{
+    grid-template-columns:repeat(2,minmax(0,1fr))!important
+  }
+  .quick .btn{
+    min-height:42px!important;
+    font-size:12.5px!important
+  }
+  .fcard h4{font-size:14px!important}
+  .field label{font-size:11.5px!important}
+  input,select,textarea{
+    width:100%!important;
+    max-width:100%!important;
+    min-width:0!important;
+    min-height:44px!important;
+    font-size:16px!important
+  }
+  .search-actions{
+    grid-template-columns:1fr 1fr!important;
+    gap:7px!important
+  }
+  .search-actions .btn{
+    min-width:0!important;
+    min-height:43px!important;
+    font-size:13px!important
+  }
+
+  .menu-card{
+    min-width:0!important;
+    min-height:62px!important;
+    padding:12px!important
+  }
+  .menu-card strong{font-size:15px!important}
+  .menu-card span{font-size:11.5px!important}
+
+  .mobile-record-list{
+    width:100%!important;
+    max-width:100%!important;
+    padding:9px!important;
+    gap:9px!important
+  }
+  .mobile-record-card{
+    width:100%!important;
+    max-width:100%!important;
+    min-width:0!important
+  }
+  .mobile-record-head{padding:13px!important}
+  .mobile-record-user{font-size:18px!important}
+  .mobile-record-date{font-size:12px!important}
+  .mobile-record-main{
+    padding:12px 13px!important;
+    gap:9px!important
+  }
+  .mobile-record-line{
+    grid-template-columns:76px minmax(0,1fr)!important;
+    gap:8px!important
+  }
+  .mobile-record-label{font-size:11.5px!important}
+  .mobile-record-value{
+    min-width:0!important;
+    font-size:14px!important;
+    line-height:1.45!important
+  }
+  .mobile-record-value .badge{
+    font-size:11.5px!important;
+    padding:5px 7px!important
+  }
+  .mobile-record-value .gps-fail,
+  .mobile-record-value .gps-accuracy,
+  .mobile-record-value .gps-text,
+  .mobile-record-value .gps-fail-reason,
+  .mobile-record-value .gps-cached{
+    font-size:11.5px!important;
+    line-height:1.4!important
+  }
+  .mobile-record-more summary{
+    padding:11px 13px!important;
+    font-size:13px!important
+  }
+  .mobile-record-extra{padding:0 13px 12px!important}
+
+  .pager .btn,.pager button{
+    min-width:40px!important;
+    min-height:40px!important;
+    font-size:12.5px!important
+  }
+  .details>summary{
+    padding:11px 12px!important;
+    font-size:13px!important
+  }
+}
+
+@media (max-width:390px){
+  .status-body .chips{grid-template-columns:1fr!important}
+  .monthbar{grid-template-columns:1fr!important}
+  .monthbar input,.monthbar #loadMonth,.monthbar #loadAll{grid-column:1!important}
+}
+</style>
+
 </head>
 <!-- step63 GPS failure reason display: robust status mapping / legacy missing reason -->
 <body><!-- step55 today check-in confirmation list / keep step54 date boundary fix --><div class="watermark">TEST · admin_test.html · step59</div>
@@ -415,7 +974,16 @@ td{font-size:10px!important;padding:7px!important;line-height:1.35!important}
     }
     if(st.status==='failed'||st.reason||st.attempted){
       const reason=st.reason||'위치 확인 실패';
-      return `<span class="gps-fail" title="${esc(reason)}">GPS 미수집</span><span class="gps-fail-reason" title="${esc(reason)}">${esc(reason)}</span>`;
+      const shortReasonLabels={
+        'permission-denied':'위치 권한 거부',
+        'position-unavailable':'위치 확인 불가',
+        'timeout':'위치 확인 시간 초과',
+        'unsupported':'위치 기능 미지원',
+        'stale-position':'오래된 위치 사용 안 함',
+        'unknown':'위치 확인 실패'
+      };
+      const displayReason=shortReasonLabels[st.code]||reason;
+      return `<span class="gps-fail" title="${esc(reason)}">GPS 미수집</span><span class="gps-fail-reason" title="${esc(reason)}">${esc(displayReason)}</span>`;
     }
     if(g.text)return `<span class="gps-text" title="${esc(g.text)}">${esc(g.text)}</span>`;
     // 실패사유 필드가 없는 기록은 원인을 추정하지 않고 표시합니다.
@@ -429,8 +997,45 @@ td{font-size:10px!important;padding:7px!important;line-height:1.35!important}
   }
   function setToday(){let d=new Date(),w='일월화수목금토'[d.getDay()];$('todayText').innerHTML=`${d.getFullYear()}년 ${d.getMonth()+1}월 ${d.getDate()}일 (${w})<br>오늘도 수고하십니다! 👋`} function toast(t){let e=$('toast');e.textContent=t;e.style.display='block';setTimeout(()=>e.style.display='none',1800)}
   async function loadSettings(){try{let u=await db.collection('settings').doc('userConfig').get();let ud=u.data()||{};state.registeredUsers=uniq([...(ud.users||[]),...(ud.coordinatorNames||[])]);state.users=[...state.registeredUsers];let a=await db.collection('settings').doc('activityConfig').get();let ad=a.data()||{};state.activities=uniq([...(ad.activities||[]),...MAIN]).filter(x=>MAIN.includes(x));let vf=await db.collection('settings').doc('visitFieldConfig').get(); if(vf.exists)state.visitFields={...state.visitFields,...(vf.data()||{})};let si=await db.collection('settings').doc('subItemConfig').get(); if(si.exists)state.subItems={...state.subItems,...(si.data()||{})};}catch(e){console.error(e)}}
-  async function loadLogs(){let ref=db.collection('attendanceLogs'); if(!state.all){let r=range(state.month);ref=ref.where('timestamp','>=',firebase.firestore.Timestamp.fromDate(r.s)).where('timestamp','<',firebase.firestore.Timestamp.fromDate(r.e)).orderBy('timestamp','desc')} let snap=await ref.get(); state.logs=snap.docs.map(d=>({id:d.id,...d.data()})); state.logs.sort((a,b)=>(time(b)?.getTime()||0)-(time(a)?.getTime()||0)); let lu=uniq(state.logs.map(user)); state.users=uniq([...state.users,...lu]);}
-  async function loadTodayLogs(){let today=dateKey(new Date());if(state.all||state.month===monthKey()){state.todayLogs=state.logs.filter(l=>dateKey(time(l))===today);return}let d=new Date(),s=new Date(d.getFullYear(),d.getMonth(),d.getDate(),0,0,0,0),e=new Date(d.getFullYear(),d.getMonth(),d.getDate()+1,0,0,0,0),ref=db.collection('attendanceLogs').where('timestamp','>=',firebase.firestore.Timestamp.fromDate(s)).where('timestamp','<',firebase.firestore.Timestamp.fromDate(e)).orderBy('timestamp','desc');let snap=await ref.get();state.todayLogs=snap.docs.map(doc=>({id:doc.id,...doc.data()}));state.todayLogs.sort((a,b)=>(time(b)?.getTime()||0)-(time(a)?.getTime()||0));}
+  async function loadLogs(){
+    // step76: 월별 Firestore 범위 쿼리 대신 전체 로그를 한 번 읽고 월은 로컬에서 필터링합니다.
+    const CACHE_MS=120000;
+    const now=Date.now();
+    let all=window.__step76AttendanceCache;
+    const cacheAt=Number(window.__step76AttendanceCacheAt||0);
+    if(!Array.isArray(all) || !cacheAt || (now-cacheAt)>CACHE_MS){
+      const snap=await db.collection('attendanceLogs').get();
+      all=snap.docs.map(d=>({id:d.id,...d.data()}));
+      all.sort((a,b)=>(time(b)?.getTime()||0)-(time(a)?.getTime()||0));
+      window.__step76AttendanceCache=all;
+      window.__step76AttendanceCacheAt=now;
+    }
+
+    if(state.all){
+      state.logs=[...all];
+    }else{
+      const wanted=norm(state.month)||monthKey();
+      state.month=wanted;
+      state.logs=all.filter(l=>{
+        const d=time(l);
+        return !!d && monthKey(d)===wanted;
+      });
+    }
+
+    const lu=uniq(state.logs.map(user));
+    state.users=uniq([...state.users,...lu]);
+  }
+  async function loadTodayLogs(){
+    // step76: 오늘 현황도 같은 캐시에서 계산하여 월 이동과 독립적으로 유지합니다.
+    const today=dateKey(new Date());
+    const all=Array.isArray(window.__step76AttendanceCache)
+      ? window.__step76AttendanceCache
+      : state.logs;
+    state.todayLogs=(all||[]).filter(l=>{
+      const d=time(l);
+      return !!d && dateKey(d)===today;
+    });
+  }
   function fillSelect(id,items,first){let e=$(id); if(!e)return; e.innerHTML=`<option value="">${first}</option>`+items.map(x=>`<option>${esc(x)}</option>`).join('')} function buildSelects(){fillSelect('userFilter',state.users,'전체 사용자');fillSelect('activityFilter',state.activities,'전체 활동목적');fillSelect('housingFilter',state.visitFields.housingTypes||[],'전체');fillSelect('reasonFilter',state.visitFields.visitReasons||[],'전체')}
   function apply(){let sd=$('startDate').value,ed=$('endDate').value,u=$('userFilter').value,a=$('activityFilter').value,h=$('housingFilter').value,r=$('reasonFilter').value,t=$('typeFilter').value,k=norm($('keywordFilter').value),min=Number($('minDur').value||0),max=Number($('maxDur').value||0);state.filtered=state.logs.filter(l=>{let dk=dateKey(time(l)); if(sd&&dk<sd)return false;if(ed&&dk>ed)return false;if(u&&user(l)!==u)return false;if(a&&!acts(l).includes(a))return false;if(h&&housing(l)!==h)return false;if(r&&reason(l)!==r)return false;if(t&&type(l)!==t)return false;let dur=duration(l)/60000;if(min&&dur<min)return false;if(max&&dur>max)return false;if(k&&!JSON.stringify(l).includes(k))return false;return true}); state.page=1; renderAll()}
   function calcWork(logs){let by={};logs.forEach(l=>{let n=user(l); if(!n)return;(by[n]??=[]).push(l)});let total=0,per={};Object.entries(by).forEach(([n,ls])=>{ls.sort((a,b)=>(time(a)?.getTime()||0)-(time(b)?.getTime()||0));let start=null,sum=0;ls.forEach(l=>{if(type(l)==='일과 시작')start=time(l); if(type(l)==='일과 종료'&&start){let e=time(l); if(e&&e>start){sum+=e-start;start=null}}});per[n]=sum;total+=sum});return{total,per}}
@@ -441,8 +1046,28 @@ let confirmed=registered.filter(n=>attendanceSet.has(n)).length;$('missingStartC
   function renderSummary(){let today=dateKey(new Date()),flt=state.filtered,work=calcWork(state.logs),actMs=state.logs.filter(l=>type(l)!=='일과 시작'&&type(l)!=='일과 종료').reduce((s,l)=>s+duration(l),0);$('todayCnt').textContent=state.logs.filter(l=>dateKey(time(l))===today).length;$('workTime').textContent=fmtDur(work.total);$('activityTime').textContent=fmtDur(actMs);$('filteredUsers').textContent=uniq(flt.map(user)).length+'명';let counts={};flt.forEach(l=>acts(l).forEach(a=>counts[a]=(counts[a]||0)+1));let top=Object.entries(counts).sort((a,b)=>b[1]-a[1])[0];$('topActivity').textContent=top?top[0]:'-';$('topActivitySub').textContent=top?`${top[1]}건 포함됨`:'활동 포함 횟수';let topw=Object.entries(work.per).sort((a,b)=>b[1]-a[1])[0];$('topWorker').textContent=topw&&topw[1]?topw[0]:'-';$('topWorkerSub').textContent=topw&&topw[1]?fmtDur(topw[1]):'이번 달 근무 1위';}
   function renderFilters(){let chips=[]; if($('startDate').value||$('endDate').value)chips.push(`기간 ${$('startDate').value||'-'} ~ ${$('endDate').value||'-'}`);['userFilter','activityFilter','housingFilter','reasonFilter','typeFilter'].forEach(id=>{let v=$(id).value;if(v)chips.push(v)});let k=norm($('keywordFilter').value);if(k)chips.push('검색 '+k);$('filterChips').innerHTML=chips.length?chips.map(c=>`<span class="chip">${esc(c)}</span>`).join(''):`<span class="chip">${state.all?'전체 기간':'선택 월'} 데이터 기준</span>`}
   function renderTable(){let tbody=$('tbody'),total=state.filtered.length,ps=Number($('pageSize').value||50),pages=Math.max(1,Math.ceil(total/ps)); if(state.page>pages)state.page=pages;let start=(state.page-1)*ps,rows=state.filtered.slice(start,start+ps);$('tableInfo').textContent=`총 ${total}건 · ${start+1}-${Math.min(start+ps,total)} 표시`;$('pageInfo').textContent=`${state.page} / ${pages}`;if(!rows.length){tbody.innerHTML='<tr><td colspan="11"><div class="empty">표시할 기록이 없습니다.</div></td></tr>';return}tbody.innerHTML=rows.map((l,i)=>{let t=type(l),alist=acts(l),cls=t==='일과 시작'?'green':t==='일과 종료'?'orange':t==='방문사례기록'?'blue':'';return`<tr><td>${start+i+1}</td><td>${fmtDT(time(l))}</td><td><b>${esc(user(l)||'-')}</b></td><td><span class="badge ${cls}">${esc(t)}</span></td><td>${esc(client(l)||'-')}<br><span class="note">${esc(housing(l)||'')}</span></td><td>${esc(reason(l)||'-')}</td><td>${alist.map(a=>`<span class="badge">${esc(a)}</span>`).join('')||'-'}</td><td><div class="detail-text" title="${esc(memo(l)||'-')}">${esc(memo(l)||'-')}</div></td><td>${fmtDur(Number(l.workDurationMs||l.boundaryDurationMs||0))}</td><td>${fmtDur(duration(l))}</td><td>${gpsCell(l)}</td></tr>`}).join('')}
-  function renderManage(){function rows(id,items,del){$(id).innerHTML=items.length?items.map(x=>`<div class="list-row"><span>${esc(x)}</span><button class="smallbtn" data-del="${esc(x)}">삭제</button></div>`).join(''):'<div class="empty">등록 항목이 없습니다.</div>';$(id).querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>del(b.dataset.del))}rows('memberList',state.registeredUsers.length?state.registeredUsers:state.users,async n=>{if(!confirm(n+' 삭제?'))return;state.registeredUsers=state.registeredUsers.filter(x=>x!==n);state.users=state.users.filter(x=>x!==n);await saveUsers();renderManage();buildSelects();toast('삭제했습니다')});rows('purposeList',state.activities,async n=>{alert('활동목적은 7개 고정 기준입니다. 운영 반영 전 별도 검토가 필요합니다.')});$('visitFieldList').innerHTML=Object.entries(state.visitFields).map(([k,v])=>`<div class="list-row"><b>${k}</b><span>${(v||[]).map(esc).join(', ')}</span></div>`).join('');$('subItemList').innerHTML=Object.entries({...state.subItems,'건강관리 세부':HEALTH}).map(([k,v])=>`<div class="list-row"><b>${esc(k)}</b><span>${(v||[]).map(esc).join(', ')}</span></div>`).join('')}
-  function renderAll(){renderStatus();renderSummary();renderFilters();renderTable();renderManage()} async function saveUsers(){let users=state.registeredUsers.length?state.registeredUsers:state.users;await db.collection('settings').doc('userConfig').set({users,coordinatorNames:users,updatedAt:firebase.firestore.FieldValue.serverTimestamp()},{merge:true})}
+  function safeManageList(v){
+    if(Array.isArray(v))return v.map(norm).filter(Boolean);
+    if(v===null||v===undefined||v==='')return [];
+    if(typeof v==='object'){
+      const out=[];
+      Object.values(v).forEach(x=>{
+        if(Array.isArray(x))out.push(...x);
+        else if(x!==null&&x!==undefined&&x!=='')out.push(x);
+      });
+      return out.map(norm).filter(Boolean);
+    }
+    return [norm(v)].filter(Boolean);
+  }
+  function renderManage(){function rows(id,items,del){$(id).innerHTML=items.length?items.map(x=>`<div class="list-row"><span>${esc(x)}</span><button class="smallbtn" data-del="${esc(x)}">삭제</button></div>`).join(''):'<div class="empty">등록 항목이 없습니다.</div>';$(id).querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>del(b.dataset.del))}rows('memberList',state.registeredUsers.length?state.registeredUsers:state.users,async n=>{if(!confirm(n+' 삭제?'))return;state.registeredUsers=state.registeredUsers.filter(x=>x!==n);state.users=state.users.filter(x=>x!==n);await saveUsers();renderManage();buildSelects();toast('삭제했습니다')});rows('purposeList',state.activities,async n=>{alert('활동목적은 7개 고정 기준입니다. 운영 반영 전 별도 검토가 필요합니다.')});const visitFieldLabels={genders:'성별',housingTypes:'주거 형태',visitReasons:'상담 형태'};$('visitFieldList').innerHTML=Object.entries(state.visitFields).map(([k,v])=>`<div class="list-row"><b>${visitFieldLabels[k]||k}</b><span>${safeManageList(v).map(esc).join(', ')}</span></div>`).join('');$('subItemList').innerHTML=Object.entries({...state.subItems,'건강관리 세부':HEALTH}).map(([k,v])=>`<div class="list-row"><b>${esc(k)}</b><span>${safeManageList(v).map(esc).join(', ')}</span></div>`).join('')}
+  function renderAll(){
+    renderStatus();
+    renderSummary();
+    renderFilters();
+    renderTable();
+    // 관리설정 렌더링 오류가 상세내역 전체를 '데이터 로딩 오류'로 덮어쓰지 않게 분리
+    try{renderManage()}catch(e){console.error('관리 설정 렌더링 오류',e)}
+  } async function saveUsers(){let users=state.registeredUsers.length?state.registeredUsers:state.users;await db.collection('settings').doc('userConfig').set({users,coordinatorNames:users,updatedAt:firebase.firestore.FieldValue.serverTimestamp()},{merge:true})}
   async function init(all=false){try{state.all=all; if(!state.month)state.month=monthKey();$('queryMonth').value=state.month;$('queryMonth').defaultValue=state.month;syncMonthDateInputs();$('monthBadge').textContent=state.all?'전체 기간 조회 중':`${state.month} 조회 중`;await loadSettings();await loadLogs();await loadTodayLogs();buildSelects();syncMonthDateInputs();state.filtered=[...state.logs];renderAll();toast('데이터를 불러왔습니다')}catch(e){console.error(e);$('tbody').innerHTML='<tr><td colspan="11"><div class="empty">데이터 로딩 오류가 발생했습니다. 콘솔을 확인해주세요.</div></td></tr>';toast('로딩 오류')}}
   function exportRows(visitOnly=false){let base=state.filtered.filter(l=>type(l)!=='일과 시작'&&type(l)!=='일과 종료');if(visitOnly)base=base.filter(l=>type(l)==='방문사례기록');let rows=[];base.forEach(l=>{let al=acts(l);if(!al.length)al=[''];let g=gpsInfo(l),st=gpsStatusInfo(l),gpsText=g.lat!==null&&g.lng!==null?`${g.lat.toFixed(6)}, ${g.lng.toFixed(6)}`:(g.text||''),gpsState=g.lat!==null&&g.lng!==null?(st.status==='cached'?'최근 위치':'수집 완료'):(st.status==='failed'?'수집 실패':'미수집'),kakao=g.lat!==null&&g.lng!==null?`https://map.kakao.com/link/map/${encodeURIComponent(user(l)||'위치')},${g.lat.toFixed(6)},${g.lng.toFixed(6)}`:'';al.forEach(a=>rows.push({'일시':(fmtDT(time(l))||'').replace('<br>',' '),'사용자':user(l),'유형':type(l),'대상자':client(l),'상담형태':reason(l),'주거형태':housing(l),'활동목적':a,'활동내용':memo(l),'활동시간':fmtDur(duration(l)),'GPS':gpsText,'GPS상태':gpsState,'GPS실패사유':st.reason||(g.lat===null&&g.lng===null?'실패 사유 기록 없음':''),'카카오맵 링크':kakao}))});if(!rows.length)return alert('내보낼 데이터가 없습니다.');let ws=XLSX.utils.json_to_sheet(rows),wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,visitOnly?'방문기록':'전체기록');XLSX.writeFile(wb,`${visitOnly?'방문기록만':'전체기록'}_${state.all?'전체기간':state.month}.xlsx`)}
   function setMissingStartModal(open){let m=$('missingStartModal');if(!m)return;m.classList.toggle('open',!!open);m.setAttribute('aria-hidden',open?'false':'true');document.body.style.overflow=open?'hidden':''}
@@ -450,4 +1075,269 @@ let confirmed=registered.filter(n=>attendanceSet.has(n)).length;$('missingStartC
   function fallbackCopy(text){let ta=document.createElement('textarea');ta.value=text;ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.select();try{document.execCommand('copy');toast('미확인 명단을 복사했습니다')}catch(e){alert(text)}ta.remove()}
   document.addEventListener('DOMContentLoaded',()=>{setToday();state.month=monthKey();$('reloadBtn').onclick=()=>init(state.all);$('loadMonth').onclick=()=>{state.month=$('queryMonth').value||monthKey();state.all=false;init(false)};$('loadAll').onclick=()=>{if(confirm('전체 기간은 느릴 수 있습니다. 불러올까요?'))init(true)};$('prevMonth').onclick=()=>{let d=range(state.month).s;d.setMonth(d.getMonth()-1);state.month=monthKey(d);init(false)};$('nextMonth').onclick=()=>{let d=range(state.month).s;d.setMonth(d.getMonth()+1);state.month=monthKey(d);init(false)};$('applyBtn').onclick=apply;$('resetBtn').onclick=$('clearBtn').onclick=()=>{['userFilter','activityFilter','housingFilter','reasonFilter','typeFilter','keywordFilter','minDur','maxDur'].forEach(id=>$(id).value='');syncMonthDateInputs();apply()};document.querySelectorAll('[data-range]').forEach(b=>b.onclick=()=>{let d=new Date(),r;if(b.dataset.range==='today'){let k=dateKey(d);$('startDate').value=k;$('endDate').value=k}else if(b.dataset.range==='week'){let s=new Date(d-6*86400000);$('startDate').value=dateKey(s);$('endDate').value=dateKey(d)}else if(b.dataset.range==='month'){syncMonthDateInputs()}else{$('startDate').value='';$('endDate').value=''}apply()});['userFilter','activityFilter','housingFilter','reasonFilter','typeFilter','pageSize'].forEach(id=>$(id).addEventListener('change',apply));$('keywordFilter').addEventListener('keydown',e=>{if(e.key==='Enter')apply()});$('prevPage').onclick=()=>{if(state.page>1){state.page--;renderTable()}};$('nextPage').onclick=()=>{let ps=Number($('pageSize').value||50),pages=Math.max(1,Math.ceil(state.filtered.length/ps));if(state.page<pages){state.page++;renderTable()}};$('excelAllBtn').onclick=()=>exportRows(false);$('excelVisitBtn').onclick=()=>exportRows(true);$('copyInactiveBtn').onclick=()=>navigator.clipboard?.writeText([...(window._inactive?.never||[]),...(window._inactive?.noact||[])].join('\n')).then(()=>toast('복사했습니다'));$('copyTodayBtn').onclick=()=>navigator.clipboard?.writeText((window._todayUsers||[]).join('\n')).then(()=>toast('복사했습니다'));$('missingStartBtn').onclick=()=>setMissingStartModal(true);$('missingStartCloseX').onclick=$('missingStartCloseBtn').onclick=()=>setMissingStartModal(false);$('copyMissingStartBtn').onclick=copyMissingStart;$('missingStartModal').addEventListener('click',e=>{if(e.target===$('missingStartModal'))setMissingStartModal(false)});document.addEventListener('keydown',e=>{if(e.key==='Escape'&&$('missingStartModal')?.classList.contains('open'))setMissingStartModal(false)});$('excelInactiveBtn').onclick=()=>{let rows=[...(window._inactive?.never||[]).map(n=>({구분:'완전 미사용자',이름:n})),...(window._inactive?.noact||[]).map(n=>({구분:'활동 없음 대상자',이름:n}))];if(!rows.length)return alert('대상이 없습니다.');let ws=XLSX.utils.json_to_sheet(rows),wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'미사용자');XLSX.writeFile(wb,`미사용자_${state.month}.xlsx`)};document.querySelectorAll('[data-open]').forEach(a=>a.onclick=()=>{let key=a.dataset.open;$('manageDetails').open=true;setTimeout(()=>$(key+'Panel')?.scrollIntoView({behavior:'smooth',block:'center'}),80)});$('addMember').onclick=async()=>{let n=norm($('memberInput').value);if(!n)return alert('이름 입력');if(state.users.includes(n))return alert('이미 있음');state.registeredUsers=uniq([...state.registeredUsers,n]);state.users=uniq([...state.users,n]);await saveUsers();$('memberInput').value='';buildSelects();renderManage();toast('추가했습니다')};$('addPurpose').onclick=()=>alert('활동목적은 현재 7개 목적 기준으로 고정하는 방향이 안전합니다.');init(false)});
   </script>
+
+<!-- step69-admin-gps-readability: GPS 실패 표시 간결화 / GPS 열 8% -->
+
+
+<script id="step71-mobile-responsive-script">
+(function(){
+  function textOf(el){ return (el && el.textContent ? el.textContent : '').trim(); }
+
+  function setupCollapsibleByTitle(titleText, bodySelector, key){
+    var candidates=Array.from(document.querySelectorAll('.section-title, h2, h3, h4'));
+    var title=candidates.find(function(el){ return textOf(el).indexOf(titleText)>=0; });
+    if(!title) return;
+
+    var section=title.closest('.section') || title.parentElement;
+    if(!section) return;
+
+    var body=bodySelector ? section.querySelector(bodySelector) : null;
+    if(!body){
+      body=Array.from(section.children).find(function(ch){
+        return !ch.classList.contains('section-head') && !ch.classList.contains('tabletop');
+      });
+    }
+    if(!body || body.dataset.mobileCollapsibleReady==='1') return;
+
+    body.dataset.mobileCollapsibleReady='1';
+    body.classList.add('mobile-collapsible','is-mobile-collapsed');
+
+    var btn=document.createElement('button');
+    btn.type='button';
+    btn.className='mobile-collapse-toggle mobile-only';
+    btn.textContent=titleText+' 열기';
+    btn.setAttribute('aria-expanded','false');
+
+    var head=section.querySelector('.section-head') || section.querySelector('.tabletop');
+    if(head) head.insertAdjacentElement('afterend',btn);
+    else section.insertBefore(btn,body);
+
+    btn.addEventListener('click',function(){
+      var collapsed=body.classList.toggle('is-mobile-collapsed');
+      btn.textContent=titleText+(collapsed?' 열기':' 닫기');
+      btn.setAttribute('aria-expanded',collapsed?'false':'true');
+    });
+  }
+
+  function getHeaders(table){
+    return Array.from(table.querySelectorAll('thead th')).map(function(th){
+      return textOf(th);
+    });
+  }
+
+  function buildRecordCard(table,row,headers){
+    var cells=Array.from(row.children).filter(function(c){return c.tagName==='TD';});
+    if(!cells.length) return null;
+    if(cells.length===1 && cells[0].hasAttribute('colspan')){
+      var empty=document.createElement('div');
+      empty.className='mobile-record-empty';
+      empty.textContent=textOf(cells[0]) || '표시할 기록이 없습니다.';
+      return empty;
+    }
+
+    var map={};
+    cells.forEach(function(cell,i){
+      var key=headers[i] || ('항목'+i);
+      map[key]={html:cell.innerHTML,text:textOf(cell)};
+    });
+
+    function find(names){
+      for(var i=0;i<names.length;i++){
+        if(map[names[i]]) return map[names[i]];
+      }
+      return {html:'',text:''};
+    }
+
+    var user=find(['사용자','성명']);
+    var date=find(['일시','날짜']);
+    var type=find(['유형']);
+    var purpose=find(['활동목적']);
+    var gps=find(['GPS']);
+    var target=find(['대상자']);
+    var consult=find(['상담 형태','상담형태']);
+    var detail=find(['세부내용','활동내용']);
+    var work=find(['근무시간']);
+    var activity=find(['활동시간']);
+
+    var card=document.createElement('article');
+    card.className='mobile-record-card';
+
+    var head=document.createElement('div');
+    head.className='mobile-record-head';
+    head.innerHTML=
+      '<div><div class="mobile-record-user">'+(user.html||'-')+'</div>'+
+      '<div class="mobile-record-date">'+(date.html||'-')+'</div></div>'+
+      '<div class="mobile-record-type">'+(type.html||'')+'</div>';
+    card.appendChild(head);
+
+    var main=document.createElement('div');
+    main.className='mobile-record-main';
+
+    function addLine(parent,label,item){
+      if(!item || !item.text || item.text==='-') return;
+      var line=document.createElement('div');
+      line.className='mobile-record-line';
+      line.innerHTML='<div class="mobile-record-label">'+label+'</div><div class="mobile-record-value">'+item.html+'</div>';
+      parent.appendChild(line);
+    }
+
+    addLine(main,'활동목적',purpose);
+    addLine(main,'GPS',gps);
+    card.appendChild(main);
+
+    var extraItems=[
+      ['대상자',target],
+      ['상담 형태',consult],
+      ['세부내용',detail],
+      ['근무시간',work],
+      ['활동시간',activity]
+    ].filter(function(x){ return x[1] && x[1].text && x[1].text!=='-'; });
+
+    if(extraItems.length){
+      var details=document.createElement('details');
+      details.className='mobile-record-more';
+      var summary=document.createElement('summary');
+      summary.textContent='상세 보기';
+      details.appendChild(summary);
+      var extra=document.createElement('div');
+      extra.className='mobile-record-extra';
+      extraItems.forEach(function(x){ addLine(extra,x[0],x[1]); });
+      details.appendChild(extra);
+      card.appendChild(details);
+    }
+
+    return card;
+  }
+
+  function renderMobileCards(){
+    var section=document.querySelector('.table-section');
+    if(!section) return;
+    var table=section.querySelector('table');
+    if(!table) return;
+
+    var list=section.querySelector('.mobile-record-list');
+    if(!list){
+      list=document.createElement('div');
+      list.className='mobile-record-list mobile-only';
+      var pager=section.querySelector('.pager');
+      if(pager) section.insertBefore(list,pager);
+      else section.appendChild(list);
+    }
+
+    var headers=getHeaders(table);
+    var rows=Array.from(table.querySelectorAll('tbody tr'));
+    list.innerHTML='';
+
+    if(!rows.length){
+      var empty=document.createElement('div');
+      empty.className='mobile-record-empty';
+      empty.textContent='표시할 기록이 없습니다.';
+      list.appendChild(empty);
+      return;
+    }
+
+    rows.forEach(function(row){
+      var card=buildRecordCard(table,row,headers);
+      if(card) list.appendChild(card);
+    });
+  }
+
+  var scheduled=false;
+  function scheduleRender(){
+    if(scheduled) return;
+    scheduled=true;
+    requestAnimationFrame(function(){
+      scheduled=false;
+      renderMobileCards();
+    });
+  }
+
+  function init(){
+    setupCollapsibleByTitle('상세 필터','.filter-body','filter');
+    setupCollapsibleByTitle('관리 메뉴','.menu-grid','manage');
+    renderMobileCards();
+
+    var tbody=document.querySelector('.table-section tbody');
+    if(tbody){
+      new MutationObserver(scheduleRender).observe(tbody,{childList:true,subtree:true,characterData:true});
+    }
+  }
+
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',init);
+  else init();
+})();
+</script>
+
+
+<!-- step71B-admin-mobile-responsive -->
+<!-- step72-admin-mobile-usability -->
+
+<script id="step76-month-loading-fix">
+(function(){
+  function validMonth(v){
+    return /^\d{4}-\d{2}$/.test(String(v||'')) ? String(v) : '';
+  }
+
+  function shiftMonth(v,delta){
+    var m=validMonth(v);
+    if(!m){
+      var d=new Date();
+      m=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+    }
+    var parts=m.split('-').map(Number);
+    var index=parts[0]*12+(parts[1]-1)+delta;
+    var y=Math.floor(index/12);
+    var mo=(index%12+12)%12+1;
+    return y+'-'+String(mo).padStart(2,'0');
+  }
+
+  function bindMonthButtons(){
+    var input=document.getElementById('queryMonth');
+    var prev=document.getElementById('prevMonth');
+    var next=document.getElementById('nextMonth');
+    var load=document.getElementById('loadMonth');
+    var reload=document.getElementById('reloadBtn');
+
+    function go(delta){
+      var base=validMonth(input && input.value) || validMonth(state.month) || monthKey();
+      var target=shiftMonth(base,delta);
+      state.month=target;
+      state.all=false;
+      state.page=1;
+      if(input) input.value=target;
+      init(false);
+    }
+
+    if(prev) prev.onclick=function(){ go(-1); };
+    if(next) next.onclick=function(){ go(1); };
+
+    if(load) load.onclick=function(){
+      var target=validMonth(input && input.value) || monthKey();
+      state.month=target;
+      state.all=false;
+      state.page=1;
+      if(input) input.value=target;
+      init(false);
+    };
+
+    if(reload) reload.onclick=function(){
+      window.__step76AttendanceCache=null;
+      window.__step76AttendanceCacheAt=0;
+      state.page=1;
+      init(state.all);
+    };
+  }
+
+  if(document.readyState==='loading'){
+    document.addEventListener('DOMContentLoaded',function(){
+      setTimeout(bindMonthButtons,0);
+    });
+  }else{
+    setTimeout(bindMonthButtons,0);
+  }
+})();
+</script>
+<!-- step76-month-loading-fix -->
+
+<!-- step78-detail-render-fix -->
 </body></html>
