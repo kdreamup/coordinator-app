@@ -2119,7 +2119,7 @@
       gpsCapturedAt:selectedGps?.capturedAt??null,
       gpsUsedCached:false,
       gpsMetaVersion:"gps-v2",
-      appBuildVersion:"6.0"
+      appBuildVersion:"6.1"
     });
     await db.collection("attendanceLogs").add(payload);
       if(type==="일과 종료") clearCurrentActivitySessionSilently();
@@ -2392,7 +2392,7 @@
         gpsCapturedAt:gpsForVisit?.capturedAt??null,
         gpsUsedCached:false,
         gpsMetaVersion:"gps-v2",
-      appBuildVersion:"6.0"
+      appBuildVersion:"6.1"
       });
       await db.collection("attendanceLogs").add(payload);
       await saveGpsCheckSnapshot("visit-record",gpsForVisit,{status:visitGpsStatus,usedCached:false,failureCode:visitGpsFailureCode,failureReason:visitGpsFailureReason,attemptedAt:gpsAttemptedAt});
@@ -2682,6 +2682,270 @@
   <!-- step62 GPS fresh-only: latest index preserved / no cached fallback / real position timestamp -->
   <!-- step64b GPS audit guarantee: robust function-scoped patch -->
   <!-- step65 GPS atomic audit: metadata in initial Firestore create / no post-create merge -->
-  <!-- release 6.0 / API 36 / GPS fresh-only audit -->
+  <!-- release 6.1 / API 36 / GPS fresh-only audit -->
+
+<script id="step79-visit-edit-complete">
+/* step79: 방문사례기록 수정창에 대상자 정보/활동내용 추가
+   - 기존 일반 활동기록 수정은 그대로 유지
+   - 방문기록일 때만 별도 입력영역 및 저장 로직 사용 */
+(function(){
+  function n(v){ return String(v ?? '').trim(); }
+  function uniqValues(arr){ return [...new Set((arr||[]).map(n).filter(Boolean))]; }
+  function escapeHtml(v){
+    return n(v).replace(/[&<>"']/g,function(m){
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m];
+    });
+  }
+  function isVisitLog79(log){
+    return !!log && (
+      n(log.recordType)==='visitCase' ||
+      n(log.type)==='방문사례기록' ||
+      (typeof getLogType==='function' && getLogType(log)==='방문사례기록')
+    );
+  }
+  function optionValuesFromSelect(id){
+    var node=document.getElementById(id);
+    if(!node) return [];
+    return Array.from(node.options).map(function(o){return n(o.value)}).filter(Boolean);
+  }
+  function radioValues(name){
+    return Array.from(document.querySelectorAll('input[name="'+name+'"]'))
+      .map(function(x){return n(x.value)}).filter(Boolean);
+  }
+  function fillSelect(id, values, current, placeholder){
+    var sel=document.getElementById(id);
+    if(!sel) return;
+    var list=uniqValues([current].concat(values||[]));
+    sel.innerHTML='<option value="">'+escapeHtml(placeholder||'선택')+'</option>'+
+      list.map(function(v){return '<option value="'+escapeHtml(v)+'">'+escapeHtml(v)+'</option>';}).join('');
+    sel.value=n(current);
+  }
+  function makeBirthYears79(current){
+    var vals=optionValuesFromSelect('birth-year-select');
+    if(!vals.length){
+      var y=new Date().getFullYear();
+      for(var i=y;i>=1900;i--) vals.push(String(i));
+    }
+    fillSelect('edit-visit-birth-year',vals,current,'년도 선택');
+  }
+  function ensureVisitEditUi79(){
+    if(document.getElementById('edit-visit-section')) return;
+    var work=document.getElementById('edit-work-hours-section');
+    if(!work || !work.parentNode) return;
+    var wrap=document.createElement('div');
+    wrap.id='edit-visit-section';
+    wrap.style.display='none';
+    wrap.innerHTML=
+      '<div style="margin:8px 0 10px;padding:10px 12px;border:1px solid #bfdbfe;border-radius:12px;background:#f8fbff;">'+
+        '<div style="font-size:15px;font-weight:900;color:#047857;margin-bottom:10px;">2. 대상자 정보 및 활동 내용</div>'+
+        '<div class="field" style="margin-top:0;"><label for="edit-visit-client-name">성함(경로당)</label>'+
+          '<input id="edit-visit-client-name" type="text" placeholder="예: 홍*동 또는 ○○경로당"></div>'+
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">'+
+          '<div class="field"><label for="edit-visit-gender">성별</label><select id="edit-visit-gender" class="work-hours-select" style="width:100%;"></select></div>'+
+          '<div class="field"><label for="edit-visit-birth-year">출생년도</label><select id="edit-visit-birth-year" class="work-hours-select" style="width:100%;"></select></div>'+
+        '</div>'+
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">'+
+          '<div class="field"><label for="edit-visit-housing">주거 형태</label><select id="edit-visit-housing" class="work-hours-select" style="width:100%;"></select></div>'+
+          '<div class="field"><label for="edit-visit-reason">상담 형태</label><select id="edit-visit-reason" class="work-hours-select" style="width:100%;"></select></div>'+
+        '</div>'+
+        '<div class="field" id="edit-visit-housing-etc-wrap" style="display:none;"><label for="edit-visit-housing-etc">기타 주거 형태</label>'+
+          '<input id="edit-visit-housing-etc" type="text" placeholder="기타 주거 형태를 입력하세요"></div>'+
+        '<div class="field"><label for="edit-visit-summary">활동 내용 <span style="color:#ef4444;font-weight:900;">*</span></label>'+
+          '<textarea id="edit-visit-summary" placeholder="상담내용, 연계내용, 방문 후 조치사항 등을 입력하세요"></textarea></div>'+
+        '<div style="margin-top:8px;font-size:11px;line-height:1.45;color:#64748b;">활동목적은 위의 ‘활동 목록’에서 수정합니다. 기존 세부체크리스트 값은 삭제하지 않고 그대로 보존됩니다.</div>'+
+      '</div>';
+    work.parentNode.insertBefore(wrap,work);
+
+    var housing=document.getElementById('edit-visit-housing');
+    if(housing){
+      housing.addEventListener('change',function(){
+        var etc=document.getElementById('edit-visit-housing-etc-wrap');
+        if(etc) etc.style.display=n(housing.value)==='기타'?'block':'none';
+        if(n(housing.value)!=='기타'){
+          var input=document.getElementById('edit-visit-housing-etc');
+          if(input) input.value='';
+        }
+      });
+    }
+    var client=document.getElementById('edit-visit-client-name');
+    if(client && typeof maskClientName==='function'){
+      client.addEventListener('blur',function(){ this.value=maskClientName(this.value); });
+    }
+  }
+  function populateVisit79(log){
+    ensureVisitEditUi79();
+    var sec=document.getElementById('edit-visit-section');
+    if(!sec) return;
+    sec.style.display=isVisitLog79(log)?'block':'none';
+    if(!isVisitLog79(log)) return;
+
+    var client=document.getElementById('edit-visit-client-name');
+    if(client) client.value=n(log.clientName);
+
+    fillSelect('edit-visit-gender',
+      optionValuesFromSelect('gender-select').concat(['남','여']),
+      log.gender,'선택');
+
+    makeBirthYears79(log.birthYear);
+
+    fillSelect('edit-visit-housing',
+      radioValues('housing-type').concat(['독거','부부','기타']),
+      log.housingType,'선택');
+
+    fillSelect('edit-visit-reason',
+      radioValues('visit-reason').concat(['대면','비대면']),
+      log.visitReason,'선택');
+
+    var he=document.getElementById('edit-visit-housing-etc');
+    if(he) he.value=n(log.housingEtc);
+    var hew=document.getElementById('edit-visit-housing-etc-wrap');
+    if(hew) hew.style.display=n(log.housingType)==='기타'?'block':'none';
+
+    var summary=document.getElementById('edit-visit-summary');
+    if(summary) summary.value=n(log.visitSummary||log.activityContent);
+
+    // 방문기록에서는 기존 memo 전체 문장 대신 실제 활동내용 입력칸을 사용
+    var memoField=document.getElementById('edit-memo-input');
+    if(memoField){
+      memoField.closest('.field').style.display='none';
+    }
+  }
+  function restoreNormalMemo79(){
+    var memoField=document.getElementById('edit-memo-input');
+    if(memoField && memoField.closest('.field')) memoField.closest('.field').style.display='';
+  }
+  function getCurrentEditingLog79(){
+    try{
+      return (allLogs||[]).find(function(l){return l.id===editingLogId;})||null;
+    }catch(e){ return null; }
+  }
+  function readVisitData79(log, purposes){
+    var clientName=n(document.getElementById('edit-visit-client-name')?.value);
+    if(clientName && typeof maskClientName==='function') clientName=maskClientName(clientName);
+    var gender=n(document.getElementById('edit-visit-gender')?.value);
+    var birthYear=n(document.getElementById('edit-visit-birth-year')?.value);
+    var housingType=n(document.getElementById('edit-visit-housing')?.value);
+    var housingEtc=housingType==='기타'?n(document.getElementById('edit-visit-housing-etc')?.value):'';
+    var visitReason=n(document.getElementById('edit-visit-reason')?.value);
+    var visitSummary=n(document.getElementById('edit-visit-summary')?.value);
+    var yearNum=Number(birthYear);
+    var age=(birthYear && Number.isFinite(yearNum)) ? (new Date().getFullYear()-yearNum+1) : '';
+
+    return {
+      clientName:clientName,
+      gender:gender,
+      birthYear:birthYear,
+      age:age,
+      housingType:housingType,
+      housingEtc:housingEtc,
+      visitReason:visitReason,
+      visitSummary:visitSummary,
+      visitPurposes:purposes,
+      visitPurposeEtc:n(log.visitPurposeEtc),
+      agencySupportDetails:Array.isArray(log.agencySupportDetails)?log.agencySupportDetails:[],
+      resourceLinkDetails:Array.isArray(log.resourceLinkDetails)?log.resourceLinkDetails:[],
+      resourceLinkDetails1:Array.isArray(log.resourceLinkDetails1)?log.resourceLinkDetails1:[],
+      resourceLinkDetails2:Array.isArray(log.resourceLinkDetails2)?log.resourceLinkDetails2:[]
+    };
+  }
+
+  function patchOpen79(){
+    if(typeof window.openEditModal!=='function' || window.openEditModal.__step79) return;
+    var original=window.openEditModal;
+    var wrapped=function(id){
+      restoreNormalMemo79();
+      original(id);
+      var log=null;
+      try{ log=(allLogs||[]).find(function(l){return l.id===id;})||null; }catch(e){}
+      populateVisit79(log);
+    };
+    wrapped.__step79=true;
+    window.openEditModal=wrapped;
+  }
+
+  function patchSave79(){
+    var btn=document.getElementById('edit-modal-save');
+    if(!btn || btn.dataset.step79==='1') return;
+    btn.dataset.step79='1';
+    btn.addEventListener('click',async function(e){
+      var log=getCurrentEditingLog79();
+      if(!isVisitLog79(log)) return; // 일반 활동기록은 기존 저장 로직 그대로
+
+      e.preventDefault();
+      e.stopImmediatePropagation();
+
+      var checked=Array.from(document.querySelectorAll('#edit-checklist input:checked'))
+        .map(function(cb){return n(cb.value)}).filter(Boolean);
+      if(!checked.length){ alert('활동목적을 1개 이상 선택해주세요.'); return; }
+
+      var data=readVisitData79(log,checked);
+      if(!data.visitSummary){ alert('활동 내용을 입력해주세요.'); return; }
+
+      var updates={
+        type:'방문사례기록',
+        recordType:'visitCase',
+        activities:checked,
+        activitiesText:checked.join(', '),
+        visitPurposes:checked,
+        activityPurposes:checked,
+        clientName:data.clientName,
+        gender:data.gender,
+        birthYear:data.birthYear,
+        age:data.age,
+        housingType:data.housingType,
+        housingEtc:data.housingEtc,
+        visitReason:data.visitReason,
+        visitSummary:data.visitSummary,
+        activityContent:data.visitSummary
+      };
+
+      // 기존 세부체크리스트/방문 전용 값은 보존
+      [
+        'agencySupportDetails','resourceLinkDetails','resourceLinkDetails1','resourceLinkDetails2',
+        'visitPurposeDetails','purposeDetailText','visitPurposeEtc'
+      ].forEach(function(k){
+        if(log[k]!==undefined) updates[k]=log[k];
+      });
+
+      // memo도 현재 수정값 기준으로 다시 맞춤
+      if(typeof makeVisitMemoText==='function'){
+        updates.memo=makeVisitMemoText(Object.assign({},data,{
+          healthDetails:Array.isArray(log.healthDetails)?log.healthDetails:[]
+        }));
+      }else{
+        updates.memo=data.visitSummary;
+      }
+
+      if(typeof clampWorkHours==='function' && typeof buildWorkBreakFields==='function'){
+        var wh=document.getElementById('edit-work-hours-select');
+        if(wh){
+          var workHours=clampWorkHours(wh.value);
+          Object.assign(updates,buildWorkBreakFields(workHours));
+        }
+      }
+
+      try{
+        await db.collection('attendanceLogs').doc(editingLogId).update(updates);
+        alert('방문기록이 수정되었습니다.');
+        if(typeof closeEditModal==='function') closeEditModal();
+        if(typeof reloadMainData==='function') await reloadMainData();
+      }catch(err){
+        console.error('방문기록 수정 오류:',err);
+        alert('수정 중 오류가 발생했습니다.');
+      }
+    },true);
+  }
+
+  function init79(){
+    ensureVisitEditUi79();
+    patchOpen79();
+    patchSave79();
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',init79);
+  else init79();
+})();
+</script>
+<!-- step79-visit-edit-complete -->
+
 </body>
 </html>

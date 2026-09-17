@@ -90,8 +90,8 @@ jobs:
 
           app = Path("android/app/build.gradle")
           a = app.read_text(encoding="utf-8")
-          a, c1 = re.subn(r"versionCode\s+\d+", "versionCode 51", a, count=1)
-          a, c2 = re.subn(r'versionName\s+"[^"]+"', 'versionName "6.0"', a, count=1)
+          a, c1 = re.subn(r"versionCode\s+\d+", "versionCode 52", a, count=1)
+          a, c2 = re.subn(r'versionName\s+"[^"]+"', 'versionName "6.1"', a, count=1)
           if c1 != 1 or c2 != 1:
               raise SystemExit("versionCode/versionName update failed")
           app.write_text(a, encoding="utf-8")
@@ -148,13 +148,13 @@ jobs:
       - name: Upload release AAB
         uses: actions/upload-artifact@v4
         with:
-          name: coordinator-release-6.0-aab
+          name: coordinator-release-6.1-aab
           path: android/app/build/outputs/bundle/release/app-release.aab
           if-no-files-found: error
 
       - name: Upload release APK
         uses: actions/upload-artifact@v4
         with:
-          name: coordinator-release-6.0-apk
+          name: coordinator-release-6.1-apk
           path: android/app/build/outputs/apk/release/app-release.apk
           if-no-files-found: error
