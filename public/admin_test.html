@@ -877,6 +877,34 @@ td{font-size:10px!important;padding:7px!important;line-height:1.35!important}
 }
 </style>
 
+
+<style id="step85-admin-purpose-subdetails">
+.purpose-subdetail{
+  margin-top:5px;
+  padding:5px 7px;
+  border-radius:7px;
+  background:#f5f8fc;
+  border:1px solid #e2e8f0;
+  font-size:10px;
+  line-height:1.35;
+  color:#475569;
+}
+.purpose-subdetail b{
+  color:#1e3a5f;
+  margin-right:5px;
+}
+.purpose-subdetail span{
+  word-break:keep-all;
+}
+@media(max-width:700px){
+  .purpose-subdetail{
+    font-size:12px;
+    padding:7px 8px;
+  }
+}
+</style>
+<!-- step85-admin-purpose-subdetails -->
+
 </head>
 <!-- step63 GPS failure reason display: robust status mapping / legacy missing reason -->
 <body><!-- step55 today check-in confirmation list / keep step54 date boundary fix --><div class="watermark">TEST · admin_test.html · step59</div>
@@ -897,7 +925,13 @@ td{font-size:10px!important;padding:7px!important;line-height:1.35!important}
 </section>
 <section class="workspace"><div class="workspace-left"><div class="section month-section"><div class="section-head"><div><div class="section-title">📅 월별 기록 조회</div><div class="section-sub">원하는 월을 선택하여 기록을 조회할 수 있습니다.</div></div><span class="chip" id="monthBadge">-</span></div><div class="monthbar"><button class="btn b-soft" id="prevMonth">‹ 이전 달</button><input id="queryMonth" type="month" autocomplete="off"/><button class="btn b-soft" id="nextMonth">다음 달 ›</button><button class="btn b-blue" id="loadMonth">선택 월 조회</button><button class="btn b-ghost" id="loadAll">전체 기간 보기</button></div><div class="month-deco"><div class="month-bars"><i style="--h:20px"></i><i style="--h:36px"></i><i style="--h:55px"></i><i style="--h:42px"></i><i style="--h:67px"></i><i style="--h:78px"></i></div><div class="month-quote">“ 꾸준한 돌봄이\n더 나은 내일을 만듭니다. ”</div></div></div><section class="section filter"><div class="section-head"><div><div class="section-title">🔎 상세 필터</div><div class="section-sub">다양한 조건으로 원하는 데이터를 빠르게 조회할 수 있습니다.</div></div><div class="filter-head-tools"><div class="filter-quick-head" aria-label="빠른 기간"><button class="btn b-soft" data-range="today">오늘</button><button class="btn b-soft" data-range="week">최근 7일</button><button class="btn b-soft" data-range="month">이번 달</button><button class="btn b-soft" data-range="all">전체 기간</button></div><button class="btn b-soft" id="resetBtn">필터 초기화</button></div></div><div class="filter-body"><div class="filter-grid"><div class="fcard"><h4>1. 기간 · 사용자</h4><div class="fields"><div class="field"><label>시작 날짜</label><input id="startDate" type="date" autocomplete="off"/></div><div class="field"><label>종료 날짜</label><input id="endDate" type="date" autocomplete="off"/></div><div class="field full"><label>사용자</label><select id="userFilter"><option value="">전체 사용자</option></select></div></div></div><div class="fcard"><h4>2. 방문기록 조건</h4><div class="fields"><div class="field full"><label>활동목적</label><select id="activityFilter"><option value="">전체 활동목적</option></select></div><div class="field"><label>주거 형태</label><select id="housingFilter"><option value="">전체</option></select></div><div class="field"><label>상담 형태</label><select id="reasonFilter"><option value="">전체</option></select></div><div class="field full"><label>기록 유형</label><select id="typeFilter"><option value="">전체</option><option>일과 시작</option><option>일과 종료</option><option>활동 기록</option><option>방문사례기록</option></select></div></div></div><div class="fcard"><h4>3. 검색 · 시간</h4><div class="fields"><div class="field full"><label>검색어</label><input id="keywordFilter" placeholder="이름, 대상자명, 활동내용 검색" type="text"/></div><div class="field"><label>최소 시간(분)</label><input id="minDur" min="0" placeholder="0" type="number"/></div><div class="field"><label>최대 시간(분)</label><input id="maxDur" min="0" placeholder="없음" type="number"/></div></div><div class="search-actions"><button class="btn b-blue" id="applyBtn">조회하기</button><button class="btn b-soft" id="clearBtn">조건 지우기</button></div></div></div><div class="downloads"><div class="download"><strong>📊 전체 기록 엑셀</strong>현재 조회 월과 필터 결과 기준으로 방문기록·일반 활동기록을 내려받습니다. 일과 시작/종료 기록은 제외합니다.</div><div class="download"><strong>📝 방문기록만 엑셀</strong>방문(사례) 기록만 활동목적별로 분리해 내려받습니다. 제출·보고용 확인에 맞췄습니다.</div></div><div class="chips" id="filterChips" style="margin-top:12px"></div></div></section></div><div class="section menu-section"><div class="section-head"><div><div class="section-title">⚙️ 관리 메뉴</div><div class="section-sub">시스템 관리를 위한 주요 메뉴입니다.</div></div></div><div class="menu-grid"><a class="menu-card" data-open="members"><div class="menu-ico">👥</div><div><strong>회원등록/관리</strong><span>회원 정보 등록 및 수정</span></div></a><a class="menu-card" data-open="purposes"><div class="menu-ico">🍃</div><div><strong>활동목적 관리</strong><span>7개 목적 기준 관리</span></div></a><a class="menu-card" data-open="visitfields"><div class="menu-ico">🏠</div><div><strong>대상자 및 방문 정보 관리</strong><span>성별·주거형태·상담형태</span></div></a><a class="menu-card" data-open="subitems"><div class="menu-ico">✅</div><div><strong>세부체크리스트 관리</strong><span>지역복지·유관기관 하위항목</span></div></a></div></div></section>
 <section class="section table-section"><div class="tabletop"><div><div class="section-title">📑 상세 내역</div><div class="section-sub" id="tableInfo">0건</div></div><select id="pageSize"><option value="10">10개씩 보기</option><option value="25">25개씩 보기</option><option selected="" value="50">50개씩 보기</option></select></div><div class="tablewrap"><table><thead><tr><th>No</th><th>일시</th><th>사용자</th><th>유형</th><th>대상자</th><th>상담 형태</th><th>활동목적</th><th>세부내용</th><th>근무시간</th><th>활동시간</th><th>GPS</th></tr></thead><tbody id="tbody"><tr><td colspan="11"><div class="empty">데이터를 불러오는 중입니다.</div></td></tr></tbody></table></div><div class="pager"><button class="btn b-soft" id="prevPage">이전</button><span class="chip" id="pageInfo">1 / 1</span><button class="btn b-soft" id="nextPage">다음</button></div></section>
-<details class="details" id="manageDetails"><summary>관리 설정 상세</summary><div class="manage-grid"><div class="manage-panel" id="membersPanel"><h3>회원등록/관리</h3><div class="addrow"><input id="memberInput" placeholder="회원 이름"/><button class="btn b-blue" id="addMember">추가</button></div><div class="list" id="memberList"></div></div><div class="manage-panel" id="purposesPanel"><h3>활동목적 관리</h3><div class="addrow"><input id="purposeInput" placeholder="활동목적"/><button class="btn b-green" id="addPurpose">추가</button></div><div class="note">활동목적은 7개 기준을 권장합니다. 기존 기록은 삭제되지 않습니다.</div><div class="list" id="purposeList"></div></div><div class="manage-panel" id="visitfieldsPanel"><h3>대상자 및 방문 정보 관리</h3><div class="list" id="visitFieldList"></div></div><div class="manage-panel" id="subitemsPanel"><h3>세부체크리스트 관리</h3><div class="list" id="subItemList"></div></div></div></details>
+<details class="details" id="manageDetails"><summary>관리 설정 상세</summary><div class="manage-grid"><div class="manage-panel" id="membersPanel"><h3>회원등록/관리</h3><div class="addrow"><input id="memberInput" placeholder="회원 이름"/><button class="btn b-blue" id="addMember">추가</button></div><div class="list" id="memberList"></div></div><div class="manage-panel" id="purposesPanel"><h3>활동목적 관리</h3><div class="addrow"><input id="purposeInput" placeholder="활동목적"/><button class="btn b-green" id="addPurpose">추가</button></div><div class="note">활동목적은 7개 기준을 권장합니다. 기존 기록은 삭제되지 않습니다.</div><div class="list" id="purposeList"></div></div><div class="manage-panel" id="visitfieldsPanel"><h3>대상자 및 방문 정보 관리</h3><div class="list" id="visitFieldList"></div></div><div class="manage-panel" id="subitemsPanel"><h3>세부체크리스트 관리</h3><div class="list" id="subItemList"></div></div><div class="manage-panel" id="appUpdatePanel"><h3>앱 업데이트 관리</h3>
+<div class="field"><label>최소 허용 versionCode</label><input id="appMinVersionCode" type="number" min="1" value="54"/></div>
+<div class="field" style="margin-top:8px;"><label>최신 버전명</label><input id="appLatestVersionName" value="6.3"/></div>
+<div class="field" style="margin-top:8px;"><label>업데이트 안내 문구</label><input id="appUpdateMessage" value="안정적인 근무기록을 위해 최신 앱으로 업데이트해주세요."/></div>
+<button class="btn b-blue" id="saveAppUpdateConfig" type="button" style="margin-top:10px;width:100%;">업데이트 기준 저장</button>
+<div class="note" id="appUpdateConfigStatus" style="margin-top:8px;">설정을 불러오는 중입니다.</div>
+<div class="note" style="margin-top:7px;color:#b45309;">새 버전이 Play 스토어에 실제 게시된 뒤 최소 versionCode를 올리세요.</div></div></div></details>
 </main>
 <div class="attendance-modal" id="missingStartModal" aria-hidden="true">
   <div class="attendance-modal-card" role="dialog" aria-modal="true" aria-labelledby="missingStartTitle">
@@ -926,7 +960,16 @@ td{font-size:10px!important;padding:7px!important;line-height:1.35!important}
   const $=id=>document.getElementById(id); const norm=v=>String(v??'').trim(); const esc=v=>norm(v).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); const uniq=a=>[...new Set((a||[]).map(norm).filter(Boolean))].sort((x,y)=>x.localeCompare(y,'ko')); const pad=n=>String(n).padStart(2,'0');
   function toDate(v){ if(!v)return null; if(v instanceof Date)return v; if(typeof v?.toDate==='function')try{return v.toDate()}catch(e){} if(typeof v==='number')return new Date(v); if(typeof v==='string'){const d=new Date(v);return isNaN(d)?null:d} if(typeof v==='object'&&typeof v.seconds==='number')return new Date(v.seconds*1000); return null}
   function dateKey(v){const d=toDate(v);return d?`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`:''} function monthKey(v=new Date()){const d=toDate(v)||new Date();return `${d.getFullYear()}-${pad(d.getMonth()+1)}`} function fmtDT(v){const d=toDate(v);return d?`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}<br>${pad(d.getHours())}:${pad(d.getMinutes())}`:'-'} function fmtDur(ms){ms=Number(ms)||0;if(ms<=0)return'0초';let s=Math.floor(ms/1000),h=Math.floor(s/3600),m=Math.floor((s%3600)/60); if(h&&m)return`${h}시간 ${m}분`; if(h)return`${h}시간`; if(m)return`${m}분`; return`${s%60}초`} function daysInMonth(y,mo){const days=[31,28,31,30,31,30,31,31,30,31,30,31];if(mo===2&&((y%4===0&&y%100!==0)||y%400===0))return 29;return days[mo-1]||31} function range(m){let [y,mo]=String(m||monthKey()).split('-').map(Number),last=daysInMonth(y,mo),s=new Date(y,mo-1,1,0,0,0,0),e=new Date(y,mo,1,0,0,0,0);return {s,e,sk:`${y}-${pad(mo)}-01`,ek:`${y}-${pad(mo)}-${pad(last)}`}} function syncMonthDateInputs(){let r=range(state.month),sd=$('startDate'),ed=$('endDate');if(sd){sd.value=r.sk;sd.defaultValue=r.sk}if(ed){ed.value=r.ek;ed.defaultValue=r.ek}return r}
-  function time(log){return toDate(log.visitDateTime)||toDate(log.timestamp)||toDate(log.clientTimeMs)||toDate(log.activitySavedAt)||null} function user(log){return norm(log.coordinatorName||log.userName||log.name||log.user)} function type(log){const t=norm(log.type); if(t==='일과 시작'||log.activities==='일과 시작')return '일과 시작'; if(t==='일과 종료'||log.activities==='일과 종료')return '일과 종료'; if(norm(log.recordType)==='visitCase'||t==='방문사례기록'||t==='방문(사례)기록')return '방문사례기록'; return '활동 기록'} function arr(v){if(Array.isArray(v))return v.map(norm).filter(Boolean); if(norm(v))return String(v).split(/[,/]/).map(x=>x.trim()).filter(Boolean); return []} function acts(log){let a=[]; a.push(...arr(log.activities),...arr(log.selectedActivities),...arr(log.visitPurposes),...arr(log.purposes),...arr(log.activityNames)); if(norm(log.activity))a.push(norm(log.activity)); if(norm(log.activitiesText))a.push(...arr(log.activitiesText)); return uniq(a)} function memo(log){return norm(log.memo||log.normalMemo||log.activityContent||log.content||log.note||log.visitContent||log.summary)} function duration(log){return Number(log.durationMs||log.activityDurationMs||0)||Number(log.durationMinutes||log.activityMinutes||0)*60000||0} function client(log){return norm(log.clientName||log.targetName||log.elderName)} function housing(log){return norm(log.housingType||log.livingType)} function reason(log){return norm(log.visitReason||log.contactType)} function finiteGpsNumber(v){if(v===null||v===undefined||v==='')return null;let n=Number(v);return Number.isFinite(n)?n:null}
+  function time(log){return toDate(log.visitDateTime)||toDate(log.timestamp)||toDate(log.clientTimeMs)||toDate(log.activitySavedAt)||null} function user(log){return norm(log.coordinatorName||log.userName||log.name||log.user)} function type(log){const t=norm(log.type); if(t==='일과 시작'||log.activities==='일과 시작')return '일과 시작'; if(t==='일과 종료'||log.activities==='일과 종료')return '일과 종료'; if(norm(log.recordType)==='visitCase'||t==='방문사례기록'||t==='방문(사례)기록')return '방문사례기록'; return '활동 기록'} function arr(v){if(Array.isArray(v))return v.map(norm).filter(Boolean); if(norm(v))return String(v).split(/[,/]/).map(x=>x.trim()).filter(Boolean); return []} function acts(log){let a=[]; a.push(...arr(log.activities),...arr(log.selectedActivities),...arr(log.visitPurposes),...arr(log.purposes),...arr(log.activityNames)); if(norm(log.activity))a.push(norm(log.activity)); if(norm(log.activitiesText))a.push(...arr(log.activitiesText)); return uniq(a)} function memo(log){
+    const direct=norm(log.visitSummary||log.activityContent);
+    if(direct)return direct.replace(/^활동\s*내용\s*:\s*/,'').trim();
+    const raw=norm(log.memo||log.normalMemo||log.content||log.note||log.visitContent||log.summary);
+    if(type(log)==='방문사례기록'&&raw){
+      const first=raw.split(/\r?\n/)[0]||raw;
+      return first.replace(/^활동\s*내용\s*:\s*/,'').trim();
+    }
+    return raw.replace(/^활동\s*내용\s*:\s*/,'').trim();
+  } function duration(log){return Number(log.durationMs||log.activityDurationMs||0)||Number(log.durationMinutes||log.activityMinutes||0)*60000||0} function client(log){return norm(log.clientName||log.targetName||log.elderName)} function housing(log){return norm(log.housingType||log.livingType)} function reason(log){return norm(log.visitReason||log.contactType)} function finiteGpsNumber(v){if(v===null||v===undefined||v==='')return null;let n=Number(v);return Number.isFinite(n)?n:null}
   function gpsInfo(log){
     const pairs=[
       ['lat','lng','accuracy','기록 위치'],
@@ -1045,7 +1088,72 @@ let registered=(state.registeredUsers&&state.registeredUsers.length?state.regist
 let confirmed=registered.filter(n=>attendanceSet.has(n)).length;$('missingStartCnt').textContent=missing.length;$('missingStartBtn').classList.toggle('zero',missing.length===0);$('missingRegisteredCnt').textContent=registered.length;$('startConfirmedCnt').textContent=confirmed;$('missingModalCnt').textContent=missing.length;$('missingStartModalSub').textContent=`${today} 기준 · 등록 회원 ${registered.length}명 중 오늘 관련 기록이 전혀 없는 ${missing.length}명`;$('missingStartList').innerHTML=missing.length?missing.map(x=>`<div class="attendance-row"><div class="attendance-name">${esc(x.name)}</div><div class="attendance-state">${esc(x.status)}</div><span class="attendance-badge ${x.kind}">${esc(x.label)}</span></div>`).join(''):'<div class="empty">오늘 출근이 모두 확인되었습니다.</div>';window._inactive={never,noact};window._todayUsers=todayUsers;window._missingStart=missing;window._startConfirmed=attendanceUsers}
   function renderSummary(){let today=dateKey(new Date()),flt=state.filtered,work=calcWork(state.logs),actMs=state.logs.filter(l=>type(l)!=='일과 시작'&&type(l)!=='일과 종료').reduce((s,l)=>s+duration(l),0);$('todayCnt').textContent=state.logs.filter(l=>dateKey(time(l))===today).length;$('workTime').textContent=fmtDur(work.total);$('activityTime').textContent=fmtDur(actMs);$('filteredUsers').textContent=uniq(flt.map(user)).length+'명';let counts={};flt.forEach(l=>acts(l).forEach(a=>counts[a]=(counts[a]||0)+1));let top=Object.entries(counts).sort((a,b)=>b[1]-a[1])[0];$('topActivity').textContent=top?top[0]:'-';$('topActivitySub').textContent=top?`${top[1]}건 포함됨`:'활동 포함 횟수';let topw=Object.entries(work.per).sort((a,b)=>b[1]-a[1])[0];$('topWorker').textContent=topw&&topw[1]?topw[0]:'-';$('topWorkerSub').textContent=topw&&topw[1]?fmtDur(topw[1]):'이번 달 근무 1위';}
   function renderFilters(){let chips=[]; if($('startDate').value||$('endDate').value)chips.push(`기간 ${$('startDate').value||'-'} ~ ${$('endDate').value||'-'}`);['userFilter','activityFilter','housingFilter','reasonFilter','typeFilter'].forEach(id=>{let v=$(id).value;if(v)chips.push(v)});let k=norm($('keywordFilter').value);if(k)chips.push('검색 '+k);$('filterChips').innerHTML=chips.length?chips.map(c=>`<span class="chip">${esc(c)}</span>`).join(''):`<span class="chip">${state.all?'전체 기간':'선택 월'} 데이터 기준</span>`}
-  function renderTable(){let tbody=$('tbody'),total=state.filtered.length,ps=Number($('pageSize').value||50),pages=Math.max(1,Math.ceil(total/ps)); if(state.page>pages)state.page=pages;let start=(state.page-1)*ps,rows=state.filtered.slice(start,start+ps);$('tableInfo').textContent=`총 ${total}건 · ${start+1}-${Math.min(start+ps,total)} 표시`;$('pageInfo').textContent=`${state.page} / ${pages}`;if(!rows.length){tbody.innerHTML='<tr><td colspan="11"><div class="empty">표시할 기록이 없습니다.</div></td></tr>';return}tbody.innerHTML=rows.map((l,i)=>{let t=type(l),alist=acts(l),cls=t==='일과 시작'?'green':t==='일과 종료'?'orange':t==='방문사례기록'?'blue':'';return`<tr><td>${start+i+1}</td><td>${fmtDT(time(l))}</td><td><b>${esc(user(l)||'-')}</b></td><td><span class="badge ${cls}">${esc(t)}</span></td><td>${esc(client(l)||'-')}<br><span class="note">${esc(housing(l)||'')}</span></td><td>${esc(reason(l)||'-')}</td><td>${alist.map(a=>`<span class="badge">${esc(a)}</span>`).join('')||'-'}</td><td><div class="detail-text" title="${esc(memo(l)||'-')}">${esc(memo(l)||'-')}</div></td><td>${fmtDur(Number(l.workDurationMs||l.boundaryDurationMs||0))}</td><td>${fmtDur(duration(l))}</td><td>${gpsCell(l)}</td></tr>`}).join('')}
+
+  function purposeSubDetails(log){
+    const selected=acts(log);
+    if(selected.length<2)return [];
+
+    const vp=(log&&typeof log.visitPurposeDetails==='object'&&log.visitPurposeDetails)||{};
+    const out=[];
+
+    const pick=function(...values){
+      let result=[];
+      values.forEach(v=>{
+        if(Array.isArray(v))result.push(...v);
+        else if(v!==null&&v!==undefined&&norm(v))result.push(...arr(v));
+      });
+      return uniq(result);
+    };
+
+    if(selected.includes('유관기관업무지원')){
+      const items=pick(log.agencySupportDetails,vp.agencySupport);
+      if(items.length)out.push({label:'유관기관업무지원',items});
+    }
+
+    if(selected.includes('건강관리(스마케어 등)')||selected.includes('건강관리')){
+      const items=pick(log.healthCareDetails,log.healthDetails,vp.healthCare);
+      if(items.length)out.push({label:'건강관리',items});
+    }
+
+    if(selected.includes('지역복지자원연계')||selected.includes('자원연계')){
+      const part1=pick(log.resourceLinkDetails1,vp.resourceLink1);
+      const part2=pick(log.resourceLinkDetails2,vp.resourceLink2);
+      const combined=(part1.length||part2.length)
+        ?uniq([...part1,...part2])
+        :pick(log.resourceLinkDetails,vp.resourceLink);
+      if(combined.length)out.push({label:'지역복지자원연계',items:combined});
+    }
+
+    if(!out.length&&norm(log.purposeDetailText)){
+      const raw=norm(log.purposeDetailText).split(/\s*\/\s*/).map(x=>x.trim()).filter(Boolean);
+      raw.forEach(line=>{
+        const m=line.match(/^(유관기관업무지원|건강관리|지역복지자원연계1?|지역복지자원연계2)\s*:\s*(.+)$/);
+        if(!m)return;
+        let label=m[1];
+        if(label.startsWith('지역복지자원연계'))label='지역복지자원연계';
+        const items=arr(m[2]);
+        if(items.length)out.push({label,items});
+      });
+    }
+
+    const merged={};
+    out.forEach(x=>{
+      merged[x.label]=uniq([...(merged[x.label]||[]),...x.items]);
+    });
+    return Object.entries(merged).map(([label,items])=>({label,items}));
+  }
+
+  function detailCellHtml(log){
+    const main=memo(log)||'-';
+    const details=purposeSubDetails(log);
+    const detailTitle=[main,...details.map(x=>`${x.label}: ${x.items.join(', ')}`)].join('\n');
+    const subHtml=details.map(x=>
+      `<div class="purpose-subdetail"><b>${esc(x.label)}</b><span>${x.items.map(esc).join(', ')}</span></div>`
+    ).join('');
+    return `<div class="detail-text" title="${esc(detailTitle)}">${esc(main)}</div>${subHtml}`;
+  }
+
+  function renderTable(){let tbody=$('tbody'),total=state.filtered.length,ps=Number($('pageSize').value||50),pages=Math.max(1,Math.ceil(total/ps)); if(state.page>pages)state.page=pages;let start=(state.page-1)*ps,rows=state.filtered.slice(start,start+ps);$('tableInfo').textContent=`총 ${total}건 · ${start+1}-${Math.min(start+ps,total)} 표시`;$('pageInfo').textContent=`${state.page} / ${pages}`;if(!rows.length){tbody.innerHTML='<tr><td colspan="11"><div class="empty">표시할 기록이 없습니다.</div></td></tr>';return}tbody.innerHTML=rows.map((l,i)=>{let t=type(l),alist=acts(l),cls=t==='일과 시작'?'green':t==='일과 종료'?'orange':t==='방문사례기록'?'blue':'';return`<tr><td>${start+i+1}</td><td>${fmtDT(time(l))}</td><td><b>${esc(user(l)||'-')}</b></td><td><span class="badge ${cls}">${esc(t)}</span></td><td>${esc(client(l)||'-')}<br><span class="note">${esc(housing(l)||'')}</span></td><td>${esc(reason(l)||'-')}</td><td>${alist.map(a=>`<span class="badge">${esc(a)}</span>`).join('')||'-'}</td><td>${detailCellHtml(l)}</td><td>${fmtDur(Number(l.workDurationMs||l.boundaryDurationMs||0))}</td><td>${fmtDur(duration(l))}</td><td>${gpsCell(l)}</td></tr>`}).join('')}
   function safeManageList(v){
     if(Array.isArray(v))return v.map(norm).filter(Boolean);
     if(v===null||v===undefined||v==='')return [];
@@ -1340,4 +1448,59 @@ let confirmed=registered.filter(n=>attendanceSet.has(n)).length;$('missingStartC
 <!-- step76-month-loading-fix -->
 
 <!-- step78-detail-render-fix -->
+<!-- step83-clean-activity-content -->
+
+<script id="step84-admin-update-config">
+document.addEventListener("DOMContentLoaded",function(){
+  const code=document.getElementById("appMinVersionCode");
+  const name=document.getElementById("appLatestVersionName");
+  const msg=document.getElementById("appUpdateMessage");
+  const save=document.getElementById("saveAppUpdateConfig");
+  const status=document.getElementById("appUpdateConfigStatus");
+  if(!code||!name||!msg||!save)return;
+
+  async function loadCfg(){
+    try{
+      const snap=await db.collection("settings").doc("appUpdateConfig").get();
+      const d=snap.exists?(snap.data()||{}):{};
+      code.value=String(Number(d.minVersionCode||54)||54);
+      name.value=norm(d.latestVersionName||"6.3");
+      msg.value=norm(d.message||"안정적인 근무기록을 위해 최신 앱으로 업데이트해주세요.");
+      if(status)status.textContent=snap.exists?"현재 설정을 불러왔습니다.":"기본값 6.3 / 54를 표시합니다.";
+    }catch(e){
+      console.error(e);
+      if(status)status.textContent="설정을 불러오지 못했습니다.";
+    }
+  }
+
+  save.onclick=async function(){
+    const min=Number(code.value||0);
+    const latest=norm(name.value);
+    const message=norm(msg.value);
+    if(!Number.isInteger(min)||min<1)return alert("최소 versionCode를 숫자로 입력해주세요.");
+    if(!latest)return alert("최신 버전명을 입력해주세요.");
+    if(!confirm(`최소 허용 versionCode를 ${min}으로 저장할까요?\n\n이 값보다 낮은 앱은 일과 시작이 차단됩니다.`))return;
+    save.disabled=true;
+    try{
+      await db.collection("settings").doc("appUpdateConfig").set({
+        minVersionCode:min,
+        latestVersionName:latest,
+        message:message||"최신 앱으로 업데이트해주세요.",
+        storeUrl:"https://play.google.com/store/apps/details?id=kr.nonsan.coordinator",
+        updatedAt:firebase.firestore.FieldValue.serverTimestamp()
+      },{merge:true});
+      if(status)status.textContent=`저장 완료 · 최소 ${min} · 최신 ${latest}`;
+      toast("앱 업데이트 설정을 저장했습니다");
+    }catch(e){
+      console.error(e);
+      alert("저장 중 오류가 발생했습니다.");
+    }finally{
+      save.disabled=false;
+    }
+  };
+  loadCfg();
+});
+</script>
+<!-- step84-admin-update-config -->
+
 </body></html>

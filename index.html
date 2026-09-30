@@ -614,7 +614,7 @@
           <div class="visit-group">
             <div class="visit-group-title"><span class="visit-step">2</span>대상자 정보 및 활동 내용</div>
             <div class="visit-grid-3">
-              <div class="visit-field"><label for="client-name-input">성함(경로당)</label><input id="client-name-input" class="visit-case-field" type="text" placeholder="예: 홍*동 또는 ○○경로당" /></div>
+              <div class="visit-field"><label for="client-name-input">성함(경로당) <span style="color:#ef4444;font-weight:900;">*</span></label><input id="client-name-input" class="visit-case-field" type="text" required placeholder="예: 홍*동 또는 ○○경로당" /></div>
               <div class="visit-field"><label for="gender-select">성별</label><select id="gender-select" class="visit-case-field"><option value="">선택</option><option value="남">남</option><option value="여">여</option></select></div>
               <div class="visit-field"><label for="birth-year-select">출생년도</label><select id="birth-year-select" class="visit-case-field"><option value="">년도 선택</option></select></div>
             </div>
@@ -635,7 +635,7 @@
             <div class="visit-field" style="margin-top:10px;"><label for="memo-input">활동 내용 <span style="color:#ef4444;font-weight:900;">*</span></label><textarea id="memo-input" class="visit-case-field" placeholder="활동 내용을 입력하세요. 예: 상담내용, 연계내용, 방문 후 조치사항 등"></textarea></div>
           </div>
 
-          <div class="visit-save-info">저장 시 활동시간, 근무시간, 작성자가 함께 저장됩니다. 활동내용은 필수이며, 성함(경로당)·성별·주거형태·상담 형태와 함께 한 묶음으로 저장됩니다.</div>
+          <div class="visit-save-info">저장 시 활동시간, 근무시간, 작성자가 함께 저장됩니다. 성함(경로당)과 활동내용은 필수이며, 성별·주거형태·상담 형태와 함께 한 묶음으로 저장됩니다.</div>
           <div class="action-row"><button id="save-activity-btn" class="btn btn-primary" type="button">방문기록 저장</button><button id="cancel-session-btn" class="btn btn-danger" type="button">작성 내용 초기화</button></div>
 
           <div class="visit-hidden-legacy">
@@ -2119,7 +2119,7 @@
       gpsCapturedAt:selectedGps?.capturedAt??null,
       gpsUsedCached:false,
       gpsMetaVersion:"gps-v2",
-      appBuildVersion:"6.2"
+      appBuildVersion:"6.3"
     });
     await db.collection("attendanceLogs").add(payload);
       if(type==="일과 종료") clearCurrentActivitySessionSilently();
@@ -2283,6 +2283,7 @@
 
   function validateVisitCaseData(data){
     if(!data.visitPurposes.length) return "활동목적을 1개 이상 선택해주세요.";
+    if(!normalizeText(data.clientName)) return "성함(경로당)을 입력해주세요.";
     if(!normalizeText(data.visitSummary)) return "활동 내용을 입력해주세요.";
     return "";
   }
@@ -2299,7 +2300,7 @@
 
   function makeVisitMemoText(data){
     const lines=[];
-    if(data.visitSummary) lines.push(`활동 내용: ${data.visitSummary}`);
+    if(data.visitSummary) lines.push(data.visitSummary);
     if(data.clientName) lines.push(`대상자: ${data.clientName}`);
     if(data.gender) lines.push(`성별: ${data.gender}`);
     if(data.birthYear) lines.push(`출생년도: ${data.birthYear}년생${data.age?` / ${data.age}세`:""}`);
@@ -2392,7 +2393,7 @@
         gpsCapturedAt:gpsForVisit?.capturedAt??null,
         gpsUsedCached:false,
         gpsMetaVersion:"gps-v2",
-      appBuildVersion:"6.2"
+      appBuildVersion:"6.3"
       });
       await db.collection("attendanceLogs").add(payload);
       await saveGpsCheckSnapshot("visit-record",gpsForVisit,{status:visitGpsStatus,usedCached:false,failureCode:visitGpsFailureCode,failureReason:visitGpsFailureReason,attemptedAt:gpsAttemptedAt});
@@ -2682,7 +2683,7 @@
   <!-- step62 GPS fresh-only: latest index preserved / no cached fallback / real position timestamp -->
   <!-- step64b GPS audit guarantee: robust function-scoped patch -->
   <!-- step65 GPS atomic audit: metadata in initial Firestore create / no post-create merge -->
-  <!-- release 6.2 / API 36 / GPS permission gate + network-resilient timer -->
+  <!-- release 6.3 / API 36 / update gate + immediate click lock -->
 
 <script id="step79-visit-edit-complete">
 /* step79: 방문사례기록 수정창에 대상자 정보/활동내용 추가
@@ -2738,8 +2739,8 @@
     wrap.innerHTML=
       '<div style="margin:8px 0 10px;padding:10px 12px;border:1px solid #bfdbfe;border-radius:12px;background:#f8fbff;">'+
         '<div style="font-size:15px;font-weight:900;color:#047857;margin-bottom:10px;">2. 대상자 정보 및 활동 내용</div>'+
-        '<div class="field" style="margin-top:0;"><label for="edit-visit-client-name">성함(경로당)</label>'+
-          '<input id="edit-visit-client-name" type="text" placeholder="예: 홍*동 또는 ○○경로당"></div>'+
+        '<div class="field" style="margin-top:0;"><label for="edit-visit-client-name">성함(경로당) <span style="color:#ef4444;font-weight:900;">*</span></label>'+
+          '<input id="edit-visit-client-name" type="text" required placeholder="예: 홍*동 또는 ○○경로당"></div>'+
         '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">'+
           '<div class="field"><label for="edit-visit-gender">성별</label><select id="edit-visit-gender" class="work-hours-select" style="width:100%;"></select></div>'+
           '<div class="field"><label for="edit-visit-birth-year">출생년도</label><select id="edit-visit-birth-year" class="work-hours-select" style="width:100%;"></select></div>'+
@@ -2879,6 +2880,7 @@
       if(!checked.length){ alert('활동목적을 1개 이상 선택해주세요.'); return; }
 
       var data=readVisitData79(log,checked);
+      if(!data.clientName){ alert('성함(경로당)을 입력해주세요.'); return; }
       if(!data.visitSummary){ alert('활동 내용을 입력해주세요.'); return; }
 
       var updates={
@@ -3169,24 +3171,65 @@
   };
 
   saveWorkBoundaryLog=async function(type){
-    if(savingWorkBoundary)return;
-    if(isRapidDuplicateClick())return;
-    if(type==="일과 시작")clearCurrentActivitySessionSilently();else enforceActivitySessionWorkState();
-    if(!currentUserName){alert("사용자를 먼저 선택해주세요.");return;}
-    const status=getTodayWorkStatus();
-    if(type==="일과 시작"&&status==="started"){alert("이미 일과가 시작되어 있습니다.");return;}
-    if(type==="일과 종료"&&status==="none"){alert("일과 시작을 먼저 저장해주세요.");return;}
-    if(type==="일과 종료"&&currentSession&&currentSession.activities.length){openEndWorkModal();return;}
-    let preGps=null;
-    if(type==="일과 시작"){preGps=await ensureGpsForStart();if(!preGps)return false;}
+    if(savingWorkBoundary)return false;
+
     const btn=type==="일과 시작"?el("start-work-btn"):el("end-work-btn");
-    const restore=setButtonBusy(btn,true,type==="일과 시작"?"일과 시작 처리 중...":"일과 종료 처리 중...");
+    const restore=setButtonBusy(btn,true,type==="일과 시작"?"앱 확인 중...":"일과 종료 처리 중...");
     savingWorkBoundary=true;
+
     try{
-      return await _doSaveWorkBoundaryLog(type,type==="일과 시작"
-        ?{workHours:getSelectedWorkHours(),requireGps:true,fastGps:true,preCapturedGps:preGps}
-        :{requireGps:true,fastGps:true});
-    }finally{savingWorkBoundary=false;restore();}
+      if(isRapidDuplicateClick())return false;
+
+      if(type==="일과 시작"){
+        const updateOk=await window.step84EnsureUpdateAllowed();
+        if(!updateOk)return false;
+      }
+
+      if(type==="일과 시작")clearCurrentActivitySessionSilently();
+      else enforceActivitySessionWorkState();
+
+      if(!currentUserName){
+        alert("사용자를 먼저 선택해주세요.");
+        return false;
+      }
+
+      const status=getTodayWorkStatus();
+      if(type==="일과 시작"&&status==="started"){
+        window.step84Notify("이미 일과가 시작되어 있습니다.","warn");
+        return false;
+      }
+      if(type==="일과 종료"&&status==="none"){
+        alert("일과 시작을 먼저 저장해주세요.");
+        return false;
+      }
+      if(type==="일과 종료"&&currentSession&&currentSession.activities.length){
+        openEndWorkModal();
+        return false;
+      }
+
+      let preGps=null;
+      if(type==="일과 시작"){
+        if(btn)btn.textContent="위치 확인 중...";
+        preGps=await ensureGpsForStart();
+        if(!preGps)return false;
+        if(btn)btn.textContent="일과 시작 저장 중...";
+      }
+
+      return await _doSaveWorkBoundaryLog(
+        type,
+        type==="일과 시작"
+          ?{workHours:getSelectedWorkHours(),requireGps:true,fastGps:true,preCapturedGps:preGps}
+          :{requireGps:true,fastGps:true}
+      );
+    }finally{
+      savingWorkBoundary=false;
+      restore();
+      try{
+        updateBoundaryBtnState();
+        updateActivityAreaState();
+        updateWorkHoursUi();
+      }catch(e){}
+    }
   };
 
   _doSaveWorkBoundaryLog=async function(type,options={}){
@@ -3210,7 +3253,7 @@
       gpsStatus:gpsStatus==="not-attempted"?choice.status:gpsStatus,gpsSource:type==="일과 시작"?"work-start":"work-end",
       gpsFailureCode:gps?"":(failCode||"unknown"),gpsFailureReason:gps?"":(failReason||"위치 확인 실패"),
       gpsAttemptedAt:attemptedAt,gpsCapturedAt:selected?.capturedAt??null,gpsUsedCached:false,
-      gpsMetaVersion:"gps-v3",appBuildVersion:"6.2",boundaryStorageVersion:"work-v2"
+      gpsMetaVersion:"gps-v3",appBuildVersion:"6.3",boundaryStorageVersion:"work-v2"
     };
     if(type==="일과 시작"){
       Object.assign(payload,buildWorkBreakFields(workHours));
@@ -3232,9 +3275,9 @@
     if(ok){
       allLogs=allLogs.filter(x=>x.id!==localId);
       Promise.resolve(reloadMainData()).catch(()=>{});
-      if(!options.silent)alert(type+"이 저장되었습니다.");
+      if(!options.silent)window.step84Notify(type+"이 저장되었습니다.");
     }else if(!options.silent){
-      alert(type+" 시각은 휴대폰에 저장되었습니다.\n인터넷 연결이 안정되면 서버로 자동 전송됩니다.");
+      window.step84Notify(type+" 시각은 휴대폰에 저장되었습니다. 인터넷 연결 후 자동 전송됩니다.","warn");
     }
     syncGpsCheckTimer();
     return true;
@@ -3253,6 +3296,109 @@
 })();
 </script>
 <!-- step82-gps-timer-resilience -->
+
+<!-- step83-required-client-name -->
+
+<script id="step84-update-gate">
+(function(){
+  const APP_VERSION_NAME="6.3";
+  const APP_VERSION_CODE=54;
+  const CACHE_KEY="coordinator_app_update_config_v1";
+  const DEFAULT_STORE_URL="https://play.google.com/store/apps/details?id=kr.nonsan.coordinator";
+  let cachedConfig=null;
+  let notifyTimer=null;
+
+  function n(v){return String(v??"").trim();}
+  function cacheRead(){
+    try{
+      const x=JSON.parse(localStorage.getItem(CACHE_KEY)||"null");
+      return x&&typeof x==="object"?x:null;
+    }catch(e){return null;}
+  }
+  function cacheWrite(x){
+    try{localStorage.setItem(CACHE_KEY,JSON.stringify(x||{}));}catch(e){}
+  }
+
+  async function readConfig(){
+    const fallback=cachedConfig||cacheRead();
+    try{
+      const snap=await Promise.race([
+        db.collection("settings").doc("appUpdateConfig").get(),
+        new Promise((_,reject)=>setTimeout(()=>reject(new Error("update-config-timeout")),4000))
+      ]);
+      if(!snap?.exists)return fallback;
+      const d=snap.data()||{};
+      const cfg={
+        minVersionCode:Number(d.minVersionCode||0)||0,
+        latestVersionName:n(d.latestVersionName||""),
+        message:n(d.message||""),
+        storeUrl:n(d.storeUrl||DEFAULT_STORE_URL)||DEFAULT_STORE_URL,
+        fetchedAt:Date.now()
+      };
+      cachedConfig=cfg;
+      cacheWrite(cfg);
+      return cfg;
+    }catch(e){
+      console.warn("[step84] app update config read failed",e);
+      return fallback;
+    }
+  }
+
+  function ensureModal(){
+    let o=document.getElementById("step84-update-modal");
+    if(o)return o;
+    o=document.createElement("div");
+    o.id="step84-update-modal";
+    o.style.cssText="display:none;position:fixed;inset:0;z-index:11000;background:rgba(15,23,42,.65);align-items:center;justify-content:center;padding:18px;";
+    o.innerHTML=`<div style="width:100%;max-width:420px;background:#fff;border-radius:22px;padding:22px 18px;box-shadow:0 18px 60px rgba(15,23,42,.28);">
+      <div style="font-size:22px;font-weight:900;color:#0f172a;margin-bottom:10px;">📲 앱 업데이트가 필요합니다</div>
+      <div id="step84-update-text" style="font-size:15px;line-height:1.65;color:#334155;margin-bottom:16px;"></div>
+      <button id="step84-update-btn" type="button" style="width:100%;border:0;border-radius:14px;padding:15px 12px;background:#2563eb;color:#fff;font-size:17px;font-weight:900;">최신 앱으로 업데이트</button>
+      <div style="margin-top:11px;font-size:12px;line-height:1.5;color:#64748b;">업데이트 후 앱을 다시 실행해주세요.</div>
+    </div>`;
+    document.body.appendChild(o);
+    return o;
+  }
+
+  function showUpdate(cfg){
+    const o=ensureModal();
+    const latest=n(cfg?.latestVersionName);
+    const msg=n(cfg?.message)||"안정적인 근무기록을 위해 최신 앱으로 업데이트해주세요.";
+    o.querySelector("#step84-update-text").innerHTML=
+      `${safeEscape(msg)}<br><br><b>현재 버전 ${APP_VERSION_NAME}</b>${latest?` · 최신 버전 ${safeEscape(latest)}`:""}`;
+    o.querySelector("#step84-update-btn").onclick=function(){
+      window.location.href=n(cfg?.storeUrl)||DEFAULT_STORE_URL;
+    };
+    o.style.display="flex";
+  }
+
+  window.step84EnsureUpdateAllowed=async function(){
+    const cfg=await readConfig();
+    const min=Number(cfg?.minVersionCode||0)||0;
+    if(min>APP_VERSION_CODE){
+      showUpdate(cfg);
+      return false;
+    }
+    return true;
+  };
+
+  window.step84Notify=function(message,kind="ok"){
+    let box=document.getElementById("step84-notify");
+    if(!box){
+      box=document.createElement("div");
+      box.id="step84-notify";
+      box.style.cssText="display:none;position:fixed;left:50%;bottom:26px;transform:translateX(-50%);z-index:10900;max-width:calc(100vw - 28px);padding:12px 16px;border-radius:14px;color:#fff;font-size:14px;font-weight:800;box-shadow:0 12px 35px rgba(15,23,42,.25);text-align:center;";
+      document.body.appendChild(box);
+    }
+    box.textContent=message;
+    box.style.background=kind==="warn"?"#92400e":"#0f172a";
+    box.style.display="block";
+    clearTimeout(notifyTimer);
+    notifyTimer=setTimeout(()=>{box.style.display="none";},2200);
+  };
+})();
+</script>
+<!-- step84-update-gate -->
 
 </body>
 </html>
