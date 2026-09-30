@@ -1611,7 +1611,7 @@
 
     // ✅ 안드로이드 앱은 로그인 직후 위치 권한을 먼저 요청합니다.
     // 사용자가 위치 권한을 허용해야 일과 시작/종료 및 5분 자동 GPS 확인이 안정적으로 작동합니다.
-    await saveGpsCheckLog("login",true);
+    window.step82FlushPendingBoundaries(); await window.step82PrepareGpsPermissionUi();
   }
 
   function logout(){
@@ -2119,7 +2119,7 @@
       gpsCapturedAt:selectedGps?.capturedAt??null,
       gpsUsedCached:false,
       gpsMetaVersion:"gps-v2",
-      appBuildVersion:"6.1"
+      appBuildVersion:"6.2"
     });
     await db.collection("attendanceLogs").add(payload);
       if(type==="일과 종료") clearCurrentActivitySessionSilently();
@@ -2392,7 +2392,7 @@
         gpsCapturedAt:gpsForVisit?.capturedAt??null,
         gpsUsedCached:false,
         gpsMetaVersion:"gps-v2",
-      appBuildVersion:"6.1"
+      appBuildVersion:"6.2"
       });
       await db.collection("attendanceLogs").add(payload);
       await saveGpsCheckSnapshot("visit-record",gpsForVisit,{status:visitGpsStatus,usedCached:false,failureCode:visitGpsFailureCode,failureReason:visitGpsFailureReason,attemptedAt:gpsAttemptedAt});
@@ -2682,7 +2682,7 @@
   <!-- step62 GPS fresh-only: latest index preserved / no cached fallback / real position timestamp -->
   <!-- step64b GPS audit guarantee: robust function-scoped patch -->
   <!-- step65 GPS atomic audit: metadata in initial Firestore create / no post-create merge -->
-  <!-- release 6.1 / API 36 / GPS fresh-only audit -->
+  <!-- release 6.2 / API 36 / GPS permission gate + network-resilient timer -->
 
 <script id="step79-visit-edit-complete">
 /* step79: 방문사례기록 수정창에 대상자 정보/활동내용 추가
@@ -2946,6 +2946,313 @@
 })();
 </script>
 <!-- step79-visit-edit-complete -->
+
+
+<script id="step82-gps-timer-resilience">
+(function(){
+  const GPS_READY_KEY="coordinator_gps_permission_ready_v1";
+  const WORK_PREFIX="coordinator_work_state_v2_";
+  const PENDING_KEY="coordinator_pending_boundaries_v1";
+  let flushBusy=false;
+
+  function s(v){return String(v??"").trim();}
+  function keyPart(v){return encodeURIComponent(s(v)||"unknown").replace(/%/g,"_");}
+  function workKey(user=currentUserName,date=formatDateKey(new Date())){return WORK_PREFIX+keyPart(user)+"_"+date;}
+  function readLocalWork(user=currentUserName,date=formatDateKey(new Date())){
+    if(!user||!date)return null;
+    try{
+      const raw=localStorage.getItem(workKey(user,date)); if(!raw)return null;
+      const x=JSON.parse(raw);
+      return x&&x.userName===user&&x.dateKey===date?x:null;
+    }catch(e){return null;}
+  }
+  function writeLocalWork(x){
+    try{if(x?.userName&&x?.dateKey)localStorage.setItem(workKey(x.userName,x.dateKey),JSON.stringify(x));}
+    catch(e){console.warn("[step82] local work save failed",e);}
+  }
+  function remoteInfo(){
+    const today=formatDateKey(new Date());
+    const rows=(allLogs||[]).filter(x=>getLogUserName(x)===currentUserName&&formatDateKey(getLogDateTime(x))===today&&(isStartLog(x)||isEndLog(x)));
+    if(!rows.length)return {status:"none",startMs:null,endMs:null,latestMs:0,workHours:null};
+    const time=x=>toDate(x.clientTimeMs)?.getTime()||toDate(x.timestamp)?.getTime()||0;
+    const ordered=[...rows].sort((a,b)=>time(b)-time(a));
+    const starts=rows.filter(isStartLog).sort((a,b)=>time(a)-time(b));
+    const ends=rows.filter(isEndLog).sort((a,b)=>time(b)-time(a));
+    const latest=ordered[0], start=starts[0]||null, end=ends[0]||null;
+    return {
+      status:isEndLog(latest)?"ended":"started",
+      startMs:start?time(start):null,
+      endMs:end?time(end):null,
+      latestMs:time(latest),
+      workHours:start?getWorkHoursFromLog(start):null
+    };
+  }
+  function effectiveInfo(){
+    const r=remoteInfo(), l=readLocalWork();
+    if(!l)return r;
+    const localLatest=Number(l.updatedAtMs)||Number(l.endMs)||Number(l.startMs)||0;
+    if(r.status==="none"||localLatest>Number(r.latestMs||0)){
+      return {
+        status:l.status||"none",
+        startMs:Number(l.startMs)||r.startMs||null,
+        endMs:Number(l.endMs)||r.endMs||null,
+        latestMs:localLatest,
+        workHours:Number(l.workHours)||r.workHours||null
+      };
+    }
+    return r;
+  }
+  function syncLocalFromRemote(){
+    if(!currentUserName)return;
+    const r=remoteInfo(); if(r.status==="none")return;
+    const date=formatDateKey(new Date()), l=readLocalWork(currentUserName,date);
+    if(Number(r.latestMs||0)<Number(l?.updatedAtMs||0))return;
+    writeLocalWork({
+      userName:currentUserName,dateKey:date,status:r.status,
+      startMs:r.startMs||l?.startMs||null,endMs:r.endMs||null,
+      workHours:r.workHours||l?.workHours||DEFAULT_WORK_HOURS,
+      autoEndAtMs:(r.startMs&&r.workHours)?r.startMs+(getTotalScheduledMinutesForWorkHours(r.workHours)*60000):(l?.autoEndAtMs||null),
+      updatedAtMs:r.latestMs||Date.now(),syncState:"synced",source:"remote"
+    });
+  }
+  function setLocalBoundary(type,ms,hours,autoEndAtMs){
+    const date=formatDateKey(ms), old=readLocalWork(currentUserName,date);
+    if(type==="일과 시작"){
+      const x={userName:currentUserName,dateKey:date,status:"started",startMs:ms,endMs:null,
+        workHours:Number(hours)||DEFAULT_WORK_HOURS,autoEndAtMs:autoEndAtMs||null,
+        updatedAtMs:ms,syncState:"pending",source:"local"};
+      writeLocalWork(x); return x;
+    }
+    const x={userName:currentUserName,dateKey:date,status:"ended",
+      startMs:Number(old?.startMs)||getWorkStartTime()||ms,endMs:ms,
+      workHours:Number(old?.workHours)||getCurrentWorkHours()||DEFAULT_WORK_HOURS,
+      autoEndAtMs:Number(old?.autoEndAtMs)||null,updatedAtMs:ms,syncState:"pending",source:"local"};
+    writeLocalWork(x); return x;
+  }
+  function markSynced(ms){
+    const x=readLocalWork(); if(!x||Number(x.updatedAtMs)!==Number(ms))return;
+    x.syncState="synced"; x.syncedAtMs=Date.now(); writeLocalWork(x);
+  }
+
+  function readPending(){try{const a=JSON.parse(localStorage.getItem(PENDING_KEY)||"[]");return Array.isArray(a)?a:[];}catch(e){return [];}}
+  function writePending(a){try{localStorage.setItem(PENDING_KEY,JSON.stringify(a||[]));}catch(e){}}
+  function queue(op){const a=readPending().filter(x=>x?.id!==op.id);a.push(op);writePending(a);}
+  function unqueue(id){writePending(readPending().filter(x=>x?.id!==id));}
+  function eventTimestamp(ms){try{return firebase.firestore.Timestamp.fromMillis(Number(ms)||Date.now());}catch(e){return new Date(Number(ms)||Date.now());}}
+  function timeoutResult(p,ms){return Promise.race([
+    Promise.resolve(p).then(()=>true).catch(e=>{console.warn("[step82] firestore write failed",e);return false;}),
+    new Promise(r=>setTimeout(()=>r(false),ms))
+  ]);}
+  async function writeBoundary(id,payload){
+    queue({id,payload,queuedAtMs:Date.now()});
+    const data={...payload,timestamp:eventTimestamp(payload.clientTimeMs),syncedAt:firebase.firestore.FieldValue.serverTimestamp()};
+    const ok=await timeoutResult(db.collection("attendanceLogs").doc(id).set(data,{merge:true}),8000);
+    if(ok){unqueue(id);markSynced(payload.clientTimeMs);}
+    return ok;
+  }
+  async function flushPending(){
+    if(flushBusy||!navigator.onLine)return false;
+    const a=readPending(); if(!a.length)return true;
+    flushBusy=true; let changed=false;
+    try{
+      for(const op of a){
+        if(!op?.id||!op?.payload)continue;
+        const data={...op.payload,timestamp:eventTimestamp(op.payload.clientTimeMs),syncedAt:firebase.firestore.FieldValue.serverTimestamp()};
+        const ok=await timeoutResult(db.collection("attendanceLogs").doc(op.id).set(data,{merge:true}),8000);
+        if(!ok)break;
+        unqueue(op.id);markSynced(op.payload.clientTimeMs);changed=true;
+      }
+      if(changed){
+        try{await loadAttendanceLogs();syncLocalFromRemote();updateTodaySummary();renderCalendar();renderHistory();updateActivityAreaState();updateBoundaryBtnState();updateWorkTimerUi();updateCurrentElapsedUi();}catch(e){}
+      }
+      return readPending().length===0;
+    }finally{flushBusy=false;}
+  }
+
+  function ensureGate(){
+    let o=document.getElementById("step82-gps-gate"); if(o)return o;
+    o=document.createElement("div");o.id="step82-gps-gate";
+    o.style.cssText="display:none;position:fixed;inset:0;z-index:10050;background:rgba(15,23,42,.60);align-items:center;justify-content:center;padding:18px;";
+    o.innerHTML=`<div style="width:100%;max-width:420px;background:#fff;border-radius:22px;padding:22px 18px;box-shadow:0 18px 60px rgba(15,23,42,.25);">
+      <div style="font-size:22px;font-weight:900;color:#0f172a;margin-bottom:10px;">📍 위치 권한이 필요합니다</div>
+      <div id="step82-gps-text" style="font-size:15px;line-height:1.65;color:#334155;margin-bottom:16px;">
+        근무 시작·종료와 방문기록의 현재 위치를 확인하기 위해 위치 권한이 필요합니다.<br><br>
+        아래 버튼을 누른 뒤 Android 안내창에서 <b>‘앱 사용 중에만 허용’</b>을 선택해주세요.
+      </div>
+      <button id="step82-gps-btn" type="button" style="width:100%;border:0;border-radius:14px;padding:15px 12px;background:#2563eb;color:#fff;font-size:17px;font-weight:900;">위치 권한 허용하기</button>
+      <div style="margin-top:12px;font-size:12px;line-height:1.55;color:#64748b;">권한을 거부한 경우: 휴대폰 설정 → 앱 → Coordinator App(노인돌봄 코디네이터) → 권한 → 위치 → 앱 사용 중에만 허용</div>
+    </div>`;
+    document.body.appendChild(o);
+    const b=o.querySelector("#step82-gps-btn");
+    b.addEventListener("click",async function(){
+      const t=o.querySelector("#step82-gps-text"), old=b.textContent;b.disabled=true;b.textContent="위치 확인 중...";
+      try{
+        const gps=await requestGpsOnce({timeout:12000,fast:true});
+        if(gps){
+          localStorage.setItem(GPS_READY_KEY,"1");o.style.display="none";
+          Promise.resolve(saveGpsCheckSnapshot("login",gps,{status:"fresh",attemptedAt:Date.now()})).catch(()=>{});
+        }else{
+          localStorage.removeItem(GPS_READY_KEY);
+          const reason=lastGpsErrorMessage||"위치 정보를 가져오지 못했습니다.";
+          t.innerHTML=`<b style="color:#be123c;">위치 확인에 실패했습니다.</b><br>${safeEscape(reason)}<br><br>위치 권한과 휴대폰 위치 기능을 켠 뒤 다시 눌러주세요.`;
+        }
+      }finally{b.disabled=false;b.textContent=old;}
+    });
+    return o;
+  }
+  function showGate(html){const o=ensureGate();const t=o.querySelector("#step82-gps-text");if(html)t.innerHTML=html;o.style.display="flex";}
+  function hideGate(){const o=document.getElementById("step82-gps-gate");if(o)o.style.display="none";}
+  async function permissionState(){
+    if(!navigator.geolocation)return "unsupported";
+    try{if(navigator.permissions?.query){const p=await navigator.permissions.query({name:"geolocation"});return p?.state||"unknown";}}catch(e){}
+    return "unknown";
+  }
+  async function prepareGpsUi(){
+    const st=await permissionState(), ready=localStorage.getItem(GPS_READY_KEY)==="1";
+    if(st==="granted"){localStorage.setItem(GPS_READY_KEY,"1");hideGate();return true;}
+    if(st==="denied"){
+      localStorage.removeItem(GPS_READY_KEY);
+      showGate(`<b style="color:#be123c;">위치 권한이 꺼져 있습니다.</b><br>근무 시작을 위해 휴대폰 설정에서 위치 권한을 <b>‘앱 사용 중에만 허용’</b>으로 변경해주세요.`);
+      return false;
+    }
+    if(ready)return true;
+    showGate(`근무 시작·종료와 방문기록의 현재 위치를 확인하기 위해 위치 권한이 필요합니다.<br><br>아래 버튼을 누른 뒤 Android 안내창에서 <b>‘앱 사용 중에만 허용’</b>을 선택해주세요.`);
+    return false;
+  }
+  async function ensureGpsForStart(){
+    const st=await permissionState(), ready=localStorage.getItem(GPS_READY_KEY)==="1";
+    if(st==="denied"||((st==="prompt"||st==="unknown")&&!ready)){await prepareGpsUi();return null;}
+    const attemptedAt=Date.now(), gps=await requestGpsOnce({timeout:12000,fast:true});
+    if(gps){
+      localStorage.setItem(GPS_READY_KEY,"1");hideGate();
+      Promise.resolve(saveGpsCheckSnapshot("work-start",gps,{status:"fresh",attemptedAt})).catch(()=>{});
+      return gps;
+    }
+    localStorage.removeItem(GPS_READY_KEY);
+    const reason=lastGpsErrorMessage||"위치 정보를 가져오지 못했습니다.";
+    showGate(`<b style="color:#be123c;">근무 시작 전 위치 확인이 필요합니다.</b><br>${safeEscape(reason)}<br><br>위치 권한과 휴대폰 위치 기능을 켠 뒤 다시 시도해주세요.`);
+    return null;
+  }
+
+  // 핵심 함수들을 네트워크 독립형으로 교체
+  getTodayWorkStatus=function(){return effectiveInfo().status||"none";};
+  getWorkStartTime=function(){return Number(effectiveInfo().startMs)||null;};
+  getWorkEndTime=function(){return Number(effectiveInfo().endMs)||null;};
+  getLatestStartLogForDate=function(dateKey){
+    const rows=(allLogs||[]).filter(x=>getLogUserName(x)===currentUserName&&formatDateKey(getLogDateTime(x))===dateKey&&isStartLog(x));
+    if(rows.length){
+      rows.sort((a,b)=>(toDate(b.clientTimeMs)?.getTime()||toDate(b.timestamp)?.getTime()||0)-(toDate(a.clientTimeMs)?.getTime()||toDate(a.timestamp)?.getTime()||0));
+      return rows[0];
+    }
+    if(dateKey===formatDateKey(new Date())){
+      const l=readLocalWork(currentUserName,dateKey);
+      if(l?.startMs)return {id:"__local_start__",userName:currentUserName,type:"일과 시작",activities:"일과 시작",
+        clientTimeMs:Number(l.startMs),timestamp:{seconds:Math.floor(Number(l.startMs)/1000)},
+        workHours:Number(l.workHours)||DEFAULT_WORK_HOURS,workHoursSelected:Number(l.workHours)||DEFAULT_WORK_HOURS,
+        scheduledWorkHours:Number(l.workHours)||DEFAULT_WORK_HOURS,autoEndAtMs:Number(l.autoEndAtMs)||null,localFallback:true};
+    }
+    return null;
+  };
+
+  loadAttendanceLogs=async function(){
+    const previous=Array.isArray(allLogs)?allLogs.slice():[];
+    try{
+      const snap=await db.collection("attendanceLogs").get();
+      allLogs=snap.docs.map(doc=>({id:doc.id,...doc.data()}));
+      allLogs.sort((a,b)=>(getLogDateTime(b)?.getTime()||0)-(getLogDateTime(a)?.getTime()||0));
+      if(currentUserName)syncLocalFromRemote();
+    }catch(err){
+      console.error("[step82] attendanceLogs load failed - keeping prior/local state",err);
+      if(previous.length)allLogs=previous;
+      else if(!Array.isArray(allLogs))allLogs=[];
+    }
+  };
+
+  saveWorkBoundaryLog=async function(type){
+    if(savingWorkBoundary)return;
+    if(isRapidDuplicateClick())return;
+    if(type==="일과 시작")clearCurrentActivitySessionSilently();else enforceActivitySessionWorkState();
+    if(!currentUserName){alert("사용자를 먼저 선택해주세요.");return;}
+    const status=getTodayWorkStatus();
+    if(type==="일과 시작"&&status==="started"){alert("이미 일과가 시작되어 있습니다.");return;}
+    if(type==="일과 종료"&&status==="none"){alert("일과 시작을 먼저 저장해주세요.");return;}
+    if(type==="일과 종료"&&currentSession&&currentSession.activities.length){openEndWorkModal();return;}
+    let preGps=null;
+    if(type==="일과 시작"){preGps=await ensureGpsForStart();if(!preGps)return false;}
+    const btn=type==="일과 시작"?el("start-work-btn"):el("end-work-btn");
+    const restore=setButtonBusy(btn,true,type==="일과 시작"?"일과 시작 처리 중...":"일과 종료 처리 중...");
+    savingWorkBoundary=true;
+    try{
+      return await _doSaveWorkBoundaryLog(type,type==="일과 시작"
+        ?{workHours:getSelectedWorkHours(),requireGps:true,fastGps:true,preCapturedGps:preGps}
+        :{requireGps:true,fastGps:true});
+    }finally{savingWorkBoundary=false;restore();}
+  };
+
+  _doSaveWorkBoundaryLog=async function(type,options={}){
+    const tempNow=Date.now(), workHours=type==="일과 시작"?clampWorkHours(options.workHours):null;
+    let gps=options.preCapturedGps||null;
+    const attemptedAt=Date.now();
+    let gpsStatus=gps?"fresh":"not-attempted", failCode="", failReason="";
+    if((options.requireGps||options.autoEnded||type==="일과 시작"||type==="일과 종료")&&!gps){
+      gps=await requestGpsOnce({timeout:options.fastGps?6000:30000,fast:!!options.fastGps});
+      gpsStatus=gps?"fresh":"failed";failCode=gps?"":(lastGpsErrorCode||"unknown");failReason=gps?"":(lastGpsErrorMessage||"위치 확인 실패");
+    }
+    if(type==="일과 시작"&&!gps&&!options.autoEnded){
+      showGate(`<b style="color:#be123c;">GPS 확인이 되지 않아 근무를 시작할 수 없습니다.</b><br>${safeEscape(failReason||lastGpsErrorMessage||"위치 권한과 위치 기능을 확인해주세요.")}`);
+      updateBoundaryBtnState();updateActivityAreaState();updateWorkHoursUi();return false;
+    }
+    const choice=selectGpsForRecord(gps), selected=choice.gps;
+    const now=Date.now();
+    const payload={
+      userName:currentUserName,type,activities:type,memo:"",clientTimeMs:now,timeStr:new Date(now).toLocaleString("ko-KR"),
+      lat:selected?.lat??null,lng:selected?.lng??null,accuracy:selected?.accuracy??null,
+      gpsStatus:gpsStatus==="not-attempted"?choice.status:gpsStatus,gpsSource:type==="일과 시작"?"work-start":"work-end",
+      gpsFailureCode:gps?"":(failCode||"unknown"),gpsFailureReason:gps?"":(failReason||"위치 확인 실패"),
+      gpsAttemptedAt:attemptedAt,gpsCapturedAt:selected?.capturedAt??null,gpsUsedCached:false,
+      gpsMetaVersion:"gps-v3",appBuildVersion:"6.2",boundaryStorageVersion:"work-v2"
+    };
+    if(type==="일과 시작"){
+      Object.assign(payload,buildWorkBreakFields(workHours));
+      payload.autoEndAtMs=now+(getTotalScheduledMinutesForWorkHours(workHours)*60000);
+      payload.autoEndAtText=new Date(payload.autoEndAtMs).toLocaleString("ko-KR");
+    }
+    if(options.autoEnded){payload.autoEnded=true;payload.autoEndedReason="selected-work-hours";}
+
+    setLocalBoundary(type,now,workHours,payload.autoEndAtMs||null);
+    const ref=db.collection("attendanceLogs").doc(), localId="__local__"+ref.id;
+    allLogs.unshift({id:localId,...payload,timestamp:{seconds:Math.floor(now/1000)},pendingSync:true});
+    updateBoundaryBtnState();updateActivityAreaState();updateWorkHoursUi();updateWorkTimerUi();updateCurrentElapsedUi();syncGpsCheckTimer();
+
+    const ok=await writeBoundary(ref.id,payload);
+    if(type==="일과 종료")clearCurrentActivitySessionSilently();
+    Promise.resolve(saveGpsCheckSnapshot(type==="일과 시작"?"work-start":"work-end",selected,{
+      status:payload.gpsStatus,usedCached:false,failureCode:payload.gpsFailureCode,failureReason:payload.gpsFailureReason,attemptedAt
+    })).catch(()=>{});
+    if(ok){
+      allLogs=allLogs.filter(x=>x.id!==localId);
+      Promise.resolve(reloadMainData()).catch(()=>{});
+      if(!options.silent)alert(type+"이 저장되었습니다.");
+    }else if(!options.silent){
+      alert(type+" 시각은 휴대폰에 저장되었습니다.\n인터넷 연결이 안정되면 서버로 자동 전송됩니다.");
+    }
+    syncGpsCheckTimer();
+    return true;
+  };
+
+  // 로그인 버튼은 기존 함수가 직접 바인딩되어 있으므로 loginToMain 내부 호출은 패치 파일에서 교체합니다.
+  window.step82PrepareGpsPermissionUi=prepareGpsUi;
+  window.step82FlushPendingBoundaries=flushPending;
+
+  window.addEventListener("online",()=>flushPending());
+  window.addEventListener("pageshow",()=>{updateWorkTimerUi();updateCurrentElapsedUi();checkAutoWorkEnd();flushPending();});
+  document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"){updateWorkTimerUi();updateCurrentElapsedUi();checkAutoWorkEnd();flushPending();}});
+  window.addEventListener("load",()=>setTimeout(()=>{
+    if(currentUserName){syncLocalFromRemote();updateWorkTimerUi();updateCurrentElapsedUi();checkAutoWorkEnd();flushPending();prepareGpsUi();}
+  },700));
+})();
+</script>
+<!-- step82-gps-timer-resilience -->
 
 </body>
 </html>
