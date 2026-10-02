@@ -2122,7 +2122,7 @@
       gpsCapturedAt:selectedGps?.capturedAt??null,
       gpsUsedCached:false,
       gpsMetaVersion:"gps-v2",
-      appBuildVersion:"6.4"
+      appBuildVersion:"6.5"
     });
     await db.collection("attendanceLogs").add(payload);
       if(type==="일과 종료") clearCurrentActivitySessionSilently();
@@ -2396,7 +2396,7 @@
         gpsCapturedAt:gpsForVisit?.capturedAt??null,
         gpsUsedCached:false,
         gpsMetaVersion:"gps-v2",
-      appBuildVersion:"6.4"
+      appBuildVersion:"6.5"
       });
       await db.collection("attendanceLogs").add(payload);
       await saveGpsCheckSnapshot("visit-record",gpsForVisit,{status:visitGpsStatus,usedCached:false,failureCode:visitGpsFailureCode,failureReason:visitGpsFailureReason,attemptedAt:gpsAttemptedAt});
@@ -2686,7 +2686,7 @@
   <!-- step62 GPS fresh-only: latest index preserved / no cached fallback / real position timestamp -->
   <!-- step64b GPS audit guarantee: robust function-scoped patch -->
   <!-- step65 GPS atomic audit: metadata in initial Firestore create / no post-create merge -->
-  <!-- release 6.4 / API 36 / native GPS stabilization -->
+  <!-- release 6.5 / API 36 / GPS + attendance management sync -->
 
 <script id="step79-visit-edit-complete">
 /* step79: 방문사례기록 수정창에 대상자 정보/활동내용 추가
@@ -3271,7 +3271,7 @@
       gpsStatus:gpsStatus==="not-attempted"?choice.status:gpsStatus,gpsSource:type==="일과 시작"?"work-start":"work-end",
       gpsFailureCode:gps?"":(failCode||"unknown"),gpsFailureReason:gps?"":(failReason||"위치 확인 실패"),
       gpsAttemptedAt:attemptedAt,gpsCapturedAt:selected?.capturedAt??null,gpsUsedCached:false,
-      gpsMetaVersion:"gps-v4",appBuildVersion:"6.4",boundaryStorageVersion:"work-v2"
+      gpsMetaVersion:"gps-v4",appBuildVersion:"6.5",boundaryStorageVersion:"work-v2"
     };
     if(type==="일과 시작"){
       Object.assign(payload,buildWorkBreakFields(workHours));
@@ -3407,10 +3407,76 @@
 </script>
 <!-- step86-native-gps-stability / native-first + tolerant fallback -->
 
+<script id="step87-admin-correction-sync">
+(function(){
+  const POLL_MS=15000;
+  let correction=null;
+  let correctionHash='';
+  let correctionUser='';
+  let correctionDate='';
+  let firstLoaded=false;
+
+  function n(v){return String(v??'').trim();}
+  function keyPart(v){return encodeURIComponent(n(v)||'unknown').replace(/%/g,'_').replace(/\//g,'_2F');}
+  function todayKey(){return formatDateKey(new Date());}
+  function correctionId(user,date){return date+'__'+keyPart(user);}
+  function correctionUsable(c){return !!(c&&c.userName===currentUserName&&c.dateKey===todayKey());}
+  function hashOf(c){return c?JSON.stringify([c.correctedStartMs||null,c.correctedEndMs||null,c.correctionReason||'',c.updatedAtMs||0]):'';}
+
+  const baseEffectiveInfo=effectiveInfo;
+  effectiveInfo=function(){
+    const base=baseEffectiveInfo();
+    if(!correctionUsable(correction))return base;
+    const out={...base};
+    const cs=Number(correction.correctedStartMs||0)||null;
+    const ce=Number(correction.correctedEndMs||0)||null;
+    if(cs)out.startMs=cs;
+    if(ce){out.endMs=ce;if(Date.now()>=ce)out.status='ended';}
+    return out;
+  };
+
+  const baseAutoEnd=getCurrentAutoEndInfo;
+  getCurrentAutoEndInfo=function(){
+    if(getTodayWorkStatus()!=='started')return null;
+    const startMs=getWorkStartTime();
+    if(!startMs)return baseAutoEnd();
+    const hours=getCurrentWorkHours();
+    return {hours,startMs,autoEndAtMs:startMs+(getTotalScheduledMinutesForWorkHours(hours)*60*1000)};
+  };
+
+  async function syncCorrection(silent=true){
+    const u=n(currentUserName),d=todayKey();
+    if(!u){correction=null;correctionUser='';correctionDate='';correctionHash='';firstLoaded=false;return null;}
+    try{
+      const snap=await db.collection('attendanceCorrections').doc(correctionId(u,d)).get();
+      const next=snap.exists?{id:snap.id,...(snap.data()||{})}:null;
+      const nextHash=hashOf(next);
+      const changed=firstLoaded&&correctionUser===u&&correctionDate===d&&nextHash!==correctionHash;
+      correction=next;correctionUser=u;correctionDate=d;correctionHash=nextHash;firstLoaded=true;
+      try{updateBoundaryBtnState();updateWorkHoursUi();updateWorkTimerUi();checkAutoWorkEnd();}catch(e){}
+      if(changed&&!silent&&next){
+        const msg='관리자가 오늘 근무시간을 정정했습니다.';
+        if(typeof window.step84Notify==='function')window.step84Notify(msg,'warn');
+        else alert(msg);
+      }
+      return next;
+    }catch(e){console.warn('[step87] correction sync failed',e);return correction;}
+  }
+
+  window.step87SyncCorrection=syncCorrection;
+  window.addEventListener('pageshow',()=>setTimeout(()=>syncCorrection(true),400));
+  document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')syncCorrection(false);});
+  document.addEventListener('click',e=>{if(e.target&&e.target.id==='login-btn')setTimeout(()=>syncCorrection(true),1200);},true);
+  setInterval(()=>{if(currentUserName)syncCorrection(false);},POLL_MS);
+  setTimeout(()=>syncCorrection(true),1500);
+})();
+</script>
+<!-- step87-admin-correction-sync -->
+
 <script id="step84-update-gate">
 (function(){
-  const APP_VERSION_NAME="6.4";
-  const APP_VERSION_CODE=55;
+  const APP_VERSION_NAME="6.5";
+  const APP_VERSION_CODE=56;
   const CACHE_KEY="coordinator_app_update_config_v1";
   const DEFAULT_STORE_URL="https://play.google.com/store/apps/details?id=kr.nonsan.coordinator";
   let cachedConfig=null;
