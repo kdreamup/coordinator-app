@@ -2122,7 +2122,7 @@
       gpsCapturedAt:selectedGps?.capturedAt??null,
       gpsUsedCached:false,
       gpsMetaVersion:"gps-v2",
-      appBuildVersion:"6.5"
+      appBuildVersion:"6.6"
     });
     await db.collection("attendanceLogs").add(payload);
       if(type==="일과 종료") clearCurrentActivitySessionSilently();
@@ -2396,7 +2396,7 @@
         gpsCapturedAt:gpsForVisit?.capturedAt??null,
         gpsUsedCached:false,
         gpsMetaVersion:"gps-v2",
-      appBuildVersion:"6.5"
+      appBuildVersion:"6.6"
       });
       await db.collection("attendanceLogs").add(payload);
       await saveGpsCheckSnapshot("visit-record",gpsForVisit,{status:visitGpsStatus,usedCached:false,failureCode:visitGpsFailureCode,failureReason:visitGpsFailureReason,attemptedAt:gpsAttemptedAt});
@@ -2532,7 +2532,17 @@
     </div>`;
     myLogs.forEach(log=>{
       const type=getLogType(log);
-      const dt=formatDateTime(getLogDateTime(log));
+      const rawDate=getLogDateTime(log);
+      const corr=typeof window.step87CorrectionForDate==="function"?window.step87CorrectionForDate(selectedDateKey):null;
+      let displayDate=rawDate, correctionBadge="";
+      if(type==="일과 시작"&&Number(corr?.correctedStartMs||0)>0){
+        displayDate=new Date(Number(corr.correctedStartMs));
+        correctionBadge='<span style="font-size:11px;color:#7c3aed;background:#f3e8ff;border-radius:999px;padding:3px 8px;font-weight:800;">관리자 확정 · 원본 '+safeEscape(formatDateTime(rawDate))+'</span>';
+      }else if(type==="일과 종료"&&Number(corr?.correctedEndMs||0)>0){
+        displayDate=new Date(Number(corr.correctedEndMs));
+        correctionBadge='<span style="font-size:11px;color:#7c3aed;background:#f3e8ff;border-radius:999px;padding:3px 8px;font-weight:800;">관리자 확정 · 원본 '+safeEscape(formatDateTime(rawDate))+'</span>';
+      }
+      const dt=formatDateTime(displayDate);
       const activities=getActivitiesFromLog(log);
       const durationText=isActivityLog(log)?(normalizeText(log.activityDurationText)||formatDuration(getDurationMs(log))):"-";
       const workHoursText=isActivityLog(log)?`${getWorkHoursForLog(log)}시간`:"";
@@ -2546,6 +2556,7 @@
               ${numBadge}
               <span class="${getHistoryBadgeClass(type)}">${safeEscape(type)}</span>
               <span style="font-size:12px;color:#64748b;">${safeEscape(dt)}</span>
+              ${correctionBadge}
             </div>
             <div style="display:flex;gap:8px;flex-shrink:0;">
               ${canEdit&&isActivityLog(log)?`<button type="button" class="btn btn-soft history-action-btn" onclick="openEditModal('${logId}')">수정</button>`:""}
@@ -2686,7 +2697,7 @@
   <!-- step62 GPS fresh-only: latest index preserved / no cached fallback / real position timestamp -->
   <!-- step64b GPS audit guarantee: robust function-scoped patch -->
   <!-- step65 GPS atomic audit: metadata in initial Firestore create / no post-create merge -->
-  <!-- release 6.5 / API 36 / GPS + attendance management sync -->
+  <!-- release 6.6 / API 36 / correction sync + duplicate boundary guard -->
 
 <script id="step79-visit-edit-complete">
 /* step79: 방문사례기록 수정창에 대상자 정보/활동내용 추가
@@ -3220,6 +3231,14 @@
         alert("일과 시작을 먼저 저장해주세요.");
         return false;
       }
+      if(type==="일과 종료"&&status==="ended"){
+        window.step84Notify("오늘 일과는 이미 종료되었습니다.","warn");
+        return false;
+      }
+      if(type==="일과 시작"&&status==="ended"){
+        window.step84Notify("오늘 일과는 이미 종료되었습니다.","warn");
+        return false;
+      }
       if(type==="일과 종료"&&currentSession&&currentSession.activities.length){
         openEndWorkModal();
         return false;
@@ -3251,6 +3270,15 @@
   };
 
   _doSaveWorkBoundaryLog=async function(type,options={}){
+    const boundaryStatus=getTodayWorkStatus();
+    if(type==="일과 종료"&&boundaryStatus==="ended"){
+      if(!options.silent&&typeof window.step84Notify==="function")window.step84Notify("오늘 일과는 이미 종료되었습니다.","warn");
+      return false;
+    }
+    if(type==="일과 시작"&&boundaryStatus!=="none"){
+      if(!options.silent&&typeof window.step84Notify==="function")window.step84Notify(boundaryStatus==="ended"?"오늘 일과는 이미 종료되었습니다.":"이미 일과가 시작되어 있습니다.","warn");
+      return false;
+    }
     const tempNow=Date.now(), workHours=type==="일과 시작"?clampWorkHours(options.workHours):null;
     let gps=options.preCapturedGps||null;
     const attemptedAt=Date.now();
@@ -3271,7 +3299,7 @@
       gpsStatus:gpsStatus==="not-attempted"?choice.status:gpsStatus,gpsSource:type==="일과 시작"?"work-start":"work-end",
       gpsFailureCode:gps?"":(failCode||"unknown"),gpsFailureReason:gps?"":(failReason||"위치 확인 실패"),
       gpsAttemptedAt:attemptedAt,gpsCapturedAt:selected?.capturedAt??null,gpsUsedCached:false,
-      gpsMetaVersion:"gps-v4",appBuildVersion:"6.5",boundaryStorageVersion:"work-v2"
+      gpsMetaVersion:"gps-v4",appBuildVersion:"6.6",boundaryStorageVersion:"work-v2"
     };
     if(type==="일과 시작"){
       Object.assign(payload,buildWorkBreakFields(workHours));
@@ -3281,7 +3309,9 @@
     if(options.autoEnded){payload.autoEnded=true;payload.autoEndedReason="selected-work-hours";}
 
     setLocalBoundary(type,now,workHours,payload.autoEndAtMs||null);
-    const ref=db.collection("attendanceLogs").doc(), localId="__local__"+ref.id;
+    const boundaryKind=type==="일과 시작"?"start":"end";
+    const boundaryDocId="boundary__"+formatDateKey(now)+"__"+keyPart(currentUserName)+"__"+boundaryKind;
+    const ref=db.collection("attendanceLogs").doc(boundaryDocId), localId="__local__"+boundaryDocId;
     allLogs.unshift({id:localId,...payload,timestamp:{seconds:Math.floor(now/1000)},pendingSync:true});
     updateBoundaryBtnState();updateActivityAreaState();updateWorkHoursUi();updateWorkTimerUi();updateCurrentElapsedUi();syncGpsCheckTimer();
 
@@ -3420,7 +3450,7 @@
   function keyPart(v){return encodeURIComponent(n(v)||'unknown').replace(/%/g,'_').replace(/\//g,'_2F');}
   function todayKey(){return formatDateKey(new Date());}
   function correctionId(user,date){return date+'__'+keyPart(user);}
-  function correctionUsable(c){return !!(c&&c.userName===currentUserName&&c.dateKey===todayKey());}
+  function correctionUsable(c){return !!(c&&n(c.userName)===n(currentUserName)&&n(c.dateKey)===todayKey());}
   function hashOf(c){return c?JSON.stringify([c.correctedStartMs||null,c.correctedEndMs||null,c.correctionReason||'',c.updatedAtMs||0]):'';}
 
   const baseEffectiveInfo=effectiveInfo;
@@ -3433,6 +3463,20 @@
     if(cs)out.startMs=cs;
     if(ce){out.endMs=ce;if(Date.now()>=ce)out.status='ended';}
     return out;
+  };
+
+  const baseGetWorkStartTime87=getWorkStartTime;
+  const baseGetWorkEndTime87=getWorkEndTime;
+  getWorkStartTime=function(){
+    if(correctionUsable(correction)){const x=Number(correction.correctedStartMs||0);if(x>0)return x;}
+    return baseGetWorkStartTime87();
+  };
+  getWorkEndTime=function(){
+    if(correctionUsable(correction)){const x=Number(correction.correctedEndMs||0);if(x>0)return x;}
+    return baseGetWorkEndTime87();
+  };
+  window.step87CorrectionForDate=function(dk){
+    return correction&&n(correction.dateKey)===n(dk)&&n(correction.userName)===n(currentUserName)?correction:null;
   };
 
   const baseAutoEnd=getCurrentAutoEndInfo;
@@ -3449,7 +3493,14 @@
     if(!u){correction=null;correctionUser='';correctionDate='';correctionHash='';firstLoaded=false;return null;}
     try{
       const snap=await db.collection('attendanceCorrections').doc(correctionId(u,d)).get();
-      const next=snap.exists?{id:snap.id,...(snap.data()||{})}:null;
+      let next=snap.exists?{id:snap.id,...(snap.data()||{})}:null;
+      if(!next){
+        try{
+          const alt=await db.collection('attendanceCorrections').where('dateKey','==',d).get();
+          const found=alt.docs.find(x=>n((x.data()||{}).userName)===u);
+          if(found)next={id:found.id,...(found.data()||{})};
+        }catch(e){console.warn('[step88] correction fallback lookup failed',e);}
+      }
       const nextHash=hashOf(next);
       const changed=firstLoaded&&correctionUser===u&&correctionDate===d&&nextHash!==correctionHash;
       correction=next;correctionUser=u;correctionDate=d;correctionHash=nextHash;firstLoaded=true;
@@ -3472,11 +3523,12 @@
 })();
 </script>
 <!-- step87-admin-correction-sync -->
+<!-- step88-correction-display-and-boundary-idempotency -->
 
 <script id="step84-update-gate">
 (function(){
-  const APP_VERSION_NAME="6.5";
-  const APP_VERSION_CODE=56;
+  const APP_VERSION_NAME="6.6";
+  const APP_VERSION_CODE=57;
   const CACHE_KEY="coordinator_app_update_config_v1";
   const DEFAULT_STORE_URL="https://play.google.com/store/apps/details?id=kr.nonsan.coordinator";
   let cachedConfig=null;

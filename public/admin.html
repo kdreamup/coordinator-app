@@ -484,80 +484,12 @@
 
 
 
-    /* step39: 실제 시안형 관리자 레이아웃 적용 - 왼쪽 메뉴/업무영역 정리 */
-    :root{
-      --step39-sidebar:#0f1f35;
-      --step39-sidebar2:#17375e;
-      --step39-blue:#2563eb;
-      --step39-border:#dbe5f2;
-      --step39-bg:#f4f8fd;
-    }
-    body.admin-shell-step39{background:var(--step39-bg);padding-left:250px;}
-    .admin-sidebar-step39{position:fixed;left:0;top:0;bottom:0;width:250px;background:linear-gradient(180deg,var(--step39-sidebar),var(--step39-sidebar2));color:#fff;z-index:500;display:flex;flex-direction:column;padding:24px 18px;box-shadow:14px 0 30px rgba(15,23,42,.12);} 
-    .sidebar-brand-step39{display:flex;align-items:center;gap:12px;padding:4px 4px 22px;border-bottom:1px solid rgba(255,255,255,.12);margin-bottom:18px;}
-    .sidebar-logo-step39{width:42px;height:42px;border-radius:16px;background:linear-gradient(135deg,#38bdf8,#2563eb);display:flex;align-items:center;justify-content:center;font-size:23px;box-shadow:0 12px 26px rgba(37,99,235,.35);}
-    .sidebar-title-step39{font-size:17px;font-weight:900;line-height:1.35;letter-spacing:-.02em;}
-    .sidebar-sub-step39{font-size:11px;color:rgba(255,255,255,.68);font-weight:800;margin-top:3px;}
-    .sidebar-nav-step39{display:grid;gap:8px;}
-    .sidebar-nav-step39 a{color:rgba(255,255,255,.86);text-decoration:none;border-radius:14px;padding:12px 13px;font-size:14px;font-weight:900;display:flex;align-items:center;gap:10px;transition:.15s ease;}
-    .sidebar-nav-step39 a:hover{background:rgba(255,255,255,.12);color:#fff;transform:translateX(2px);}
-    .sidebar-nav-step39 a.active{background:#2563eb;color:#fff;box-shadow:0 10px 22px rgba(37,99,235,.38);}
-    .sidebar-help-step39{margin-top:auto;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.08);border-radius:18px;padding:14px;font-size:12px;line-height:1.55;color:rgba(255,255,255,.78);}
-    .sidebar-help-step39 strong{display:block;color:#fff;font-size:15px;margin-bottom:4px;}
-    body.admin-shell-step39 .topbar{position:sticky;top:0;z-index:300;background:rgba(255,255,255,.94);backdrop-filter:blur(16px);border-bottom:1px solid var(--step39-border);} 
-    body.admin-shell-step39 .topbar-inner{max-width:1680px;padding:18px 26px;align-items:center;}
-    body.admin-shell-step39 .brand-title{font-size:28px;color:#0f172a;}
-    body.admin-shell-step39 .brand-sub{font-size:13px;color:#64748b;}
-    body.admin-shell-step39 .toolbar .btn{border-radius:13px;box-shadow:0 8px 18px rgba(15,23,42,.06);}
-    body.admin-shell-step39 .container{max-width:1680px;padding:24px 26px 46px;}
-    body.admin-shell-step39 .hero{background:#fff;border:1px solid var(--step39-border);box-shadow:0 10px 28px rgba(15,23,42,.05);color:#0f172a;border-radius:22px;padding:22px 24px;}
-    body.admin-shell-step39 .hero::after{background:linear-gradient(135deg,rgba(37,99,235,.12),rgba(20,184,166,.16));right:18px;top:12px;width:150px;height:150px;}
-    body.admin-shell-step39 .hero h2{font-size:25px;color:#0f172a;}
-    body.admin-shell-step39 .hero p{color:#475569;font-weight:700;}
-    body.admin-shell-step39 .usage-status-grid, body.admin-shell-step39 .step38-usage-grid{grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px;}
-    body.admin-shell-step39 .summary-grid{gap:12px;}
-    body.admin-shell-step39 .summary-card, body.admin-shell-step39 .inactive-user-panel, body.admin-shell-step39 .today-active-panel, body.admin-shell-step39 .month-query-panel, body.admin-shell-step39 .filter-redesign-panel, body.admin-shell-step39 .table-panel, body.admin-shell-step39 .panel{border:1px solid var(--step39-border);box-shadow:0 10px 28px rgba(15,23,42,.055);}
-    body.admin-shell-step39 .month-query-panel{background:#fff;}
-    body.admin-shell-step39 .filter-top-line{background:#f1f7ff;}
-    body.admin-shell-step39 .filter-card{background:#fff;}
-    body.admin-shell-step39 .three-col{grid-template-columns:repeat(2,minmax(0,1fr)) !important;}
-    body.admin-shell-step39 .table-wrap{max-height:600px;}
-    body.admin-shell-step39 thead th{background:#f1f6fd;color:#334155;}
-    @media(max-width:1100px){
-      body.admin-shell-step39{padding-left:0;}
-      .admin-sidebar-step39{position:relative;width:auto;min-height:auto;border-radius:0;padding:16px 18px;}
-      .sidebar-nav-step39{grid-template-columns:repeat(3,1fr);} .sidebar-help-step39{display:none;}
-      body.admin-shell-step39 .usage-status-grid, body.admin-shell-step39 .step38-usage-grid{grid-template-columns:1fr;}
-    }
-    @media(max-width:700px){.sidebar-nav-step39{grid-template-columns:1fr 1fr}.sidebar-title-step39{font-size:15px}body.admin-shell-step39 .container{padding:16px 14px 36px}.admin-sidebar-step39{display:none}}
+    /* step40: 왼쪽 메뉴 제거 - 단일 스크롤형 관리자 화면 유지 */
 
 </style>
   <!-- break time display v32: 4시간 이상 휴게시간/실근무시간 표시 -->
 </head>
-<body class="admin-shell-step39">
-
-  <!-- step39: 실제 디자인 시안 반영용 왼쪽 메뉴 -->
-  <aside class="admin-sidebar-step39">
-    <div class="sidebar-brand-step39">
-      <div class="sidebar-logo-step39">💙</div>
-      <div>
-        <div class="sidebar-title-step39">노인코디네이터<br>관리자 시스템</div>
-        <div class="sidebar-sub-step39">근태 · 방문기록 · 월별결과</div>
-      </div>
-    </div>
-    <nav class="sidebar-nav-step39" aria-label="관리자 주요 메뉴">
-      <a class="active" href="#top">🏠 대시보드</a>
-      <a href="#month-query-panel">📅 월별 기록 조회</a>
-      <a href="#inactive-user-panel">🚫 미사용자 확인</a>
-      <a href="#history-tbody">📋 상세내역</a>
-      <a href="#step38-management-title">⚙️ 관리 설정</a>
-      <a href="#filter-user">🔎 필터</a>
-    </nav>
-    <div class="sidebar-help-step39">
-      <strong>관리 팁</strong>
-      월별 조회 후 필터를 적용하고, 필요한 엑셀만 내려받으면 속도가 더 안정적입니다.
-    </div>
-  </aside>
+<body>
 
   <header class="topbar" id="top">
     <div class="topbar-inner">
@@ -3239,7 +3171,7 @@
 
 
 <script>
-  // step39: 왼쪽 메뉴가 있는 실제 시안형 관리자 레이아웃
+  // step40: 왼쪽 메뉴 제거, 기존 스크롤형 관리자 화면으로 정리
   // step38: 직관형 관리자 레이아웃 최종 정렬 및 가벼운 화면 구성
   document.addEventListener('DOMContentLoaded', function(){
     setTimeout(function(){
