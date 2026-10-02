@@ -1866,7 +1866,7 @@
     if(!currentUserName) return false;
     const now=Date.now();
     const hasGps=!!(gps&&gps.lat!=null&&gps.lng!=null);
-    const status=meta.status||(hasGps?"fresh":"failed");
+    const status=meta.status||(hasGps?(gps.gpsStatus||"fresh"):"failed");
     const failureCode=meta.failureCode||(hasGps?"":(lastGpsErrorCode||"unknown"));
     const failureReason=meta.failureReason||(hasGps?"":(lastGpsErrorMessage||"위치 정보를 가져오지 못했습니다."));
     try{
@@ -1887,6 +1887,9 @@
         gpsAttemptedAt:meta.attemptedAt??now,
         gpsCapturedAt:hasGps?(gps.capturedAt??null):null,
         gpsUsedCached:!!meta.usedCached,
+        gpsProvider:hasGps?(gps.gpsProvider||"unknown"):null,
+        gpsPermissionMode:hasGps?(gps.gpsPermissionMode||"unknown"):null,
+        gpsPositionAgeMs:hasGps?(gps.positionAgeMs??null):null,
         workStatus:getTodayWorkStatus()
       });
       return true;
@@ -2119,7 +2122,7 @@
       gpsCapturedAt:selectedGps?.capturedAt??null,
       gpsUsedCached:false,
       gpsMetaVersion:"gps-v2",
-      appBuildVersion:"6.3"
+      appBuildVersion:"6.4"
     });
     await db.collection("attendanceLogs").add(payload);
       if(type==="일과 종료") clearCurrentActivitySessionSilently();
@@ -2393,7 +2396,7 @@
         gpsCapturedAt:gpsForVisit?.capturedAt??null,
         gpsUsedCached:false,
         gpsMetaVersion:"gps-v2",
-      appBuildVersion:"6.3"
+      appBuildVersion:"6.4"
       });
       await db.collection("attendanceLogs").add(payload);
       await saveGpsCheckSnapshot("visit-record",gpsForVisit,{status:visitGpsStatus,usedCached:false,failureCode:visitGpsFailureCode,failureReason:visitGpsFailureReason,attemptedAt:gpsAttemptedAt});
@@ -2683,7 +2686,7 @@
   <!-- step62 GPS fresh-only: latest index preserved / no cached fallback / real position timestamp -->
   <!-- step64b GPS audit guarantee: robust function-scoped patch -->
   <!-- step65 GPS atomic audit: metadata in initial Firestore create / no post-create merge -->
-  <!-- release 6.3 / API 36 / update gate + immediate click lock -->
+  <!-- release 6.4 / API 36 / native GPS stabilization -->
 
 <script id="step79-visit-edit-complete">
 /* step79: 방문사례기록 수정창에 대상자 정보/활동내용 추가
@@ -3089,7 +3092,9 @@
     b.addEventListener("click",async function(){
       const t=o.querySelector("#step82-gps-text"), old=b.textContent;b.disabled=true;b.textContent="위치 확인 중...";
       try{
-        const gps=await requestGpsOnce({timeout:12000,fast:true});
+        const gps=typeof window.step86RequestGpsWithPermission==="function"
+          ?await window.step86RequestGpsWithPermission({timeout:15000,fast:true})
+          :await requestGpsOnce({timeout:15000,fast:true});
         if(gps){
           localStorage.setItem(GPS_READY_KEY,"1");o.style.display="none";
           Promise.resolve(saveGpsCheckSnapshot("login",gps,{status:"fresh",attemptedAt:Date.now()})).catch(()=>{});
@@ -3105,6 +3110,9 @@
   function showGate(html){const o=ensureGate();const t=o.querySelector("#step82-gps-text");if(html)t.innerHTML=html;o.style.display="flex";}
   function hideGate(){const o=document.getElementById("step82-gps-gate");if(o)o.style.display="none";}
   async function permissionState(){
+    if(typeof window.step86GpsPermissionState==="function"){
+      try{return await window.step86GpsPermissionState();}catch(e){console.warn("[step86] permission state fallback",e);}
+    }
     if(!navigator.geolocation)return "unsupported";
     try{if(navigator.permissions?.query){const p=await navigator.permissions.query({name:"geolocation"});return p?.state||"unknown";}}catch(e){}
     return "unknown";
@@ -3112,13 +3120,23 @@
   async function prepareGpsUi(){
     const st=await permissionState(), ready=localStorage.getItem(GPS_READY_KEY)==="1";
     if(st==="granted"){localStorage.setItem(GPS_READY_KEY,"1");hideGate();return true;}
+    if(st==="services-off"){
+      localStorage.removeItem(GPS_READY_KEY);
+      showGate(`<b style="color:#be123c;">휴대폰 위치 기능이 꺼져 있습니다.</b><br>휴대폰 상단 빠른 설정에서 <b>위치(GPS)</b>를 켠 뒤 아래 버튼을 다시 눌러주세요.`);
+      return false;
+    }
     if(st==="denied"){
       localStorage.removeItem(GPS_READY_KEY);
-      showGate(`<b style="color:#be123c;">위치 권한이 꺼져 있습니다.</b><br>근무 시작을 위해 휴대폰 설정에서 위치 권한을 <b>‘앱 사용 중에만 허용’</b>으로 변경해주세요.`);
+      showGate(`<b style="color:#be123c;">위치 권한이 꺼져 있습니다.</b><br>근무 시작을 위해 휴대폰 설정에서 위치 권한을 <b>‘앱 사용 중에만 허용’</b>으로 변경해주세요.<br><br><span style="color:#64748b;">‘대략적인 위치’만 허용되어도 앱은 동작하며, 정확한 위치를 허용하면 위치 정확도가 더 좋아집니다.</span>`);
+      return false;
+    }
+    if(st==="unsupported"){
+      localStorage.removeItem(GPS_READY_KEY);
+      showGate(`<b style="color:#be123c;">이 기기에서 위치 기능을 확인할 수 없습니다.</b><br>앱을 완전히 종료한 뒤 다시 실행해주세요. 계속되면 관리자에게 연락해주세요.`);
       return false;
     }
     if(ready)return true;
-    showGate(`근무 시작·종료와 방문기록의 현재 위치를 확인하기 위해 위치 권한이 필요합니다.<br><br>아래 버튼을 누른 뒤 Android 안내창에서 <b>‘앱 사용 중에만 허용’</b>을 선택해주세요.`);
+    showGate(`근무 시작·종료와 방문기록의 현재 위치를 확인하기 위해 위치 권한이 필요합니다.<br><br>아래 버튼을 누른 뒤 Android 안내창에서 <b>‘앱 사용 중에만 허용’</b>을 선택해주세요.<br><br><span style="color:#64748b;">‘대략적인 위치’를 선택해도 앱 사용은 가능합니다.</span>`);
     return false;
   }
   async function ensureGpsForStart(){
@@ -3253,7 +3271,7 @@
       gpsStatus:gpsStatus==="not-attempted"?choice.status:gpsStatus,gpsSource:type==="일과 시작"?"work-start":"work-end",
       gpsFailureCode:gps?"":(failCode||"unknown"),gpsFailureReason:gps?"":(failReason||"위치 확인 실패"),
       gpsAttemptedAt:attemptedAt,gpsCapturedAt:selected?.capturedAt??null,gpsUsedCached:false,
-      gpsMetaVersion:"gps-v3",appBuildVersion:"6.3",boundaryStorageVersion:"work-v2"
+      gpsMetaVersion:"gps-v4",appBuildVersion:"6.4",boundaryStorageVersion:"work-v2"
     };
     if(type==="일과 시작"){
       Object.assign(payload,buildWorkBreakFields(workHours));
@@ -3299,10 +3317,100 @@
 
 <!-- step83-required-client-name -->
 
+<script id="step86-native-gps-stability">
+(function(){
+  const NATIVE_PRIMARY_MAX_AGE=60000;
+  const NATIVE_FALLBACK_MAX_AGE=120000;
+  const WEB_MAX_AGE=120000;
+  let nativeGeoCache=null;
+  function setGpsFailure(code,message){lastGpsErrorCode=code||"unknown";lastGpsErrorMessage=message||"위치 정보를 가져오지 못했습니다.";}
+  function clearGpsFailure(){lastGpsErrorCode="";lastGpsErrorMessage="";}
+  function nativeGeo(){
+    if(nativeGeoCache)return nativeGeoCache;
+    try{
+      const cap=window.Capacitor;if(!cap)return null;
+      const isNative=typeof cap.isNativePlatform==="function"?cap.isNativePlatform():(typeof cap.getPlatform==="function"&&cap.getPlatform()!=="web");
+      if(!isNative)return null;
+      const plugin=cap.Plugins?.Geolocation||(typeof cap.registerPlugin==="function"?cap.registerPlugin("Geolocation"):null);
+      if(plugin)nativeGeoCache=plugin;return plugin||null;
+    }catch(e){return null;}
+  }
+  function pluginUnavailable(err){const code=String(err?.code||"").toLowerCase();const msg=String(err?.message||err||"").toLowerCase();return code.includes("unimplemented")||code.includes("unavailable")||msg.includes("not implemented")||msg.includes("not available");}
+  function nativeError(err){
+    const code=String(err?.code||"");const msg=String(err?.message||err||"");
+    if(code==="OS-PLUG-GLOC-0003")return {code:"permission-denied",message:"위치 권한이 허용되지 않았습니다. 앱 권한에서 위치를 허용해주세요."};
+    if(code==="OS-PLUG-GLOC-0007"||code==="OS-PLUG-GLOC-0009"||code==="OS-PLUG-GLOC-0017")return {code:"location-services-disabled",message:"휴대폰 위치(GPS) 기능이 꺼져 있습니다. 위치 기능을 켠 뒤 다시 시도해주세요."};
+    if(code==="OS-PLUG-GLOC-0010")return {code:"timeout",message:"현재 위치 확인이 지연되고 있습니다. 잠시 후 다시 시도해주세요."};
+    if(code==="OS-PLUG-GLOC-0014"||code==="OS-PLUG-GLOC-0015"||code==="OS-PLUG-GLOC-0016")return {code:"location-settings-error",message:"휴대폰 위치 서비스를 확인할 수 없습니다. 위치(GPS)를 켠 뒤 다시 시도해주세요."};
+    if(code==="OS-PLUG-GLOC-0002")return {code:"position-unavailable",message:"현재 위치를 확인할 수 없습니다. 잠시 후 다시 시도하거나 창가·실외에서 다시 확인해주세요."};
+    return {code:code||"native-location-error",message:msg||"현재 위치를 확인하지 못했습니다."};
+  }
+  function permissionMode(p){if(!p)return "unknown";if(p.location==="granted")return "precise";if(p.coarseLocation==="granted")return "approximate";return "none";}
+  async function nativePermission(){
+    const geo=nativeGeo();if(!geo)return null;
+    try{
+      const p=await geo.checkPermissions();const mode=permissionMode(p);
+      if(mode!=="none")return {state:"granted",mode,status:p};
+      const states=[p?.location,p?.coarseLocation];
+      if(states.includes("prompt")||states.includes("prompt-with-rationale"))return {state:"prompt",mode:"none",status:p};
+      return {state:"denied",mode:"none",status:p};
+    }catch(err){
+      if(pluginUnavailable(err)){nativeGeoCache=null;return null;}
+      const e=nativeError(err);setGpsFailure(e.code,e.message);
+      if(e.code==="location-services-disabled"||e.code==="location-settings-error")return {state:"services-off",mode:"none",error:e};
+      if(e.code==="permission-denied")return {state:"denied",mode:"none",error:e};
+      return {state:"unknown",mode:"none",error:e};
+    }
+  }
+  async function requestNativePermission(){
+    const geo=nativeGeo();if(!geo)return null;
+    try{
+      let p=await geo.checkPermissions();if(permissionMode(p)!=="none")return {state:"granted",mode:permissionMode(p),status:p};
+      p=await geo.requestPermissions();const mode=permissionMode(p);
+      if(mode!=="none")return {state:"granted",mode,status:p};
+      setGpsFailure("permission-denied","위치 권한이 허용되지 않았습니다. 앱 권한에서 위치를 허용해주세요.");return {state:"denied",mode:"none",status:p};
+    }catch(err){
+      if(pluginUnavailable(err)){nativeGeoCache=null;return null;}
+      const e=nativeError(err);setGpsFailure(e.code,e.message);
+      return {state:(e.code==="location-services-disabled"||e.code==="location-settings-error")?"services-off":"denied",mode:"none",error:e};
+    }
+  }
+  function toGps(pos,mode,provider){
+    if(!pos?.coords||pos.coords.latitude==null||pos.coords.longitude==null)return null;
+    const capturedAt=Number(pos.timestamp)||Date.now();const positionAgeMs=Math.max(0,Date.now()-capturedAt);
+    const gps={lat:Number(pos.coords.latitude),lng:Number(pos.coords.longitude),accuracy:pos.coords.accuracy==null?null:Number(pos.coords.accuracy),capturedAt,positionAgeMs,gpsProvider:provider||"capacitor-native",gpsPermissionMode:mode||"unknown",gpsStatus:positionAgeMs>60000?"recent-fallback":"fresh"};
+    lastGps=gps;try{saveGpsToStorage(gps);}catch(e){}clearGpsFailure();return gps;
+  }
+  async function nativeAttempt(geo,mode,options){try{const pos=await geo.getCurrentPosition(options);return {gps:toGps(pos,mode,"capacitor-native"),error:null};}catch(err){const e=nativeError(err);setGpsFailure(e.code,e.message);return {gps:null,error:e,raw:err};}}
+  async function nativePosition(options={}){
+    const geo=nativeGeo();if(!geo)return null;const perm=await nativePermission();if(!perm)return null;
+    if(perm.state!=="granted"){if(perm.state==="services-off")setGpsFailure("location-services-disabled","휴대폰 위치(GPS) 기능이 꺼져 있습니다. 위치 기능을 켠 뒤 다시 시도해주세요.");else setGpsFailure("permission-denied","위치 권한이 허용되지 않았습니다. 앱 권한에서 위치를 허용해주세요.");return false;}
+    const fast=!!options.fast;const precise=perm.mode==="precise";const firstTimeout=fast?15000:22000;const secondTimeout=fast?15000:22000;
+    let r=await nativeAttempt(geo,perm.mode,{enableHighAccuracy:precise,timeout:firstTimeout,maximumAge:NATIVE_PRIMARY_MAX_AGE,enableLocationFallback:true});
+    if(r.gps)return r.gps;if(r.error?.code==="permission-denied"||r.error?.code==="location-services-disabled")return false;
+    await new Promise(resolve=>setTimeout(resolve,700));
+    r=await nativeAttempt(geo,perm.mode,{enableHighAccuracy:false,timeout:secondTimeout,maximumAge:NATIVE_FALLBACK_MAX_AGE,enableLocationFallback:true});
+    return r.gps||false;
+  }
+  async function webPosition(options={}){
+    if(!navigator.geolocation){setGpsFailure("unsupported","이 기기 또는 앱에서 위치 기능을 지원하지 않습니다.");return null;}
+    const fast=!!options.fast;const firstTimeout=fast?15000:(Number(options.timeout)||30000);
+    const first=await requestGpsSingle({enableHighAccuracy:true,timeout:firstTimeout,maxPositionAgeMs:WEB_MAX_AGE});
+    if(first){first.gpsProvider="web-geolocation";first.gpsPermissionMode="browser";first.gpsStatus=(first.positionAgeMs||0)>60000?"recent-fallback":"fresh";return first;}
+    const second=await requestGpsSingle({enableHighAccuracy:false,timeout:fast?15000:20000,maxPositionAgeMs:WEB_MAX_AGE});
+    if(second){second.gpsProvider="web-geolocation";second.gpsPermissionMode="browser";second.gpsStatus=(second.positionAgeMs||0)>60000?"recent-fallback":"fresh";}return second;
+  }
+  window.step86GpsPermissionState=async function(){const p=await nativePermission();if(p)return p.state;if(!navigator.geolocation)return "unsupported";try{if(navigator.permissions?.query){const x=await navigator.permissions.query({name:"geolocation"});return x?.state||"unknown";}}catch(e){}return "unknown";};
+  window.step86RequestGpsWithPermission=async function(options={}){const geo=nativeGeo();if(geo){const p=await requestNativePermission();if(p&&p.state!=="granted")return null;}return await window.requestGpsOnce(options);};
+  window.requestGpsOnce=async function(options={}){const geo=nativeGeo();if(geo){const result=await nativePosition(options);if(result!==null)return result||null;}return await webPosition(options);};
+})();
+</script>
+<!-- step86-native-gps-stability / native-first + tolerant fallback -->
+
 <script id="step84-update-gate">
 (function(){
-  const APP_VERSION_NAME="6.3";
-  const APP_VERSION_CODE=54;
+  const APP_VERSION_NAME="6.4";
+  const APP_VERSION_CODE=55;
   const CACHE_KEY="coordinator_app_update_config_v1";
   const DEFAULT_STORE_URL="https://play.google.com/store/apps/details?id=kr.nonsan.coordinator";
   let cachedConfig=null;
