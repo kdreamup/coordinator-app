@@ -26,5 +26,15 @@ vm.runInContext(getFunction(admin,'  async function resetWorkBoundaries(){','  c
  const timeCtx={clampWorkHours:x=>x,Math};vm.createContext(timeCtx);
  vm.runInContext(getFunction(app,'  function getTotalScheduledMinutesForWorkHours(', '  function buildWorkBreakFields('),timeCtx);
  for(let h=1;h<=5;h++)assert.equal(timeCtx.getTotalScheduledMinutesForWorkHours(h),h*60);
+ // A user absent from attendance records can still be reset by exact name/date.
+ elements.step87CorrUser.value='이승현';await context.resetWorkBoundaries();
+ assert.equal(correction.userName,'이승현');assert.deepEqual(logs.map(l=>l.id),['visit','other']);
+ // The real settings reader handles the app's legacy names field and name objects.
+ const configDb=context.db;
+ context.db={collection:()=>({doc:id=>({get:async()=>({exists:true,data:()=>id==='userConfig'?{names:['이승현',{name:'김테스트'}]}:{}})})})};
+ Object.assign(context,{uniq:xs=>[...new Set(xs.filter(Boolean))],MAIN:[],state:{visitFields:{}}});
+ vm.runInContext(getFunction(admin,'  async function loadSettings(){','  async function loadLogs(){'),context);
+ await context.loadSettings();assert.ok(context.state.registeredUsers.includes('이승현'));assert.ok(context.state.registeredUsers.includes('김테스트'));
+ context.db=configDb;
  console.log('PASS: admin script syntax, reset only selected user/date boundaries, visits retained, Excel boundaries excluded, 1–5 hour scheduling without extra break');
 })().catch(e=>{console.error(e);process.exitCode=1;});

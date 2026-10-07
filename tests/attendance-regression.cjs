@@ -5,7 +5,7 @@ for(const [,attrs,body] of scripts)if(!attrs.includes('src='))new vm.Script(body
 assert.equal(html,fs.readFileSync('public/index.html','utf8'));
 const script=id=>scripts.find(x=>x[1].includes(`id="${id}"`))[2];
 const mem=new Map(),records=new Map(),corrections=new Map();
-let fail=false,gpsResolve;
+let fail=false,gpsResolve,failCode="unavailable",readDenied=false;
 const noop=()=>{};
 let clock=Date.UTC(2026,9,7,12);
 class TestDate extends Date{constructor(...a){super(...(a.length?a:[clock]));}static now(){return clock;}}
@@ -26,7 +26,7 @@ const c={console,Date:TestDate,Promise,Map,Set,Number,String,JSON,encodeURICompo
  reloadMainData:async()=>{c.allLogs=[...records].map(([id,data])=>({id,...data}));},
  firebase:{firestore:{Timestamp:{fromMillis:ms=>({seconds:ms/1000})},FieldValue:{serverTimestamp:()=>0}}},
  db:{collection:name=>({get:async()=>({docs:[...records].map(([id,data])=>({id,data:()=>data}))}),doc:id=>({id,collection:name,get:async()=>({id,exists:corrections.has(id),data:()=>corrections.get(id)})}),where:()=>({get:async()=>({docs:[]})})}),
- runTransaction:async fn=>{if(fail)throw Error('offline');await fn({get:async ref=>({exists:ref.collection==='attendanceCorrections'?corrections.has(ref.id):records.has(ref.id),data:()=>corrections.get(ref.id)}),set:(ref,data)=>records.set(ref.id,data)});}},
+ runTransaction:async fn=>{if(fail){const e=Error('simulated save failure');e.code=failCode;throw e;}await fn({get:async ref=>{if(readDenied&&ref.collection==='attendanceCorrections'){const e=Error('Missing or insufficient permissions');e.code='permission-denied';throw e;}return ({exists:ref.collection==='attendanceCorrections'?corrections.has(ref.id):records.has(ref.id),data:()=>corrections.get(ref.id)});},set:(ref,data)=>records.set(ref.id,data)});}},
 };
 for(const n of ['updateBoundaryBtnState','updateActivityAreaState','updateWorkHoursUi','updateWorkTimerUi','updateCurrentElapsedUi','syncGpsCheckTimer','clearCurrentActivitySessionSilently','updateTodaySummary','renderCalendar','checkAutoWorkEnd','saveGpsCheckSnapshot','loadAttendanceLogs'])c[n]=noop;
 c.window=c;c.addEventListener=noop;c.step84Notify=noop;vm.createContext(c);
@@ -80,7 +80,15 @@ c.window=c;c.addEventListener=noop;c.step84Notify=noop;vm.createContext(c);
  c.currentUserName='offline-user';c.allLogs=[{userName:c.currentUserName,type:'일과 시작',clientTimeMs:original}];fail=true;
  const offline=c._doSaveWorkBoundaryLog('일과 종료');gpsResolve({lat:1,lng:2});assert.equal(await offline,true);
  assert.equal(JSON.parse(mem.get('coordinator_pending_boundaries_v1')).length,1);
- fail=false;await c.step82FlushPendingBoundaries();assert.equal(records.size,2);
+ assert.equal(c.step92BoundarySyncDiagnostic().last.state,'pending');
+ assert.equal(c.step92BoundarySyncDiagnostic().last.code,'unavailable');
+ failCode='permission-denied';await c.step82FlushPendingBoundaries();
+ assert.equal(c.step92BoundarySyncDiagnostic().last.state,'error');
+ assert.equal(c.step92BoundarySyncDiagnostic().pending.length,1);
+ fail=false;readDenied=true;await c.step82FlushPendingBoundaries();
+ assert.equal(c.step92BoundarySyncDiagnostic().last.phase,'attendanceCorrections 읽기');
+ assert.equal(c.step92BoundarySyncDiagnostic().pending.length,1);
+ readDenied=false;await c.step82FlushPendingBoundaries();assert.equal(records.size,2);assert.equal(c.step92BoundarySyncDiagnostic().last.state,'synced');
  assert.equal(JSON.parse(mem.get('coordinator_pending_boundaries_v1')).length,0);
  assert.equal(await c._doSaveWorkBoundaryLog('일과 시작'),false);
  // GPS failure releases the lock so a valid start can be retried.
@@ -103,5 +111,15 @@ c.window=c;c.addEventListener=noop;c.step84Notify=noop;vm.createContext(c);
  assert.equal(c.getCurrentAutoEndInfo().autoEndAtMs,clock+300*60000);
  assert.equal(await c._doSaveWorkBoundaryLog('일과 종료'),false);
  assert.equal(await c._doSaveWorkBoundaryLog('일과 시작'),false);
+ // A server-confirmed absence clears a stale completed phone state.
+ c.currentUserName='이승현';c.allLogs=[];
+ const ghostKey='coordinator_work_state_v2_'+encodeURIComponent(c.currentUserName).replace(/%/g,'_')+'_'+today;
+ mem.set(ghostKey,JSON.stringify({userName:c.currentUserName,dateKey:today,status:'ended',startMs:clock-10000,endMs:clock-5000,updatedAtMs:clock-5000,syncState:'synced'}));
+ mem.set('coordinator_pending_boundaries_v1','[]');
+ await c.loadAttendanceLogs();assert.equal(c.getTodayWorkStatus(),'none');assert.equal(mem.has(ghostKey),false);
+ // A real queued offline end is retained even after a server read with no records.
+ mem.set(ghostKey,JSON.stringify({userName:c.currentUserName,dateKey:today,status:'ended',startMs:clock-10000,endMs:clock-5000,updatedAtMs:clock-5000,syncState:'pending'}));
+ mem.set('coordinator_pending_boundaries_v1',JSON.stringify([{id:'ghost-end',payload:{userName:c.currentUserName,clientTimeMs:clock-5000,type:'일과 종료'}}]));
+ await c.loadAttendanceLogs();assert.equal(c.getTodayWorkStatus(),'ended');assert.equal(mem.has(ghostKey),true);
  console.log('PASS: script syntax, bundle parity, correction scope/today/history/removal/user isolation, auto-end schedule, concurrent end, immutable replay, offline retry, GPS retry, reset/restart and early-end blocking');
 })().catch(e=>{console.error(e);process.exitCode=1;});

@@ -2134,7 +2134,7 @@
       gpsCapturedAt:selectedGps?.capturedAt??null,
       gpsUsedCached:false,
       gpsMetaVersion:"gps-v2",
-      appBuildVersion:"6.8"
+      appBuildVersion:"6.10"
     });
     await db.collection("attendanceLogs").add(payload);
       if(type==="일과 종료") clearCurrentActivitySessionSilently();
@@ -2408,7 +2408,7 @@
         gpsCapturedAt:gpsForVisit?.capturedAt??null,
         gpsUsedCached:false,
         gpsMetaVersion:"gps-v2",
-      appBuildVersion:"6.8"
+      appBuildVersion:"6.10"
       });
       await db.collection("attendanceLogs").add(payload);
       await saveGpsCheckSnapshot("visit-record",gpsForVisit,{status:visitGpsStatus,usedCached:false,failureCode:visitGpsFailureCode,failureReason:visitGpsFailureReason,attemptedAt:gpsAttemptedAt});
@@ -2715,7 +2715,7 @@
   <!-- step62 GPS fresh-only: latest index preserved / no cached fallback / real position timestamp -->
   <!-- step64b GPS audit guarantee: robust function-scoped patch -->
   <!-- step65 GPS atomic audit: metadata in initial Firestore create / no post-create merge -->
-  <!-- release 6.8 / API 36 / correction sync + duplicate boundary guard -->
+  <!-- release 6.10 / API 36 / correction sync + duplicate boundary guard -->
 
 <script id="step79-visit-edit-complete">
 /* step79: 방문사례기록 수정창에 대상자 정보/활동내용 추가
@@ -2988,6 +2988,8 @@
   const WORK_PREFIX="coordinator_work_state_v2_";
   const PENDING_KEY="coordinator_pending_boundaries_v1";
   let flushBusy=false;
+  let serverLogsConfirmed=false;
+  let serverLogsDate="";
 
   function s(v){return String(v??"").trim();}
   function keyPart(v){return encodeURIComponent(s(v)||"unknown").replace(/%/g,"_");}
@@ -3036,6 +3038,13 @@
   function effectiveInfo(){
     const r=remoteInfo(), l=readLocalWork();
     if(!l)return r;
+    const queued=readPending().some(op=>op?.payload?.userName===currentUserName&&formatDateKey(op.payload.clientTimeMs)===formatDateKey(new Date()));
+    // A successful server read wins over a completed, already-synced local state.
+    // Preserve genuine offline pending work until it is uploaded.
+    if(serverLogsConfirmed&&serverLogsDate===formatDateKey(new Date())&&!queued){
+      if(r.status==='none')localStorage.removeItem(workKey());
+      return r;
+    }
     const localLatest=Number(l.updatedAtMs)||Number(l.endMs)||Number(l.startMs)||0;
     if(r.status==="none"||localLatest>Number(r.latestMs||0)){
       return {
@@ -3052,7 +3061,8 @@
     if(!currentUserName)return;
     const r=remoteInfo(); if(r.status==="none")return;
     const date=formatDateKey(new Date()), l=readLocalWork(currentUserName,date);
-    if(Number(r.latestMs||0)<Number(l?.updatedAtMs||0))return;
+    const queued=readPending().some(op=>op?.payload?.userName===currentUserName&&formatDateKey(op.payload.clientTimeMs)===date);
+    if(Number(r.latestMs||0)<Number(l?.updatedAtMs||0)&&!(serverLogsConfirmed&&!queued))return;
     writeLocalWork({
       userName:currentUserName,dateKey:date,status:r.status,
       startMs:r.startMs||l?.startMs||null,endMs:r.endMs||null,
@@ -3085,44 +3095,96 @@
   function queue(op){const a=readPending().filter(x=>x?.id!==op.id);a.push(op);writePending(a);}
   function unqueue(id){writePending(readPending().filter(x=>x?.id!==id));}
   function eventTimestamp(ms){try{return firebase.firestore.Timestamp.fromMillis(Number(ms)||Date.now());}catch(e){return new Date(Number(ms)||Date.now());}}
+  const SYNC_DIAGNOSTIC_KEY="coordinator_boundary_sync_diagnostic_v1";
+  function saveSyncDiagnostic(value){
+    const record={...value,atMs:Date.now(),userName:currentUserName,projectId:"attendance-system-e2848",appVersion:"6.10"};
+    try{localStorage.setItem(SYNC_DIAGNOSTIC_KEY,JSON.stringify(record));}catch(e){}
+    renderBoundarySync();
+  }
+  function renderBoundarySync(){
+    if(!document.createElement)return;
+    let box=document.getElementById('boundary-sync-status');
+    if(!box){
+      const anchor=document.getElementById('start-work-btn');if(!anchor?.parentNode)return;
+      box=document.createElement('section');box.id='boundary-sync-status';
+      box.style.cssText='padding:12px;margin:12px 0;border:1px solid #cbd5e1;border-radius:12px;background:#fff;white-space:pre-wrap;font-size:14px';
+      box.setAttribute('role','status');anchor.parentNode.insertBefore(box,anchor.nextSibling);
+    }
+    let diagnostic={};try{diagnostic=JSON.parse(localStorage.getItem(SYNC_DIAGNOSTIC_KEY)||'{}');}catch(e){}
+    const pending=readPending().filter(op=>op?.payload?.userName===currentUserName);
+    box.replaceChildren();
+    const title=document.createElement('strong');
+    title.textContent=pending.length?(diagnostic.userName===currentUserName&&diagnostic.state==='error'?'서버 저장 오류':'서버 전송 대기'):'전송 대기 기록 없음';box.appendChild(title);
+    const info=document.createElement('div');
+    info.textContent=pending.length?'휴대폰에 '+pending.length+'건 보관 중입니다. 서버 저장은 아직 확인되지 않았습니다.':'';
+    box.appendChild(info);
+    if(diagnostic.userName===currentUserName){
+      const detail=document.createElement('div');detail.textContent=diagnostic.state==='synced'?'최근 기록: 서버 저장 확인 완료':
+        [diagnostic.code,diagnostic.phase,diagnostic.message].filter(Boolean).join(' · ');box.appendChild(detail);
+    }
+    const retry=document.createElement('button');retry.type='button';retry.textContent='서버 전송 다시 확인';
+    retry.disabled=flushBusy;retry.addEventListener('click',async()=>{retry.disabled=true;try{await flushPending();}finally{renderBoundarySync();}});box.appendChild(retry);
+    const details=document.createElement('details'),summary=document.createElement('summary');summary.textContent='저장 진단 정보';details.appendChild(summary);
+    const area=document.createElement('textarea');area.readOnly=true;area.style.cssText='width:100%;height:150px';
+    area.value=JSON.stringify({userName:currentUserName,projectId:'attendance-system-e2848',appVersion:'6.10',pending:pending.map(op=>({id:op.id,type:op.payload.type,clientTimeMs:op.payload.clientTimeMs,lastError:op.lastError||null})),lastResult:diagnostic.userName===currentUserName?diagnostic:null},null,2);
+    details.appendChild(area);box.appendChild(details);
+  }
   function timeoutResult(p,ms){return Promise.race([
-    Promise.resolve(p).then(()=>true).catch(e=>{console.warn("[step82] firestore write failed",e);return false;}),
-    new Promise(r=>setTimeout(()=>r(false),ms))
+    Promise.resolve(p).then(value=>({ok:true,value})).catch(e=>({ok:false,code:String(e.code||'unknown'),message:String(e.message||e),phase:e.boundaryPhase||'transaction'})),
+    new Promise(r=>setTimeout(()=>r({ok:false,code:'timeout',message:'서버 응답을 아직 확인하지 못했습니다.',phase:'transaction'}),ms))
   ]);}
+  function recordSyncResult(id,result){
+    if(result.ok){unqueue(id);saveSyncDiagnostic({state:'synced',id});return;}
+    const lastError={code:result.code,message:result.message,phase:result.phase,atMs:Date.now()};
+    writePending(readPending().map(op=>op.id===id?{...op,lastError}:op));
+    saveSyncDiagnostic({state:['unavailable','timeout','deadline-exceeded'].includes(result.code)?'pending':'error',id,...lastError});
+  }
+  window.step92BoundarySyncDiagnostic=function(){
+    let last=null;try{last=JSON.parse(localStorage.getItem(SYNC_DIAGNOSTIC_KEY)||'null');}catch(e){}
+    return {pending:readPending().filter(op=>op?.payload?.userName===currentUserName),last:last?.userName===currentUserName?last:null};
+  };
   async function persistBoundary(id,payload){
     const ref=db.collection("attendanceLogs").doc(id);
     const data={...payload,timestamp:eventTimestamp(payload.clientTimeMs),syncedAt:firebase.firestore.FieldValue.serverTimestamp()};
     // Read before creating: concurrent devices and retries must preserve the first record.
     return db.runTransaction(async tx=>{
       const correctionRef=db.collection("attendanceCorrections").doc(formatDateKey(payload.clientTimeMs)+"__"+keyPart(payload.userName));
-      const correctionSnap=await tx.get(correctionRef);
+      let correctionSnap;
+      try{correctionSnap=await tx.get(correctionRef);}catch(e){e.boundaryPhase='attendanceCorrections 읽기';throw e;}
       const resetAt=Number(correctionSnap.exists?correctionSnap.data()?.boundaryResetAtMs:0)||0;
-      const existing=await tx.get(ref);
-      if(Number(payload.clientTimeMs)>resetAt&&!existing.exists)tx.set(ref,data);
+      let existing;
+      try{existing=await tx.get(ref);}catch(e){e.boundaryPhase='attendanceLogs 읽기';throw e;}
+      if(Number(payload.clientTimeMs)<=resetAt)return 'reset-discarded';
+      if(!existing.exists)tx.set(ref,data);
+      return existing.exists?'existing':'created';
     });
   }
   async function writeBoundary(id,payload){
     queue({id,payload,queuedAtMs:Date.now()});
-    const ok=await timeoutResult(persistBoundary(id,payload),8000);
-    if(ok){unqueue(id);markSynced(payload.clientTimeMs);}
-    return ok;
+    saveSyncDiagnostic({state:'pending',id,message:'서버 저장 확인 중'});
+    const result=await timeoutResult(persistBoundary(id,payload),8000);
+    recordSyncResult(id,result);
+    if(result.ok&&result.value!=='reset-discarded')markSynced(payload.clientTimeMs);
+    if(result.ok&&result.value==='reset-discarded')saveSyncDiagnostic({state:'reset',id,message:'관리자가 초기화한 이전 기록은 재전송하지 않았습니다.'});
+    return result.ok;
   }
   async function flushPending(){
     if(flushBusy||!navigator.onLine)return false;
-    const a=readPending(); if(!a.length)return true;
+    const a=readPending().filter(op=>op?.payload?.userName===currentUserName); if(!a.length){renderBoundarySync();return true;}
     flushBusy=true; let changed=false;
     try{
       for(const op of a){
         if(!op?.id||!op?.payload)continue;
-        const ok=await timeoutResult(persistBoundary(op.id,op.payload),8000);
-        if(!ok)break;
-        unqueue(op.id);markSynced(op.payload.clientTimeMs);changed=true;
+        const result=await timeoutResult(persistBoundary(op.id,op.payload),8000);
+        recordSyncResult(op.id,result);
+        if(!result.ok)break;
+        if(result.value!=='reset-discarded')markSynced(op.payload.clientTimeMs);changed=true;
       }
       if(changed){
         try{await loadAttendanceLogs();syncLocalFromRemote();updateTodaySummary();renderCalendar();renderHistory();updateActivityAreaState();updateBoundaryBtnState();updateWorkTimerUi();updateCurrentElapsedUi();}catch(e){}
       }
       return readPending().length===0;
-    }finally{flushBusy=false;}
+    }finally{flushBusy=false;renderBoundarySync();}
   }
 
   function ensureGate(){
@@ -3232,11 +3294,13 @@
   loadAttendanceLogs=async function(){
     const previous=Array.isArray(allLogs)?allLogs.slice():[];
     try{
-      const snap=await db.collection("attendanceLogs").get();
+      const snap=await db.collection("attendanceLogs").get({source:"server"});
+      serverLogsConfirmed=true;serverLogsDate=formatDateKey(new Date());
       allLogs=snap.docs.map(doc=>({id:doc.id,...doc.data()}));
       allLogs.sort((a,b)=>(getLogDateTime(b)?.getTime()||0)-(getLogDateTime(a)?.getTime()||0));
-      if(currentUserName)syncLocalFromRemote();
+      if(currentUserName){syncLocalFromRemote();effectiveInfo();}
     }catch(err){
+      serverLogsConfirmed=false;
       console.error("[step82] attendanceLogs load failed - keeping prior/local state",err);
       if(previous.length)allLogs=previous;
       else if(!Array.isArray(allLogs))allLogs=[];
@@ -3354,7 +3418,7 @@
       gpsStatus:gpsStatus==="not-attempted"?choice.status:gpsStatus,gpsSource:type==="일과 시작"?"work-start":"work-end",
       gpsFailureCode:gps?"":(failCode||"unknown"),gpsFailureReason:gps?"":(failReason||"위치 확인 실패"),
       gpsAttemptedAt:attemptedAt,gpsCapturedAt:selected?.capturedAt??null,gpsUsedCached:false,
-      gpsMetaVersion:"gps-v4",appBuildVersion:"6.8",boundaryStorageVersion:"work-v2"
+      gpsMetaVersion:"gps-v4",appBuildVersion:"6.10",boundaryStorageVersion:"work-v2"
     };
     if(type==="일과 시작"){
       Object.assign(payload,buildWorkBreakFields(workHours));
@@ -3376,11 +3440,12 @@
       status:payload.gpsStatus,usedCached:false,failureCode:payload.gpsFailureCode,failureReason:payload.gpsFailureReason,attemptedAt
     })).catch(()=>{});
     if(ok){
-      allLogs=allLogs.filter(x=>x.id!==localId);
-      Promise.resolve(reloadMainData()).catch(()=>{});
+      // Keep the optimistic row until the reload replaces it; avoid an empty-state gap.
+      try{await reloadMainData();}catch(e){console.warn("[step91] boundary reload deferred",e);}
       if(!options.silent)window.step84Notify(type+"이 저장되었습니다.");
     }else if(!options.silent){
-      window.step84Notify(type+" 시각은 휴대폰에 저장되었습니다. 인터넷 연결 후 자동 전송됩니다.","warn");
+      const result=window.step92BoundarySyncDiagnostic().last;
+      window.step84Notify(result?.state==='error'?type+" 서버 저장 실패 ("+result.code+"). 휴대폰 기록은 보존됐습니다. 저장 진단 정보를 확인해주세요.":type+" 기록은 휴대폰에 보관 중이며 서버 저장은 아직 확인되지 않았습니다.","warn");
     }
     syncGpsCheckTimer();
     return true;
@@ -3388,9 +3453,10 @@
   };
 
   // 로그인 버튼은 기존 함수가 직접 바인딩되어 있으므로 loginToMain 내부 호출은 패치 파일에서 교체합니다.
-  window.step82PrepareGpsPermissionUi=prepareGpsUi;
+  window.step82PrepareGpsPermissionUi=async function(){renderBoundarySync();return prepareGpsUi();};
   window.step82FlushPendingBoundaries=flushPending;
 
+  setInterval(()=>{if(currentUserName){renderBoundarySync();if(navigator.onLine)flushPending();}},30000);
   window.addEventListener("online",()=>flushPending());
   window.addEventListener("pageshow",()=>{updateWorkTimerUi();updateCurrentElapsedUi();checkAutoWorkEnd();flushPending();});
   document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"){updateWorkTimerUi();updateCurrentElapsedUi();checkAutoWorkEnd();flushPending();}});
@@ -3589,8 +3655,8 @@
 
 <script id="step84-update-gate">
 (function(){
-  const APP_VERSION_NAME="6.8";
-  const APP_VERSION_CODE=59;
+  const APP_VERSION_NAME="6.10";
+  const APP_VERSION_CODE=61;
   const CACHE_KEY="coordinator_app_update_config_v1";
   const DEFAULT_STORE_URL="https://play.google.com/store/apps/details?id=kr.nonsan.coordinator";
   let cachedConfig=null;
