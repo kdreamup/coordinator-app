@@ -1397,7 +1397,8 @@
 
   async function loadAttendanceLogs(){
     try{
-      const snap=await db.collection("attendanceLogs").get();
+      if(!currentUserName){allLogs=[];return;}
+      const snap=await db.collection("attendanceLogs").where("userName","==",currentUserName).get();
       allLogs=snap.docs.map(doc=>({id:doc.id,...doc.data()}));
       allLogs.sort((a,b)=>(getLogDateTime(b)?.getTime()||0)-(getLogDateTime(a)?.getTime()||0));
       console.log("[loadAttendanceLogs] 로그 수:", allLogs.length);
@@ -1599,6 +1600,7 @@
       alert("등록되지 않은 사용자입니다.\n관리자에게 문의하세요."); return;
     }
     currentUserName=finalUser; localStorage.setItem(LS_LAST_USER,currentUserName);
+    await loadAttendanceLogs();
     updateMainUserUi(); showScreen("main");
     const saved=loadSessionFromStorage(); if(saved) currentSession=saved;
     enforceActivitySessionWorkState();
@@ -2134,7 +2136,7 @@
       gpsCapturedAt:selectedGps?.capturedAt??null,
       gpsUsedCached:false,
       gpsMetaVersion:"gps-v2",
-      appBuildVersion:"6.10"
+      appBuildVersion:"6.11"
     });
     await db.collection("attendanceLogs").add(payload);
       if(type==="일과 종료") clearCurrentActivitySessionSilently();
@@ -2408,7 +2410,7 @@
         gpsCapturedAt:gpsForVisit?.capturedAt??null,
         gpsUsedCached:false,
         gpsMetaVersion:"gps-v2",
-      appBuildVersion:"6.10"
+      appBuildVersion:"6.11"
       });
       await db.collection("attendanceLogs").add(payload);
       await saveGpsCheckSnapshot("visit-record",gpsForVisit,{status:visitGpsStatus,usedCached:false,failureCode:visitGpsFailureCode,failureReason:visitGpsFailureReason,attemptedAt:gpsAttemptedAt});
@@ -2715,7 +2717,7 @@
   <!-- step62 GPS fresh-only: latest index preserved / no cached fallback / real position timestamp -->
   <!-- step64b GPS audit guarantee: robust function-scoped patch -->
   <!-- step65 GPS atomic audit: metadata in initial Firestore create / no post-create merge -->
-  <!-- release 6.10 / API 36 / correction sync + duplicate boundary guard -->
+  <!-- release 6.11 / API 36 / correction sync + duplicate boundary guard -->
 
 <script id="step79-visit-edit-complete">
 /* step79: 방문사례기록 수정창에 대상자 정보/활동내용 추가
@@ -2982,6 +2984,13 @@
 <!-- step79-visit-edit-complete -->
 
 
+<script id="step93-quota-backoff">
+(function(){
+  const key='coordinator_firestore_retry_after_v1';
+  window.step93QuotaBlocked=function(){return Date.now()<Number(localStorage.getItem(key)||0);};
+  window.step93RememberQuota=function(error){if(error?.code==='resource-exhausted')localStorage.setItem(key,String(Date.now()+60*60*1000));};
+})();
+</script>
 <script id="step82-gps-timer-resilience">
 (function(){
   const GPS_READY_KEY="coordinator_gps_permission_ready_v1";
@@ -3097,7 +3106,7 @@
   function eventTimestamp(ms){try{return firebase.firestore.Timestamp.fromMillis(Number(ms)||Date.now());}catch(e){return new Date(Number(ms)||Date.now());}}
   const SYNC_DIAGNOSTIC_KEY="coordinator_boundary_sync_diagnostic_v1";
   function saveSyncDiagnostic(value){
-    const record={...value,atMs:Date.now(),userName:currentUserName,projectId:"attendance-system-e2848",appVersion:"6.10"};
+    const record={...value,atMs:Date.now(),userName:currentUserName,projectId:"attendance-system-e2848",appVersion:"6.11"};
     try{localStorage.setItem(SYNC_DIAGNOSTIC_KEY,JSON.stringify(record));}catch(e){}
     renderBoundarySync();
   }
@@ -3126,7 +3135,7 @@
     retry.disabled=flushBusy;retry.addEventListener('click',async()=>{retry.disabled=true;try{await flushPending();}finally{renderBoundarySync();}});box.appendChild(retry);
     const details=document.createElement('details'),summary=document.createElement('summary');summary.textContent='저장 진단 정보';details.appendChild(summary);
     const area=document.createElement('textarea');area.readOnly=true;area.style.cssText='width:100%;height:150px';
-    area.value=JSON.stringify({userName:currentUserName,projectId:'attendance-system-e2848',appVersion:'6.10',pending:pending.map(op=>({id:op.id,type:op.payload.type,clientTimeMs:op.payload.clientTimeMs,lastError:op.lastError||null})),lastResult:diagnostic.userName===currentUserName?diagnostic:null},null,2);
+    area.value=JSON.stringify({userName:currentUserName,projectId:'attendance-system-e2848',appVersion:'6.11',pending:pending.map(op=>({id:op.id,type:op.payload.type,clientTimeMs:op.payload.clientTimeMs,lastError:op.lastError||null})),lastResult:diagnostic.userName===currentUserName?diagnostic:null},null,2);
     details.appendChild(area);box.appendChild(details);
   }
   function timeoutResult(p,ms){return Promise.race([
@@ -3135,6 +3144,7 @@
   ]);}
   function recordSyncResult(id,result){
     if(result.ok){unqueue(id);saveSyncDiagnostic({state:'synced',id});return;}
+    window.step93RememberQuota?.(result);
     const lastError={code:result.code,message:result.message,phase:result.phase,atMs:Date.now()};
     writePending(readPending().map(op=>op.id===id?{...op,lastError}:op));
     saveSyncDiagnostic({state:['unavailable','timeout','deadline-exceeded'].includes(result.code)?'pending':'error',id,...lastError});
@@ -3144,6 +3154,7 @@
     return {pending:readPending().filter(op=>op?.payload?.userName===currentUserName),last:last?.userName===currentUserName?last:null};
   };
   async function persistBoundary(id,payload){
+    if(window.step93QuotaBlocked?.()){const error=new Error('서버 일일 한도 초과로 자동 전송을 잠시 대기합니다. 기록은 휴대폰에 보존됩니다.');error.code='resource-exhausted';throw error;}
     const ref=db.collection("attendanceLogs").doc(id);
     const data={...payload,timestamp:eventTimestamp(payload.clientTimeMs),syncedAt:firebase.firestore.FieldValue.serverTimestamp()};
     // Read before creating: concurrent devices and retries must preserve the first record.
@@ -3169,7 +3180,7 @@
     return result.ok;
   }
   async function flushPending(){
-    if(flushBusy||!navigator.onLine)return false;
+    if(flushBusy||!navigator.onLine||window.step93QuotaBlocked?.())return false;
     const a=readPending().filter(op=>op?.payload?.userName===currentUserName); if(!a.length){renderBoundarySync();return true;}
     flushBusy=true; let changed=false;
     try{
@@ -3291,20 +3302,23 @@
     return null;
   };
 
+  let attendanceLoadTask=null,attendanceLoadUser='';
   loadAttendanceLogs=async function(){
-    const previous=Array.isArray(allLogs)?allLogs.slice():[];
-    try{
-      const snap=await db.collection("attendanceLogs").get({source:"server"});
-      serverLogsConfirmed=true;serverLogsDate=formatDateKey(new Date());
-      allLogs=snap.docs.map(doc=>({id:doc.id,...doc.data()}));
-      allLogs.sort((a,b)=>(getLogDateTime(b)?.getTime()||0)-(getLogDateTime(a)?.getTime()||0));
-      if(currentUserName){syncLocalFromRemote();effectiveInfo();}
-    }catch(err){
-      serverLogsConfirmed=false;
-      console.error("[step82] attendanceLogs load failed - keeping prior/local state",err);
-      if(previous.length)allLogs=previous;
-      else if(!Array.isArray(allLogs))allLogs=[];
-    }
+    const user=currentUserName;
+    if(!user){allLogs=[];serverLogsConfirmed=false;return;}
+    if(window.step93QuotaBlocked?.()){serverLogsConfirmed=false;return;}
+    if(attendanceLoadTask&&attendanceLoadUser===user)return attendanceLoadTask;
+    attendanceLoadUser=user;
+    const task=(async()=>{
+      try{
+        const snapshots=await Promise.all(['userName','coordinatorName'].map(field=>db.collection('attendanceLogs').where(field,'==',user).get({source:'server'})));
+        if(currentUserName!==user)return;
+        const rows=new Map();snapshots.forEach(snap=>snap.docs.forEach(doc=>rows.set(doc.id,{id:doc.id,...doc.data()})));
+        allLogs=[...rows.values()];allLogs.sort((a,b)=>(getLogDateTime(b)?.getTime()||0)-(getLogDateTime(a)?.getTime()||0));
+        serverLogsConfirmed=true;serverLogsDate=formatDateKey(new Date());syncLocalFromRemote();effectiveInfo();
+      }catch(error){serverLogsConfirmed=false;window.step93RememberQuota?.(error);console.error('[step93] personal attendance read failed',error);}
+    })();
+    attendanceLoadTask=task;try{return await task;}finally{if(attendanceLoadTask===task)attendanceLoadTask=null;}
   };
 
   saveWorkBoundaryLog=async function(type){
@@ -3418,7 +3432,7 @@
       gpsStatus:gpsStatus==="not-attempted"?choice.status:gpsStatus,gpsSource:type==="일과 시작"?"work-start":"work-end",
       gpsFailureCode:gps?"":(failCode||"unknown"),gpsFailureReason:gps?"":(failReason||"위치 확인 실패"),
       gpsAttemptedAt:attemptedAt,gpsCapturedAt:selected?.capturedAt??null,gpsUsedCached:false,
-      gpsMetaVersion:"gps-v4",appBuildVersion:"6.10",boundaryStorageVersion:"work-v2"
+      gpsMetaVersion:"gps-v4",appBuildVersion:"6.11",boundaryStorageVersion:"work-v2"
     };
     if(type==="일과 시작"){
       Object.assign(payload,buildWorkBreakFields(workHours));
@@ -3561,7 +3575,7 @@
 
 <script id="step87-admin-correction-sync">
 (function(){
-  const POLL_MS=15000;
+  const POLL_MS=120000;
 
   function n(v){return String(v??'').trim();}
   function keyPart(v){return encodeURIComponent(n(v)||'unknown').replace(/%/g,'_').replace(/\//g,'_2F');}
@@ -3571,6 +3585,7 @@
 
   const corrections=new Map();
   const inFlight=new Map();
+  const fetchedAt=new Map();
   function cacheKey(user,date){return user+'\u0000'+date;}
   window.step87CorrectionForDate=function(dk){
     const c=corrections.get(cacheKey(n(currentUserName),n(dk)));
@@ -3595,15 +3610,17 @@
     return {hours,startMs,autoEndAtMs:startMs+(getTotalScheduledMinutesForWorkHours(hours)*60*1000)};
   };
 
-  async function fetchCorrection(u,d){
+  async function fetchCorrection(u,d,force=false){
     const key=cacheKey(u,d);
+    if(window.step93QuotaBlocked?.())return {next:corrections.get(key)||null,changed:false};
+    if(!force&&fetchedAt.has(key)&&Date.now()-fetchedAt.get(key)<POLL_MS)return {next:corrections.get(key)||null,changed:false};
     if(inFlight.has(key))return inFlight.get(key);
     const task=(async()=>{
       const snap=await db.collection('attendanceCorrections').doc(correctionId(u,d)).get({source:'server'});
       let next=snap.exists?{id:snap.id,...(snap.data()||{})}:null;
       if(!next){
-        const alt=await db.collection('attendanceCorrections').where('dateKey','==',d).get({source:'server'});
-        const found=alt.docs.find(x=>n((x.data()||{}).userName)===u);
+        const alt=await db.collection('attendanceCorrections').where('userName','==',u).get({source:'server'});
+        const found=alt.docs.find(x=>n((x.data()||{}).userName)===u&&n((x.data()||{}).dateKey)===d);
         if(found)next={id:found.id,...(found.data()||{})};
       }
       const valid=next&&n(next.userName)===u&&n(next.dateKey)===d?next:null;
@@ -3614,13 +3631,13 @@
       return {next:valid,changed:previous!==undefined&&hashOf(previous)!==hashOf(valid)};
     })();
     inFlight.set(key,task);
-    try{return await task;}finally{inFlight.delete(key);}
+    try{const result=await task;fetchedAt.set(key,Date.now());return result;}catch(error){fetchedAt.set(key,Date.now());window.step93RememberQuota?.(error);throw error;}finally{inFlight.delete(key);}
   }
-  async function syncCorrection(silent=true){
+  async function syncCorrection(silent=true,force=false){
     const u=n(currentUserName),today=todayKey(),selected=n(selectedDateKey)||today;
     if(!u)return null;
     const results=await Promise.allSettled([...new Set([today,selected])].map(async d=>{
-      const result=await fetchCorrection(u,d);
+      const result=await fetchCorrection(u,d,force);
       if(n(currentUserName)!==u)return;
       renderHistory();
       if(d===today){
@@ -3642,11 +3659,11 @@
         .catch(e=>console.warn('[step89] history correction lookup failed',e));
   };
 
-  window.step87SyncCorrection=syncCorrection;
+  window.step87SyncCorrection=(silent=true)=>syncCorrection(silent,true);
   window.addEventListener('pageshow',()=>setTimeout(()=>syncCorrection(true),400));
   document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')syncCorrection(false);});
   document.addEventListener('click',e=>{if(e.target&&e.target.id==='login-btn')setTimeout(()=>syncCorrection(true),1200);},true);
-  setInterval(()=>{if(currentUserName)syncCorrection(false);},POLL_MS);
+  setInterval(()=>{if(currentUserName&&document.visibilityState==='visible')syncCorrection(false);},POLL_MS);
   setTimeout(()=>syncCorrection(true),1500);
 })();
 </script>
@@ -3655,8 +3672,8 @@
 
 <script id="step84-update-gate">
 (function(){
-  const APP_VERSION_NAME="6.10";
-  const APP_VERSION_CODE=61;
+  const APP_VERSION_NAME="6.11";
+  const APP_VERSION_CODE=62;
   const CACHE_KEY="coordinator_app_update_config_v1";
   const DEFAULT_STORE_URL="https://play.google.com/store/apps/details?id=kr.nonsan.coordinator";
   let cachedConfig=null;

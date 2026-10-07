@@ -1058,45 +1058,35 @@ td{font-size:10px!important;padding:7px!important;line-height:1.35!important}
   }
   function setToday(){let d=kstDate(new Date()),w='일월화수목금토'[d.getUTCDay()];$('todayText').innerHTML=`${d.getUTCFullYear()}년 ${d.getUTCMonth()+1}월 ${d.getUTCDate()}일 (${w})<br>오늘도 수고하십니다! 👋`} function toast(t){let e=$('toast');e.textContent=t;e.style.display='block';setTimeout(()=>e.style.display='none',1800)}
   async function loadSettings(){try{let u=await db.collection('settings').doc('userConfig').get();let ud=u.data()||{};state.registeredUsers=uniq([...(Array.isArray(ud.users)?ud.users:[]),...(Array.isArray(ud.coordinatorNames)?ud.coordinatorNames:[]),...(Array.isArray(ud.names)?ud.names:[])].map(v=>typeof v==='string'?v:v?.name||''));state.users=[...state.registeredUsers];let a=await db.collection('settings').doc('activityConfig').get();let ad=a.data()||{};state.activities=uniq([...(ad.activities||[]),...MAIN]).filter(x=>MAIN.includes(x));let vf=await db.collection('settings').doc('visitFieldConfig').get(); if(vf.exists)state.visitFields={...state.visitFields,...(vf.data()||{})};let si=await db.collection('settings').doc('subItemConfig').get(); if(si.exists)state.subItems={...state.subItems,...(si.data()||{})};}catch(e){console.error(e)}}
+  const logRangeCache=new Map();
+  function kstRange(key,monthly=false){
+    const start=new Date(key+(monthly?'-01':'')+'T00:00:00+09:00');
+    const end=monthly?new Date(Date.UTC(Number(key.slice(0,4)),Number(key.slice(5,7)),1)-9*3600000):new Date(start.getTime()+86400000);
+    return {start,end};
+  }
+  async function readLogRange(key,monthly=false){
+    const cacheKey=(monthly?'month:':'day:')+key,hit=logRangeCache.get(cacheKey);
+    if(hit&&Date.now()-hit.at<120000)return hit.rows;
+    const range=kstRange(key,monthly),rows=new Map();
+    const snaps=await Promise.all(['timestamp','visitDateTime'].map(field=>db.collection('attendanceLogs')
+      .where(field,'>=',firebase.firestore.Timestamp.fromDate(range.start))
+      .where(field,'<',firebase.firestore.Timestamp.fromDate(range.end)).get()));
+    snaps.forEach(snap=>snap.docs.forEach(doc=>rows.set(doc.id,{id:doc.id,...doc.data()})));
+    const result=[...rows.values()].filter(l=>{const d=time(l);return d&&d>=range.start&&d<range.end;});
+    logRangeCache.set(cacheKey,{at:Date.now(),rows:result});return result;
+  }
   async function loadLogs(){
-    // step76: 월별 Firestore 범위 쿼리 대신 전체 로그를 한 번 읽고 월은 로컬에서 필터링합니다.
-    const CACHE_MS=120000;
-    const now=Date.now();
-    let all=window.__step76AttendanceCache;
-    const cacheAt=Number(window.__step76AttendanceCacheAt||0);
-    if(!Array.isArray(all) || !cacheAt || (now-cacheAt)>CACHE_MS){
-      const snap=await db.collection('attendanceLogs').get();
-      all=snap.docs.map(d=>({id:d.id,...d.data()}));
-      all.sort((a,b)=>(time(b)?.getTime()||0)-(time(a)?.getTime()||0));
-      window.__step76AttendanceCache=all;
-      window.__step76AttendanceCacheAt=now;
-    }
-
+    let rows;
     if(state.all){
-      state.logs=[...all];
-    }else{
-      const wanted=norm(state.month)||monthKey();
-      state.month=wanted;
-      state.logs=all.filter(l=>{
-        const d=time(l);
-        return !!d && monthKey(d)===wanted;
-      });
-    }
-
-    const lu=uniq(state.logs.map(user));
-    state.users=uniq([...state.users,...lu]);
+      const hit=logRangeCache.get('all');
+      if(hit&&Date.now()-hit.at<300000)rows=hit.rows;
+      else{const snap=await db.collection('attendanceLogs').get();rows=snap.docs.map(d=>({id:d.id,...d.data()}));logRangeCache.set('all',{at:Date.now(),rows});}
+    }else rows=await readLogRange(norm(state.month)||monthKey(),true);
+    rows.sort((a,b)=>(time(b)?.getTime()||0)-(time(a)?.getTime()||0));
+    state.logs=rows;window.__step76AttendanceCache=rows;window.__step76AttendanceCacheAt=Date.now();
+    state.users=uniq([...state.registeredUsers,...rows.map(user)]);
   }
-  async function loadTodayLogs(){
-    // step76: 오늘 현황도 같은 캐시에서 계산하여 월 이동과 독립적으로 유지합니다.
-    const today=dateKey(new Date());
-    const all=Array.isArray(window.__step76AttendanceCache)
-      ? window.__step76AttendanceCache
-      : state.logs;
-    state.todayLogs=(all||[]).filter(l=>{
-      const d=time(l);
-      return !!d && dateKey(d)===today;
-    });
-  }
+  async function loadTodayLogs(){state.todayLogs=await readLogRange(dateKey(new Date()));}
   function fillSelect(id,items,first){let e=$(id); if(!e)return; e.innerHTML=`<option value="">${first}</option>`+items.map(x=>`<option>${esc(x)}</option>`).join('')} function buildSelects(){const names=uniq([...(state.registeredUsers||[]),...(state.users||[]),...(Array.isArray(window.__step76AttendanceCache)?window.__step76AttendanceCache:[]).map(user)]);fillSelect('userFilter',names,'전체 사용자');fillSelect('activityFilter',state.activities,'전체 활동목적');fillSelect('housingFilter',state.visitFields.housingTypes||[],'전체');fillSelect('reasonFilter',state.visitFields.visitReasons||[],'전체')}
   function apply(){let sd=$('startDate').value,ed=$('endDate').value,u=$('userFilter').value,a=$('activityFilter').value,h=$('housingFilter').value,r=$('reasonFilter').value,t=$('typeFilter').value,k=norm($('keywordFilter').value),min=Number($('minDur').value||0),max=Number($('maxDur').value||0);state.filtered=state.logs.filter(l=>{let dk=dateKey(time(l)); if(sd&&dk<sd)return false;if(ed&&dk>ed)return false;if(u&&user(l)!==u)return false;if(a&&!acts(l).includes(a))return false;if(h&&housing(l)!==h)return false;if(r&&reason(l)!==r)return false;if(t&&type(l)!==t)return false;let dur=duration(l)/60000;if(min&&dur<min)return false;if(max&&dur>max)return false;if(k&&!JSON.stringify(l).includes(k))return false;return true}); state.page=1; renderAll()}
   function calcWork(logs){let by={};logs.forEach(l=>{let n=user(l); if(!n)return;(by[n]??=[]).push(l)});let total=0,per={};Object.entries(by).forEach(([n,ls])=>{ls.sort((a,b)=>(time(a)?.getTime()||0)-(time(b)?.getTime()||0));let start=null,sum=0;ls.forEach(l=>{if(type(l)==='일과 시작')start=time(l); if(type(l)==='일과 종료'&&start){let e=time(l); if(e&&e>start){sum+=e-start;start=null}}});per[n]=sum;total+=sum});return{total,per}}
@@ -1729,7 +1719,19 @@ document.addEventListener("DOMContentLoaded",function(){
     s87.unsubs.push(db.collection(SCHEDULES).onSnapshot(s=>{s87.schedules=mapSnap(s);renderScheduleLists();loadScheduleForm();renderLive();}));
     s87.unsubs.push(db.collection(EXCEPTIONS).onSnapshot(s=>{s87.exceptions=mapSnap(s);renderScheduleLists();renderLive();}));
     s87.unsubs.push(db.collection(CORRECTIONS).onSnapshot(s=>{s87.corrections=mapSnap(s);renderLive();renderSummary();renderTable();}));
-    s87.unsubs.push(db.collection('attendanceLogs').onSnapshot(s=>{const all=s.docs.map(d=>({id:d.id,...d.data()}));all.sort((a,b)=>(time(b)?.getTime()||0)-(time(a)?.getTime()||0));window.__step76AttendanceCache=all;window.__step76AttendanceCacheAt=Date.now();state.users=uniq([...(state.registeredUsers||[]),...all.map(user)]);state.logs=state.all?all:all.filter(l=>{const d=time(l);return d&&monthKey(d)===state.month;});state.todayLogs=all.filter(l=>dateKey(time(l))===dateKey(new Date()));try{apply();}catch(e){state.filtered=[...state.logs];renderAll();}}));
+    const today=dateKey(new Date()),range=kstRange(today);
+    const todayQuery=db.collection('attendanceLogs').where('timestamp','>=',firebase.firestore.Timestamp.fromDate(range.start)).where('timestamp','<',firebase.firestore.Timestamp.fromDate(range.end));
+    s87.unsubs.push(todayQuery.onSnapshot(s=>{
+      const rows=s.docs.map(d=>({id:d.id,...d.data()})).filter(l=>dateKey(time(l))===today);
+      state.todayLogs=rows;logRangeCache.delete('day:'+today);logRangeCache.delete('month:'+today.slice(0,7));logRangeCache.delete('all');
+      if(state.all||state.month===today.slice(0,7)){
+        state.logs=[...state.logs.filter(l=>dateKey(time(l))!==today),...rows];
+        state.logs.sort((a,b)=>(time(b)?.getTime()||0)-(time(a)?.getTime()||0));
+        window.__step76AttendanceCache=state.logs;
+      }
+      state.users=uniq([...state.registeredUsers,...state.logs.map(user),...rows.map(user)]);
+      try{apply();renderLive();}catch(e){console.error('[step93] today update failed',e);}
+    },error=>{console.error('[step93] today subscription stopped',error);toast('실시간 조회 오류: '+error.code+' · 기존 화면을 유지합니다');}));
   }
 
   document.addEventListener('DOMContentLoaded',()=>{ensureUi();setTimeout(()=>{loadCollectionsOnce().then(startRealtime).catch(e=>{console.error('[step87] init failed',e);});},300);setInterval(renderLive,30000);});

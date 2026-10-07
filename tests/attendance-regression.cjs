@@ -25,7 +25,7 @@ const c={console,Date:TestDate,Promise,Map,Set,Number,String,JSON,encodeURICompo
  saveWorkBoundaryLog:noop,_doSaveWorkBoundaryLog:noop,renderHistory:noop,
  reloadMainData:async()=>{c.allLogs=[...records].map(([id,data])=>({id,...data}));},
  firebase:{firestore:{Timestamp:{fromMillis:ms=>({seconds:ms/1000})},FieldValue:{serverTimestamp:()=>0}}},
- db:{collection:name=>({get:async()=>({docs:[...records].map(([id,data])=>({id,data:()=>data}))}),doc:id=>({id,collection:name,get:async()=>({id,exists:corrections.has(id),data:()=>corrections.get(id)})}),where:()=>({get:async()=>({docs:[]})})}),
+ db:{collection:name=>({get:async()=>({docs:[...records].map(([id,data])=>({id,data:()=>data}))}),doc:id=>({id,collection:name,get:async()=>({id,exists:corrections.has(id),data:()=>corrections.get(id)})}),where:(field,op,value)=>({get:async()=>({docs:[...records].filter(([id,data])=>data[field]===value).map(([id,data])=>({id,data:()=>data}))})})}),
  runTransaction:async fn=>{if(fail){const e=Error('simulated save failure');e.code=failCode;throw e;}await fn({get:async ref=>{if(readDenied&&ref.collection==='attendanceCorrections'){const e=Error('Missing or insufficient permissions');e.code='permission-denied';throw e;}return ({exists:ref.collection==='attendanceCorrections'?corrections.has(ref.id):records.has(ref.id),data:()=>corrections.get(ref.id)});},set:(ref,data)=>records.set(ref.id,data)});}},
 };
 for(const n of ['updateBoundaryBtnState','updateActivityAreaState','updateWorkHoursUi','updateWorkTimerUi','updateCurrentElapsedUi','syncGpsCheckTimer','clearCurrentActivitySessionSilently','updateTodaySummary','renderCalendar','checkAutoWorkEnd','saveGpsCheckSnapshot','loadAttendanceLogs'])c[n]=noop;
@@ -33,6 +33,7 @@ c.window=c;c.addEventListener=noop;c.step84Notify=noop;vm.createContext(c);
 (async()=>{
  vm.runInContext(html.slice(html.indexOf('  function canEndWorkNow('),html.indexOf('  async function checkAutoWorkEnd(')),c);
  c.formatClockTime=ms=>new Date(ms).toISOString();
+ vm.runInContext(script('step93-quota-backoff'),c);
  vm.runInContext(script('step82-gps-timer-resilience'),c);
  // The correction module must initialize without access to step82's private effectiveInfo.
  vm.runInContext(script('step87-admin-correction-sync'),c);
@@ -121,5 +122,21 @@ c.window=c;c.addEventListener=noop;c.step84Notify=noop;vm.createContext(c);
  mem.set(ghostKey,JSON.stringify({userName:c.currentUserName,dateKey:today,status:'ended',startMs:clock-10000,endMs:clock-5000,updatedAtMs:clock-5000,syncState:'pending'}));
  mem.set('coordinator_pending_boundaries_v1',JSON.stringify([{id:'ghost-end',payload:{userName:c.currentUserName,clientTimeMs:clock-5000,type:'일과 종료'}}]));
  await c.loadAttendanceLogs();assert.equal(c.getTodayWorkStatus(),'ended');assert.equal(mem.has(ghostKey),true);
- console.log('PASS: script syntax, bundle parity, correction scope/today/history/removal/user isolation, auto-end schedule, concurrent end, immutable replay, offline retry, GPS retry, reset/restart and early-end blocking');
+ // A quota failure keeps BOTH start and end; recovery uploads original times.
+ c.currentUserName='quota-user';c.allLogs=[];mem.set('coordinator_pending_boundaries_v1','[]');
+ fail=true;failCode='resource-exhausted';const before=records.size,startClock=clock;
+ assert.equal(await c._doSaveWorkBoundaryLog('일과 시작',{preCapturedGps:{lat:1,lng:2},workHours:5}),true);
+ assert.equal(c.step93QuotaBlocked(),true);assert.equal(c.getTodayWorkStatus(),'started');
+ clock+=5*3600000;
+ // Reproduce continued exhaustion at the end of a five-hour shift.
+ c.step93RememberQuota({code:'resource-exhausted'});
+ const ending=c._doSaveWorkBoundaryLog('일과 종료');gpsResolve({lat:1,lng:2});assert.equal(await ending,true);
+ assert.equal(c.getTodayWorkStatus(),'ended');assert.equal(c.step92BoundarySyncDiagnostic().pending.length,2);
+ assert.equal(await c.step82FlushPendingBoundaries(),false);assert.equal(records.size,before);
+ clock+=3600001;fail=false;await c.step82FlushPendingBoundaries();
+ assert.equal(c.step92BoundarySyncDiagnostic().pending.length,0);
+ const uploaded=[...records.values()].filter(x=>x.userName==='quota-user');assert.equal(uploaded.length,2);
+ assert.equal(uploaded.find(x=>x.type==='일과 시작').clientTimeMs,startClock);
+ assert.equal(uploaded.find(x=>x.type==='일과 종료').clientTimeMs,startClock+5*3600000);
+ console.log('PASS: quota start/end retention, backoff, recovery timestamps; script syntax, bundle parity, correction scope/today/history/removal/user isolation, auto-end schedule, concurrent end, immutable replay, offline retry, GPS retry, reset/restart and early-end blocking');
 })().catch(e=>{console.error(e);process.exitCode=1;});
