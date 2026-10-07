@@ -1602,7 +1602,7 @@ document.addEventListener("DOMContentLoaded",function(){
       document.querySelector('.menu-grid')?.insertAdjacentHTML('beforeend',`<a class="menu-card" data-open="schedule"><div class="menu-ico">🗓️</div><div><strong>근무일정 관리</strong><span>기본요일·시간·예외일정</span></div></a>`);
     }
 
-    const modal=document.createElement('div');modal.className='step87-modal';modal.id='step87CorrectionModal';modal.innerHTML=`<div class="step87-modal-card"><div class="step87-modal-head"><h3>근무시간 관리자 정정</h3><button class="attendance-modal-close" id="step87CorrCloseX" type="button">×</button></div><div class="step87-modal-body"><div class="step87-form-grid"><div><label>선생님</label><input id="step87CorrUser" readonly></div><div><label>근무일</label><input id="step87CorrDate" readonly></div><div><label>원본 시작</label><input id="step87OrigStart" readonly></div><div><label>원본 종료</label><input id="step87OrigEnd" readonly></div><div><label>확정 시작시간</label><input id="step87CorrStart" type="datetime-local"></div><div><label>확정 종료시간</label><input id="step87CorrEnd" type="datetime-local"></div><div><label>정정 사유</label><select id="step87CorrReason"><option value="">선택</option><option>GPS 오류</option><option>네트워크 지연</option><option>앱 오류</option><option>자동종료 시간 조정</option><option>관리자 확인</option><option>기타</option></select></div><div><label>정정자</label><input id="step87CorrBy" value="관리자"></div><div class="full"><label>상세 메모</label><textarea id="step87CorrNote" placeholder="정정 근거를 간단히 입력하세요."></textarea></div></div><div class="step87-note">앱의 원본 출퇴근 기록은 삭제하거나 덮어쓰지 않습니다. 확정시간과 수정 이력을 별도 저장합니다.</div><div class="step87-history" id="step87CorrHistory"></div></div><div class="step87-modal-foot"><button class="btn b-soft" id="step87CorrCancel" type="button">취소</button><button class="btn b-blue" id="step87CorrSave" type="button">정정 저장</button></div></div>`;document.body.appendChild(modal);
+    const modal=document.createElement('div');modal.className='step87-modal';modal.id='step87CorrectionModal';modal.innerHTML=`<div class="step87-modal-card"><div class="step87-modal-head"><h3>근무시간 관리자 정정</h3><button class="attendance-modal-close" id="step87CorrCloseX" type="button">×</button></div><div class="step87-modal-body"><div class="step87-form-grid"><div><label>선생님</label><input id="step87CorrUser" readonly></div><div><label>근무일</label><input id="step87CorrDate" readonly></div><div><label>원본 시작</label><input id="step87OrigStart" readonly></div><div><label>원본 종료</label><input id="step87OrigEnd" readonly></div><div><label>확정 시작시간</label><input id="step87CorrStart" type="datetime-local"></div><div><label>확정 종료시간</label><input id="step87CorrEnd" type="datetime-local"></div><div><label>정정 사유</label><select id="step87CorrReason"><option value="">선택</option><option>GPS 오류</option><option>네트워크 지연</option><option>앱 오류</option><option>자동종료 시간 조정</option><option>관리자 확인</option><option>기타</option></select></div><div><label>정정자</label><input id="step87CorrBy" value="관리자"></div><div class="full"><label>상세 메모</label><textarea id="step87CorrNote" placeholder="정정 근거를 간단히 입력하세요."></textarea></div></div><div class="step87-note">시간 정정은 확정값을 별도로 저장합니다. 잘못 저장된 시작·종료는 초기화할 수 있습니다. 방문·활동 기록은 초기화하지 않습니다.</div><div class="step87-history" id="step87CorrHistory"></div></div><div class="step87-modal-foot"><button class="btn b-soft" id="step90ResetBoundary" type="button">시작·종료 초기화</button><button class="btn b-soft" id="step87CorrCancel" type="button">취소</button><button class="btn b-blue" id="step87CorrSave" type="button">정정 저장</button></div></div>`;document.body.appendChild(modal);
 
     bindUi();populateUsers();renderWeekRows();
   }
@@ -1672,6 +1672,29 @@ document.addEventListener("DOMContentLoaded",function(){
     const name=n(document.getElementById('step87CorrUser').value),dk=n(document.getElementById('step87CorrDate').value),reason=n(document.getElementById('step87CorrReason').value),by=n(document.getElementById('step87CorrBy').value)||'관리자',note=n(document.getElementById('step87CorrNote').value),start=fromDtLocal(document.getElementById('step87CorrStart').value),end=fromDtLocal(document.getElementById('step87CorrEnd').value);if(!name||!dk)return;if(!reason)return alert('정정 사유를 선택해주세요.');if(start&&end&&end<=start)return alert('종료시간은 시작시간보다 늦어야 합니다.');const id=corrId(name,dk),old=s87.corrections[id]||{},orig=originalBoundary(name,dk);const history=Array.isArray(old.history)?old.history.slice(-49):[];history.push({changedAtMs:Date.now(),by,reason,note,startMs:start,endMs:end,previousStartMs:ms(old.correctedStartMs),previousEndMs:ms(old.correctedEndMs)});const data={userName:name,dateKey:dk,originalStartMs:ms(old.originalStartMs)||orig.startMs||null,originalEndMs:ms(old.originalEndMs)||orig.endMs||null,correctedStartMs:start,correctedEndMs:end,correctionReason:reason,correctionNote:note,updatedBy:by,updatedAtMs:Date.now(),updatedAt:firebase.firestore.FieldValue.serverTimestamp(),history};await db.collection(CORRECTIONS).doc(id).set(data,{merge:true});closeCorrection();toast('근무시간 정정을 저장했습니다');
   }
 
+  async function resetWorkBoundaries(){
+    const name=n(document.getElementById('step87CorrUser').value),dk=n(document.getElementById('step87CorrDate').value);
+    if(!name||!dk)return;
+    if(!confirm(`${name} · ${dk}의 시작·종료 기록과 정정시간을 초기화할까요? 방문·활동 기록은 유지됩니다. 초기화 후 앱에서 다시 시작할 수 있습니다.`))return;
+    const btn=document.getElementById('step90ResetBoundary');if(btn.disabled)return;btn.disabled=true;
+    try{
+      const snap=await db.collection('attendanceLogs').where('userName','==',name).get({source:'server'});
+      const rows=snap.docs.filter(doc=>{const l=doc.data()||{};return dateKey(time(l))===dk&&(type(l)==='일과 시작'||type(l)==='일과 종료');});
+      if(rows.length>450)throw new Error('기록이 너무 많아 별도 확인이 필요합니다.');
+      const resetAtMs=Date.now(),batch=db.batch();
+      rows.forEach(doc=>batch.delete(doc.ref));
+      batch.set(db.collection(CORRECTIONS).doc(corrId(name,dk)),{
+        userName:name,dateKey:dk,correctedStartMs:null,correctedEndMs:null,
+        originalStartMs:null,originalEndMs:null,history:[],correctionReason:'관리자 초기화',
+        correctionNote:'',boundaryResetAtMs:resetAtMs,updatedAtMs:resetAtMs,
+        updatedBy:n(document.getElementById('step87CorrBy').value)||'관리자',
+        updatedAt:firebase.firestore.FieldValue.serverTimestamp()
+      });
+      await batch.commit();
+      closeCorrection();toast('시작·종료를 초기화했습니다. 앱에 돌아가 잠시 기다린 후 다시 시작해주세요.');
+    }finally{btn.disabled=false;}
+  }
+
   const baseCalcWork=calcWork;
   calcWork=function(logs){
     try{const groups={};(logs||[]).forEach(l=>{const name=user(l),dk=dateKey(time(l));if(!name||!dk)return;const k=name+'\u0000'+dk;(groups[k]??=[]).push(l);});let total=0,per={};Object.entries(groups).forEach(([k,rows])=>{const split=k.indexOf('\u0000'),name=k.slice(0,split),dk=k.slice(split+1);const starts=rows.filter(l=>type(l)==='일과 시작').map(l=>time(l)?.getTime()).filter(Boolean).sort((a,b)=>a-b);const ends=rows.filter(l=>type(l)==='일과 종료').map(l=>time(l)?.getTime()).filter(Boolean).sort((a,b)=>b-a);const c=correctionFor(name,dk),st=ms(c?.correctedStartMs)||starts[0]||null,en=ms(c?.correctedEndMs)||ends[0]||null;if(st&&en&&en>st){const d=en-st;total+=d;per[name]=(per[name]||0)+d;}});users().forEach(x=>{if(per[x]==null)per[x]=0;});return{total,per};}catch(e){console.warn('[step87] calcWork fallback',e);return baseCalcWork(logs);}
@@ -1684,6 +1707,7 @@ document.addEventListener("DOMContentLoaded",function(){
   renderAll=function(){baseRenderAll();populateUsers();renderScheduleLists();renderLive();};
 
   function bindUi(){
+    document.getElementById('step90ResetBoundary').onclick=()=>resetWorkBoundaries().catch(e=>{console.error(e);alert('시작·종료 초기화 실패: '+e.message);});
     document.getElementById('step87NotifyBtn').onclick=requestNotify;document.getElementById('step87LiveRefresh').onclick=()=>{loadCollectionsOnce().then(()=>renderLive());};document.getElementById('step87ScheduleUser').onchange=loadScheduleForm;document.getElementById('step87SaveSchedule').onclick=()=>saveSchedule().catch(e=>{console.error(e);alert('근무일정 저장 오류');});document.getElementById('step87ExType').onchange=exFormMode;document.getElementById('step87SaveException').onclick=()=>saveException().catch(e=>{console.error(e);alert('예외일정 저장 오류');});document.getElementById('step87CorrCloseX').onclick=document.getElementById('step87CorrCancel').onclick=closeCorrection;document.getElementById('step87CorrectionModal').onclick=e=>{if(e.target.id==='step87CorrectionModal')closeCorrection();};document.getElementById('step87CorrSave').onclick=()=>saveCorrection().catch(e=>{console.error(e);alert('근무시간 정정 저장 오류');});document.getElementById('step87ExDate').value=dateKey(new Date());exFormMode();notificationState();
     document.querySelectorAll('[data-open="schedule"]').forEach(a=>a.onclick=()=>{document.getElementById('manageDetails').open=true;setTimeout(()=>document.getElementById('schedulePanel')?.scrollIntoView({behavior:'smooth',block:'center'}),80);});
   }

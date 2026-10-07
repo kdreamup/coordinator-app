@@ -918,15 +918,14 @@
     if(h>0) return `${h}시간`;
     return `${m}분`;
   }
-  // v36: 4시간 이상 근무자는 휴게시간을 차감하지 않고 총 체류/활동 시간을 30분 늘립니다.
-  // 예: 4시간 선택 → 실근무 4시간 + 휴게 30분 = 총 4시간 30분 / 5시간 선택 → 총 5시간 30분
+  // 선택시간을 종료 기준으로 사용합니다. 휴게 정보는 별도 표기하며 종료 예정시각에 추가하지 않습니다.
   function getActualWorkMinutesForWorkHours(hours){
     const h=clampWorkHours(hours);
     return Math.max(0,h*60);
   }
   function getTotalScheduledMinutesForWorkHours(hours){
     const h=clampWorkHours(hours);
-    return Math.max(0,h*60+getBreakMinutesForWorkHours(h));
+    return Math.max(0,h*60);
   }
   function buildWorkBreakFields(hours){
     const h=clampWorkHours(hours);
@@ -1713,13 +1712,26 @@
     select.style.opacity=select.disabled?"0.55":"1";
     if(status==="started"){
       const info=getCurrentAutoEndInfo();
-      helper.textContent=info?`선택 근로 ${info.hours}시간${getBreakMinutesForWorkHours(info.hours)?" + 휴게 30분":""} · 총 ${formatMinutesAsHourText(getTotalScheduledMinutesForWorkHours(info.hours))} · 자동 종료 예정 ${formatClockTime(info.autoEndAtMs)}`:"근무시간 확인 중입니다.";
+      helper.textContent=info?`선택 근무 ${info.hours}시간${getBreakMinutesForWorkHours(info.hours)?" · 휴게 30분":""} · 자동 종료 예정 ${formatClockTime(info.autoEndAtMs)}`:"근무시간 확인 중입니다.";
     }else if(status==="ended"){
-      helper.textContent=`오늘 일과가 종료되었습니다. 선택 근로 ${getCurrentWorkHours()}시간${getBreakMinutesForWorkHours(getCurrentWorkHours())?" + 휴게 30분":""}`;
+      helper.textContent=`오늘 일과가 종료되었습니다. 선택 근무 ${getCurrentWorkHours()}시간${getBreakMinutesForWorkHours(getCurrentWorkHours())?" · 휴게 30분":""}`;
     }else{
       helper.textContent="일과 시작 전에 1~5시간 중 선택하세요. 시작 후에는 선택 시간이 고정됩니다.";
       if(!select.value) select.value=String(DEFAULT_WORK_HOURS);
     }
+  }
+
+  function canEndWorkNow(silent=false){
+    const info=getCurrentAutoEndInfo();
+    if(!info||Date.now()<info.autoEndAtMs){
+      if(!silent){
+        const remaining=info?Math.max(1,Math.ceil((info.autoEndAtMs-Date.now())/60000)):null;
+        const message=info?`아직 근무시간이 끝나지 않았습니다. 종료 예정 ${formatClockTime(info.autoEndAtMs)} · ${remaining}분 남았습니다.`:'근무 시작시간을 확인한 후 종료할 수 있습니다.';
+        if(typeof window.step84Notify==='function')window.step84Notify(message,'warn');else alert(message);
+      }
+      return false;
+    }
+    return true;
   }
 
   async function checkAutoWorkEnd(){
@@ -2122,7 +2134,7 @@
       gpsCapturedAt:selectedGps?.capturedAt??null,
       gpsUsedCached:false,
       gpsMetaVersion:"gps-v2",
-      appBuildVersion:"6.7"
+      appBuildVersion:"6.8"
     });
     await db.collection("attendanceLogs").add(payload);
       if(type==="일과 종료") clearCurrentActivitySessionSilently();
@@ -2396,7 +2408,7 @@
         gpsCapturedAt:gpsForVisit?.capturedAt??null,
         gpsUsedCached:false,
         gpsMetaVersion:"gps-v2",
-      appBuildVersion:"6.7"
+      appBuildVersion:"6.8"
       });
       await db.collection("attendanceLogs").add(payload);
       await saveGpsCheckSnapshot("visit-record",gpsForVisit,{status:visitGpsStatus,usedCached:false,failureCode:visitGpsFailureCode,failureReason:visitGpsFailureReason,attemptedAt:gpsAttemptedAt});
@@ -2523,7 +2535,7 @@
 
   function renderHistory(){
     const wrap=el("history-list");
-    const myLogs=allLogs.filter(log=>getLogUserName(log)===currentUserName&&formatDateKey(getLogDateTime(log))===selectedDateKey);
+    const myLogs=allLogs.filter(log=>getLogUserName(log)===currentUserName&&formatDateKey(getLogDateTime(log))===selectedDateKey&&!isStartLog(log)&&!isEndLog(log));
     if(!myLogs.length){ wrap.innerHTML=`<div class="empty">${selectedDateKey} 날짜의 기록이 없습니다.</div>`; return; }
     const canEdit=isCurrentMonth(selectedDateKey);
     const actTotal=myLogs.filter(isActivityLog).length;
@@ -2648,6 +2660,7 @@
   // ✅ 일과 종료 확인 모달 버튼
   el("end-work-save-and-end").addEventListener("click", async function(){
     if(savingVisitRecord||savingWorkBoundary) return;
+    if(!canEndWorkNow())return;
     const restore=setButtonBusy(el("end-work-save-and-end"),true,"저장 후 종료 중...");
     try{
       closeEndWorkModal();
@@ -2663,6 +2676,7 @@
 
   el("end-work-just-end").addEventListener("click", async function(){
     if(savingWorkBoundary) return;
+    if(!canEndWorkNow())return;
     const restore=setButtonBusy(el("end-work-just-end"),true,"일과 종료 중...");
     savingWorkBoundary=true;
     try{
@@ -2701,7 +2715,7 @@
   <!-- step62 GPS fresh-only: latest index preserved / no cached fallback / real position timestamp -->
   <!-- step64b GPS audit guarantee: robust function-scoped patch -->
   <!-- step65 GPS atomic audit: metadata in initial Firestore create / no post-create merge -->
-  <!-- release 6.7 / API 36 / correction sync + duplicate boundary guard -->
+  <!-- release 6.8 / API 36 / correction sync + duplicate boundary guard -->
 
 <script id="step79-visit-edit-complete">
 /* step79: 방문사례기록 수정창에 대상자 정보/활동내용 추가
@@ -2990,9 +3004,21 @@
     try{if(x?.userName&&x?.dateKey)localStorage.setItem(workKey(x.userName,x.dateKey),JSON.stringify(x));}
     catch(e){console.warn("[step82] local work save failed",e);}
   }
+  window.step90ApplyBoundaryReset=function(user,date,resetAtMs){
+    const marker="coordinator_boundary_reset_"+keyPart(user)+"_"+date;
+    const cutoff=Number(resetAtMs)||0;
+    if(!cutoff||cutoff<=Number(localStorage.getItem(marker)||0))return;
+    const old=readLocalWork(user,date);
+    if(old&&Number(old.updatedAtMs||0)<=cutoff)localStorage.removeItem(workKey(user,date));
+    writePending(readPending().filter(op=>!(op?.payload?.userName===user&&formatDateKey(op.payload.clientTimeMs)===date&&Number(op.payload.clientTimeMs)<=cutoff)));
+    allLogs=(allLogs||[]).filter(log=>!(getLogUserName(log)===user&&formatDateKey(getLogDateTime(log))===date&&(isStartLog(log)||isEndLog(log))&&Number(log.clientTimeMs||toDate(log.timestamp)?.getTime()||0)<=cutoff));
+    localStorage.setItem(marker,String(cutoff));
+    if(user===currentUserName&&date===formatDateKey(new Date()))clearCurrentActivitySessionSilently();
+  };
   function remoteInfo(){
     const today=formatDateKey(new Date());
-    const rows=(allLogs||[]).filter(x=>getLogUserName(x)===currentUserName&&formatDateKey(getLogDateTime(x))===today&&(isStartLog(x)||isEndLog(x)));
+    const resetAt=Number(window.step87CorrectionForDate?.(today)?.boundaryResetAtMs)||0;
+    const rows=(allLogs||[]).filter(x=>getLogUserName(x)===currentUserName&&formatDateKey(getLogDateTime(x))===today&&(isStartLog(x)||isEndLog(x))&&Number(x.clientTimeMs||toDate(x.timestamp)?.getTime()||0)>resetAt);
     if(!rows.length)return {status:"none",startMs:null,endMs:null,latestMs:0,workHours:null};
     const time=x=>toDate(x.clientTimeMs)?.getTime()||toDate(x.timestamp)?.getTime()||0;
     const ordered=[...rows].sort((a,b)=>time(b)-time(a));
@@ -3068,8 +3094,11 @@
     const data={...payload,timestamp:eventTimestamp(payload.clientTimeMs),syncedAt:firebase.firestore.FieldValue.serverTimestamp()};
     // Read before creating: concurrent devices and retries must preserve the first record.
     return db.runTransaction(async tx=>{
+      const correctionRef=db.collection("attendanceCorrections").doc(formatDateKey(payload.clientTimeMs)+"__"+keyPart(payload.userName));
+      const correctionSnap=await tx.get(correctionRef);
+      const resetAt=Number(correctionSnap.exists?correctionSnap.data()?.boundaryResetAtMs:0)||0;
       const existing=await tx.get(ref);
-      if(!existing.exists)tx.set(ref,data);
+      if(Number(payload.clientTimeMs)>resetAt&&!existing.exists)tx.set(ref,data);
     });
   }
   async function writeBoundary(id,payload){
@@ -3254,6 +3283,7 @@
         window.step84Notify("오늘 일과는 이미 종료되었습니다.","warn");
         return false;
       }
+      if(type==="일과 종료"&&!canEndWorkNow())return false;
       if(type==="일과 종료"&&currentSession&&currentSession.activities.length){
         openEndWorkModal();
         return false;
@@ -3299,7 +3329,7 @@
       if(!options.silent&&typeof window.step84Notify==="function")window.step84Notify(boundaryStatus==="ended"?"오늘 일과는 이미 종료되었습니다.":"이미 일과가 시작되어 있습니다.","warn");
       return false;
     }
-    if(type==="일과 종료"&&boundaryStatus!=="started")return false;
+    if(type==="일과 종료"&&(boundaryStatus!=="started"||!canEndWorkNow(!!options.silent)))return false;
     const tempNow=Date.now(), workHours=type==="일과 시작"?clampWorkHours(options.workHours):null;
     let gps=options.preCapturedGps||null;
     const attemptedAt=Date.now();
@@ -3315,6 +3345,7 @@
     if(currentUserName!==boundaryUser||formatDateKey(new Date())!==boundaryDate)return false;
     const afterGpsStatus=getTodayWorkStatus();
     if(type==="일과 시작"?afterGpsStatus!=="none":afterGpsStatus!=="started")return false;
+    if(type==="일과 종료"&&!canEndWorkNow(!!options.silent))return false;
     const choice=selectGpsForRecord(gps), selected=choice.gps;
     const now=Date.now();
     const payload={
@@ -3323,7 +3354,7 @@
       gpsStatus:gpsStatus==="not-attempted"?choice.status:gpsStatus,gpsSource:type==="일과 시작"?"work-start":"work-end",
       gpsFailureCode:gps?"":(failCode||"unknown"),gpsFailureReason:gps?"":(failReason||"위치 확인 실패"),
       gpsAttemptedAt:attemptedAt,gpsCapturedAt:selected?.capturedAt??null,gpsUsedCached:false,
-      gpsMetaVersion:"gps-v4",appBuildVersion:"6.7",boundaryStorageVersion:"work-v2"
+      gpsMetaVersion:"gps-v4",appBuildVersion:"6.8",boundaryStorageVersion:"work-v2"
     };
     if(type==="일과 시작"){
       Object.assign(payload,buildWorkBreakFields(workHours));
@@ -3470,7 +3501,7 @@
   function keyPart(v){return encodeURIComponent(n(v)||'unknown').replace(/%/g,'_').replace(/\//g,'_2F');}
   function todayKey(){return formatDateKey(new Date());}
   function correctionId(user,date){return date+'__'+keyPart(user);}
-  function hashOf(c){return c?JSON.stringify([c.correctedStartMs||null,c.correctedEndMs||null,c.correctionReason||'',c.updatedAtMs||0]):'';}
+  function hashOf(c){return c?JSON.stringify([c.correctedStartMs||null,c.correctedEndMs||null,c.correctionReason||'',c.updatedAtMs||0,c.boundaryResetAtMs||0]):'';}
 
   const corrections=new Map();
   const inFlight=new Map();
@@ -3512,6 +3543,8 @@
       const valid=next&&n(next.userName)===u&&n(next.dateKey)===d?next:null;
       const previous=corrections.get(key);
       corrections.set(key,valid);
+      if(valid?.boundaryResetAtMs&&typeof window.step90ApplyBoundaryReset==='function')
+        window.step90ApplyBoundaryReset(u,d,valid.boundaryResetAtMs);
       return {next:valid,changed:previous!==undefined&&hashOf(previous)!==hashOf(valid)};
     })();
     inFlight.set(key,task);
@@ -3556,8 +3589,8 @@
 
 <script id="step84-update-gate">
 (function(){
-  const APP_VERSION_NAME="6.7";
-  const APP_VERSION_CODE=58;
+  const APP_VERSION_NAME="6.8";
+  const APP_VERSION_CODE=59;
   const CACHE_KEY="coordinator_app_update_config_v1";
   const DEFAULT_STORE_URL="https://play.google.com/store/apps/details?id=kr.nonsan.coordinator";
   let cachedConfig=null;
