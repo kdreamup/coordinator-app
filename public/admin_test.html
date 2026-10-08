@@ -1059,6 +1059,7 @@ td{font-size:10px!important;padding:7px!important;line-height:1.35!important}
   function setToday(){let d=kstDate(new Date()),w='일월화수목금토'[d.getUTCDay()];$('todayText').innerHTML=`${d.getUTCFullYear()}년 ${d.getUTCMonth()+1}월 ${d.getUTCDate()}일 (${w})<br>오늘도 수고하십니다! 👋`} function toast(t){let e=$('toast');e.textContent=t;e.style.display='block';setTimeout(()=>e.style.display='none',1800)}
   async function loadSettings(){try{let u=await db.collection('settings').doc('userConfig').get();let ud=u.data()||{};state.registeredUsers=uniq([...(Array.isArray(ud.users)?ud.users:[]),...(Array.isArray(ud.coordinatorNames)?ud.coordinatorNames:[]),...(Array.isArray(ud.names)?ud.names:[])].map(v=>typeof v==='string'?v:v?.name||''));state.users=[...state.registeredUsers];let a=await db.collection('settings').doc('activityConfig').get();let ad=a.data()||{};state.activities=uniq([...(ad.activities||[]),...MAIN]).filter(x=>MAIN.includes(x));let vf=await db.collection('settings').doc('visitFieldConfig').get(); if(vf.exists)state.visitFields={...state.visitFields,...(vf.data()||{})};let si=await db.collection('settings').doc('subItemConfig').get(); if(si.exists)state.subItems={...state.subItems,...(si.data()||{})};}catch(e){console.error(e)}}
   const logRangeCache=new Map();
+  const logRangeInFlight=new Map();
   function kstRange(key,monthly=false){
     const start=new Date(key+(monthly?'-01':'')+'T00:00:00+09:00');
     const end=monthly?new Date(Date.UTC(Number(key.slice(0,4)),Number(key.slice(5,7)),1)-9*3600000):new Date(start.getTime()+86400000);
@@ -1066,7 +1067,9 @@ td{font-size:10px!important;padding:7px!important;line-height:1.35!important}
   }
   async function readLogRange(key,monthly=false){
     const cacheKey=(monthly?'month:':'day:')+key,hit=logRangeCache.get(cacheKey);
-    if(hit&&Date.now()-hit.at<120000)return hit.rows;
+    if(hit&&Date.now()-hit.at<(monthly?1800000:120000))return hit.rows;
+    if(logRangeInFlight.has(cacheKey))return logRangeInFlight.get(cacheKey);
+    const task=(async()=>{
     const range=kstRange(key,monthly),rows=new Map();
     const snaps=await Promise.all(['timestamp','visitDateTime'].map(field=>db.collection('attendanceLogs')
       .where(field,'>=',firebase.firestore.Timestamp.fromDate(range.start))
@@ -1074,6 +1077,9 @@ td{font-size:10px!important;padding:7px!important;line-height:1.35!important}
     snaps.forEach(snap=>snap.docs.forEach(doc=>rows.set(doc.id,{id:doc.id,...doc.data()})));
     const result=[...rows.values()].filter(l=>{const d=time(l);return d&&d>=range.start&&d<range.end;});
     logRangeCache.set(cacheKey,{at:Date.now(),rows:result});return result;
+    })();
+    logRangeInFlight.set(cacheKey,task);
+    try{return await task;}finally{logRangeInFlight.delete(cacheKey);}
   }
   async function loadLogs(){
     let rows;
@@ -1659,6 +1665,8 @@ document.addEventListener("DOMContentLoaded",function(){
 
   function renderCorrHistory(c){const box=document.getElementById('step87CorrHistory');if(!box)return;const h=Array.isArray(c?.history)?[...c.history].slice(-8).reverse():[];box.innerHTML='<b>정정 이력</b>'+(h.length?h.map(x=>`<div class="step87-history-row">${esc(kstLocale(Number(x.changedAtMs)||0))} · ${esc(x.by||'관리자')} · ${esc(x.reason||'-')} · 시작 ${esc(x.startMs?clock(x.startMs):'-')} / 종료 ${esc(x.endMs?clock(x.endMs):'-')}</div>`).join(''):'<div class="step87-history-row">정정 이력이 없습니다.</div>');}
   async function openCorrection(name,dk){
+    const id=corrId(name,dk),snap=await db.collection(CORRECTIONS).doc(id).get();
+    if(snap.exists)s87.corrections[id]={id,...snap.data()};else delete s87.corrections[id];
     const b=effectiveBoundary(name,dk),c=b.correction||{};document.getElementById('step87CorrUser').value=name;document.getElementById('step87CorrDate').value=dk;document.getElementById('step87OrigStart').value=b.original.startMs?kstLocale(b.original.startMs):'기록 없음';document.getElementById('step87OrigEnd').value=b.original.endMs?kstLocale(b.original.endMs):'기록 없음';document.getElementById('step87CorrStart').value=dtLocal(ms(c.correctedStartMs)||b.original.startMs);document.getElementById('step87CorrEnd').value=dtLocal(ms(c.correctedEndMs)||b.original.endMs);document.getElementById('step87CorrReason').value=n(c.correctionReason);document.getElementById('step87CorrBy').value=n(c.updatedBy)||'관리자';document.getElementById('step87CorrNote').value=n(c.correctionNote);renderCorrHistory(c);document.getElementById('step87CorrectionModal').classList.add('open');
   }
   function closeCorrection(){document.getElementById('step87CorrectionModal')?.classList.remove('open');}
@@ -1713,17 +1721,47 @@ document.addEventListener("DOMContentLoaded",function(){
   }
 
   function mapSnap(snap){const out={};snap.forEach(doc=>out[doc.id]={id:doc.id,...(doc.data()||{})});return out;}
-  async function loadCollectionsOnce(){const [a,b,c]=await Promise.all([db.collection(SCHEDULES).get(),db.collection(EXCEPTIONS).get(),db.collection(CORRECTIONS).get()]);s87.schedules=mapSnap(a);s87.exceptions=mapSnap(b);s87.corrections=mapSnap(c);s87.ready=true;renderScheduleLists();renderLive();renderSummary();renderTable();}
+  function managementQueries(collection){
+    if(state.all)return [db.collection(collection)];
+    const month=state.month||monthKey(),today=dateKey(new Date());
+    const [year,number]=month.split('-').map(Number);
+    const next=number===12?`${year+1}-01`:`${year}-${String(number+1).padStart(2,'0')}`;
+    const queries=[db.collection(collection).where('dateKey','>=',month+'-01').where('dateKey','<',next+'-01')];
+    if(!today.startsWith(month+'-'))queries.push(db.collection(collection).where('dateKey','==',today));
+    return queries;
+  }
+  async function readManagementScope(collection){
+    const snapshots=await Promise.all(managementQueries(collection).map(query=>query.get()));
+    return Object.assign({},...snapshots.map(mapSnap));
+  }
+  function refreshManagementRealtime(){
+    (s87.scopeUnsubs||[]).forEach(fn=>fn());s87.scopeUnsubs=[];
+    const generation=(s87.scopeGeneration||0)+1;s87.scopeGeneration=generation;
+    for(const [collection,key] of [[EXCEPTIONS,'exceptions'],[CORRECTIONS,'corrections']]){
+      const queries=managementQueries(collection),parts=queries.map(()=>({}));
+      s87[key]={};
+      queries.forEach((query,index)=>s87.scopeUnsubs.push(query.onSnapshot(snap=>{
+        if(generation!==s87.scopeGeneration)return;
+        parts[index]=mapSnap(snap);s87[key]=Object.assign({},...parts);
+        renderScheduleLists();renderLive();renderSummary();renderTable();
+      },error=>{console.error('관리 범위 조회 실패',error);toast('관리 범위 조회 오류: '+error.code);})));
+    }
+  }
+  const baseManagementInit=init;
+  init=async function(...args){await baseManagementInit(...args);if(s87.ready)refreshManagementRealtime();};
+  async function loadCollectionsOnce(){const [a,b,c]=await Promise.all([db.collection(SCHEDULES).get(),readManagementScope(EXCEPTIONS),readManagementScope(CORRECTIONS)]);s87.schedules=mapSnap(a);s87.exceptions=b;s87.corrections=c;s87.ready=true;renderScheduleLists();renderLive();renderSummary();renderTable();}
   function startRealtime(){
     s87.unsubs.forEach(fn=>{try{fn();}catch(e){}});s87.unsubs=[];
     s87.unsubs.push(db.collection(SCHEDULES).onSnapshot(s=>{s87.schedules=mapSnap(s);renderScheduleLists();loadScheduleForm();renderLive();}));
-    s87.unsubs.push(db.collection(EXCEPTIONS).onSnapshot(s=>{s87.exceptions=mapSnap(s);renderScheduleLists();renderLive();}));
-    s87.unsubs.push(db.collection(CORRECTIONS).onSnapshot(s=>{s87.corrections=mapSnap(s);renderLive();renderSummary();renderTable();}));
+    refreshManagementRealtime();
     const today=dateKey(new Date()),range=kstRange(today);
     const todayQuery=db.collection('attendanceLogs').where('timestamp','>=',firebase.firestore.Timestamp.fromDate(range.start)).where('timestamp','<',firebase.firestore.Timestamp.fromDate(range.end));
     s87.unsubs.push(todayQuery.onSnapshot(s=>{
       const rows=s.docs.map(d=>({id:d.id,...d.data()})).filter(l=>dateKey(time(l))===today);
-      state.todayLogs=rows;logRangeCache.delete('day:'+today);logRangeCache.delete('month:'+today.slice(0,7));logRangeCache.delete('all');
+      state.todayLogs=rows;logRangeCache.set('day:'+today,{at:Date.now(),rows});
+      for(const key of ['month:'+today.slice(0,7),'all']){
+        const cached=logRangeCache.get(key);if(cached)cached.rows=[...cached.rows.filter(l=>dateKey(time(l))!==today),...rows];
+      }
       if(state.all||state.month===today.slice(0,7)){
         state.logs=[...state.logs.filter(l=>dateKey(time(l))!==today),...rows];
         state.logs.sort((a,b)=>(time(b)?.getTime()||0)-(time(a)?.getTime()||0));

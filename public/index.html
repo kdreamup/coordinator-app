@@ -668,12 +668,13 @@
   <div class="card">
     <div class="card-head">
       <h3>캘린더 기록보기</h3>
-      <div class="sub">날짜를 선택해 기록을 확인하세요. 이번 달만 수정·삭제 가능합니다.</div>
+      <div class="sub">오늘 내역은 자동 조회합니다. 과거 기록은 월 내역 불러오기 또는 날짜 선택으로 조회합니다. 이번 달만 수정·삭제 가능합니다.</div>
     </div>
     <div class="card-body">
       <div class="cal-nav">
         <div class="cal-nav-title" id="cal-title">2026년 4월</div>
         <div class="cal-nav-btns">
+          <button class="btn btn-soft btn-sm" id="cal-load-month" type="button">월 내역 불러오기</button>
           <button class="btn btn-soft btn-sm" id="cal-prev" type="button">◀</button>
           <button class="btn btn-soft btn-sm" id="cal-today-btn" type="button">오늘</button>
           <button class="btn btn-soft btn-sm" id="cal-next" type="button">▶</button>
@@ -756,8 +757,137 @@
     projectId: "attendance-system-e2848",
     appId: "1:216864577770:web:af2c6a85b6027882e8df93"
   };
-  if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+  // Test builds must use an explicit non-production project, including emulator builds.
+  const testEnvironment=window.COORDINATOR_TEST_ENV;
+  if(testEnvironment && (!testEnvironment.config?.projectId || testEnvironment.config.projectId===firebaseConfig.projectId))
+    throw new Error("테스트 환경에서 운영 Firebase에 연결할 수 없습니다.");
+  const effectiveFirebaseConfig=testEnvironment?.config||firebaseConfig;
+  if(firebase.apps.length&&firebase.app().options.projectId!==effectiveFirebaseConfig.projectId)
+    throw new Error("이미 연결된 Firebase 프로젝트가 앱 설정과 다릅니다. 저장을 중단합니다.");
+  if (!firebase.apps.length) firebase.initializeApp(effectiveFirebaseConfig);
+  const activeFirebaseProjectId=firebase.app().options.projectId;
   const db = firebase.firestore();
+  if(testEnvironment?.emulator) db.useEmulator(testEnvironment.emulator.host||'127.0.0.1',testEnvironment.emulator.port||8080);
+
+
+
+  /* Durable visit outbox: acknowledge locally only after a successful storage write. */
+  const VISIT_OUTBOX_KEY='coordinator_pending_visits_v1';
+  let visitFlushTask=null;
+  function readVisitOutbox(){
+    const raw=localStorage.getItem(VISIT_OUTBOX_KEY);
+    if(!raw)return [];
+    const rows=JSON.parse(raw);
+    if(!Array.isArray(rows))throw new Error('방문 대기 기록 형식을 확인해야 합니다.');
+    return rows;
+  }
+  function writeVisitOutbox(rows){localStorage.setItem(VISIT_OUTBOX_KEY,JSON.stringify(rows));}
+  function visitOutboxStatus(){return readVisitOutbox().filter(x=>x.payload.userName===currentUserName);}
+  function renderVisitOutbox(){
+    if(!document.createElement)return;
+    let box=document.getElementById('visit-sync-status');
+    if(!box){const anchor=el('save-activity-btn');if(!anchor?.parentNode)return;
+      box=document.createElement('div');box.id='visit-sync-status';box.setAttribute('role','status');anchor.parentNode.appendChild(box);}
+    const pending=visitOutboxStatus();box.replaceChildren();
+    const label=document.createElement('span');label.textContent=pending.length?`방문기록 ${pending.length}건 기기 보관 중 · 서버 저장 미확인`:'방문기록 전송 대기 없음';box.appendChild(label);
+    if(pending.length){const button=document.createElement('button');button.type='button';button.textContent='방문기록 다시 전송';button.disabled=!!visitFlushTask;
+      button.addEventListener('click',()=>flushVisitOutbox().catch(console.error));box.appendChild(button);}
+  }
+  function queueVisitPayload(payload,id){
+    id=id||('visit__'+encodeURIComponent(payload.userName)+'__'+payload.clientTimeMs+'__'+Math.random().toString(36).slice(2));
+    const data={...payload};delete data.timestamp;delete data.createdAt;delete data.updatedAt;
+    const rows=readVisitOutbox();if(!rows.some(x=>x.id===id))rows.push({id,payload:data,queuedAtMs:Date.now()});
+    writeVisitOutbox(rows);try{renderVisitOutbox();}catch(error){console.warn('방문 대기 표시 오류',error);}return id;
+  }
+  function visitTransferWithDeadline(promise,ms=8000){
+    let timer;
+    const deadline=new Promise((_,reject)=>{timer=setTimeout(()=>{const error=new Error('서버 저장 확인 시간이 지나 기기에 보관합니다.');error.code='deadline-exceeded';reject(error);},ms);});
+    return Promise.race([promise,deadline]).finally(()=>clearTimeout(timer));
+  }
+  async function flushVisitOutbox(){
+    if(visitFlushTask)return visitFlushTask;
+    if(!currentUserName||!navigator.onLine||window.step93QuotaBlocked?.()){renderVisitOutbox();return false;}
+    const user=currentUserName;
+    const task=(async()=>{
+      for(const op of readVisitOutbox().filter(x=>x.payload.userName===user)){
+        if(currentUserName!==user||window.step93QuotaBlocked?.())break;
+        try{
+          const ref=db.collection('attendanceLogs').doc(op.id);
+          await visitTransferWithDeadline(db.runTransaction(async tx=>{
+            const existing=await tx.get(ref);if(existing.exists)return;
+            tx.set(ref,{...op.payload,timestamp:firebase.firestore.Timestamp.fromMillis(op.payload.clientTimeMs),
+              createdAt:firebase.firestore.FieldValue.serverTimestamp(),updatedAt:firebase.firestore.FieldValue.serverTimestamp()});
+          }));
+          writeVisitOutbox(readVisitOutbox().filter(x=>x.id!==op.id));
+          window.step94InvalidateAttendance?.();
+        }catch(error){
+          window.step93RememberQuota?.(error);
+          writeVisitOutbox(readVisitOutbox().map(x=>x.id===op.id?{...x,lastError:{code:String(error.code||'unknown'),message:String(error.message),atMs:Date.now()}}:x));
+          break;
+        }
+      }
+      return !readVisitOutbox().some(x=>x.payload.userName===user);
+    })();
+    visitFlushTask=task;
+    try{return await task;}finally{visitFlushTask=null;renderVisitOutbox();}
+  }
+  window.step94VisitOutbox={pending:visitOutboxStatus,flush:flushVisitOutbox};
+  window.addEventListener('online',()=>flushVisitOutbox().catch(console.error));
+  setInterval(()=>{if(document.visibilityState==='visible')flushVisitOutbox().catch(console.error);},120000);
+
+
+  /* Visit drafts are separate from submitted records and never count as server saves. */
+  const VISIT_DRAFT_KEY='coordinator_visit_drafts_v1';
+  function readVisitDrafts(){const rows=JSON.parse(localStorage.getItem(VISIT_DRAFT_KEY)||'[]');if(!Array.isArray(rows))throw new Error('임시 보관 기록 형식을 확인해야 합니다.');return rows;}
+  function removeVisitDraft(user,date){localStorage.setItem(VISIT_DRAFT_KEY,JSON.stringify(readVisitDrafts().filter(x=>!(x.userName===user&&x.dateKey===date))));}
+  function protectVisitDraft(){
+    if(!currentUserName)return true;
+    try{
+      const data=getVisitCaseFormData();
+      if(!data.clientName&&!data.visitSummary&&!data.visitPurposes?.length)return true;
+      const startedAt=Number(currentSession?.startedAt)||Date.now(),dateKey=formatDateKey(startedAt);
+      const draft={userName:currentUserName,dateKey,startedAt,savedAtMs:Date.now(),data};
+      const rows=readVisitDrafts().filter(x=>!(x.userName===draft.userName&&x.dateKey===draft.dateKey));rows.push(draft);
+      localStorage.setItem(VISIT_DRAFT_KEY,JSON.stringify(rows));return true;
+    }catch(error){console.error('방문 입력 임시 보관 실패',error);return false;}
+  }
+  function migrateLegacyVisitDraft(user){
+    const raw=localStorage.getItem(LS_SESSION),memo=localStorage.getItem(LS_MEMO)||'';
+    if(!raw||!memo)return;
+    const session=JSON.parse(raw);
+    if((session.userName&&session.userName!==user)||(!session.userName&&localStorage.getItem(LS_LAST_USER)!==user))return;
+    if(!Number(session.startedAt))return;
+    const dateKey=formatDateKey(Number(session.startedAt)),rows=readVisitDrafts();
+    if(rows.some(x=>x.userName===user&&x.dateKey===dateKey))return;
+    rows.push({userName:user,dateKey,startedAt:Number(session.startedAt),savedAtMs:Date.now(),
+      data:{clientName:'',visitSummary:memo,visitPurposes:[...(session.activities||[])]},migratedFromLegacy:true});
+    localStorage.setItem(VISIT_DRAFT_KEY,JSON.stringify(rows));
+  }
+  function renderVisitDrafts(){
+    if(!document.createElement)return;
+    let box=document.getElementById('visit-drafts');
+    if(!box){const anchor=el('save-activity-btn');if(!anchor?.parentNode)return;box=document.createElement('details');box.id='visit-drafts';anchor.parentNode.appendChild(box);}
+    box.replaceChildren();const drafts=readVisitDrafts().filter(x=>x.userName===currentUserName);
+    const summary=document.createElement('summary');summary.textContent=`작성 중 보관 내역 ${drafts.length}건 · 서버에 제출한 기록이 아닙니다`;box.appendChild(summary);
+    for(const draft of drafts){
+      const label=document.createElement('p');label.textContent=`${draft.dateKey} · ${draft.data.clientName||'대상자 미입력'}`;box.appendChild(label);
+      const area=document.createElement('textarea');area.readOnly=true;area.style.cssText='width:100%;min-height:100px';
+      area.value=`활동목적: ${(draft.data.visitPurposes||[]).join(', ')}\n내용: ${draft.data.visitSummary||''}\n세부항목: ${[...(draft.data.agencySupportDetails||[]),...(draft.data.healthCareDetails||[]),...(draft.data.resourceLinkDetails||[])].join(', ')}`;box.appendChild(area);
+      if(draft.dateKey===formatDateKey(new Date())&&getTodayWorkStatus()==='started'){
+        const button=document.createElement('button');button.type='button';button.textContent='작성 내용 복원';button.addEventListener('click',()=>restoreVisitDraft(draft));box.appendChild(button);
+      }
+    }
+  }
+  function restoreVisitDraft(draft){
+    if(draft.userName!==currentUserName)return;
+    const d=draft.data;
+    for(const [id,value] of Object.entries({'client-name-input':d.clientName,'gender-select':d.gender,'birth-year-select':d.birthYear,'housing-etc-input':d.housingEtc,'memo-input':d.visitSummary}))if(el(id))el(id).value=value||'';
+    const groups={'visit-purpose':d.visitPurposes,'visit-reason':[d.visitReason],'housing-type':[d.housingType],'agency-detail':d.agencySupportDetails,'health-detail':d.healthCareDetails,'resource-detail-1':d.resourceLinkDetails1,'resource-detail-2':d.resourceLinkDetails2};
+    for(const [name,values] of Object.entries(groups))document.querySelectorAll(`input[name="${name}"]`).forEach(node=>node.checked=(values||[]).includes(node.value));
+    currentSession={startedAt:draft.startedAt,activities:[...(d.visitPurposes||[])]};saveSessionToStorage();updateVisitPurposeDetailVisibility();updateHousingEtcVisibility();updateCurrentElapsedUi();
+  }
+  document.addEventListener('input',event=>{if(event.target?.closest?.('.visit-case-field,.visit-field'))protectVisitDraft();});
+  document.addEventListener('change',event=>{if(event.target?.closest?.('.visit-field'))protectVisitDraft();});
 
   const LS_LAST_USER = "coordinator_last_user";
   const LS_SESSION   = "coordinator_session";
@@ -825,6 +955,7 @@
   let lastGpsErrorCode = "";
   let etcText = ""; // ✅ 기타 입력 내용
 
+  let historyMonthRequested=false;
   let calYear = new Date().getFullYear();
   let calMonth = new Date().getMonth();
   let selectedDateKey = formatDateKey(new Date());
@@ -1398,7 +1529,11 @@
   async function loadAttendanceLogs(){
     try{
       if(!currentUserName){allLogs=[];return;}
-      const snap=await db.collection("attendanceLogs").where("userName","==",currentUserName).get();
+      const today=formatDateKey(new Date());
+      const start=new Date(today+'T00:00:00+09:00'),end=new Date(start.getTime()+86400000);
+      const snap=await db.collection("attendanceLogs").where("userName","==",currentUserName)
+        .where('timestamp','>=',firebase.firestore.Timestamp.fromMillis(start.getTime()))
+        .where('timestamp','<',firebase.firestore.Timestamp.fromMillis(end.getTime())).orderBy('timestamp','desc').get();
       allLogs=snap.docs.map(doc=>({id:doc.id,...doc.data()}));
       allLogs.sort((a,b)=>(getLogDateTime(b)?.getTime()||0)-(getLogDateTime(a)?.getTime()||0));
       console.log("[loadAttendanceLogs] 로그 수:", allLogs.length);
@@ -1599,7 +1734,8 @@
     if(!allNames.includes(finalUser)){
       alert("등록되지 않은 사용자입니다.\n관리자에게 문의하세요."); return;
     }
-    currentUserName=finalUser; localStorage.setItem(LS_LAST_USER,currentUserName);
+    try{migrateLegacyVisitDraft(finalUser);}catch(error){alert('기존 작성 내용을 보관하지 못했습니다. 저장 공간을 확인해주세요.');return;}
+    currentUserName=finalUser;currentSession=null;resetVisitCaseForm({keepMemoStorage:true});localStorage.setItem(LS_LAST_USER,currentUserName);
     await loadAttendanceLogs();
     updateMainUserUi(); showScreen("main");
     const saved=loadSessionFromStorage(); if(saved) currentSession=saved;
@@ -1608,6 +1744,9 @@
     const savedGps=loadGpsFromStorage(); if(savedGps) lastGps=savedGps;
     renderActivityChips(); updateActivityAreaState(); updateEtcInputVisibility(); updateSubActivityVisibility(); updateCurrentElapsedUi();
     updateTodaySummary(); renderCalendar(); renderHistory();
+    const todayDraft=readVisitDrafts().find(x=>x.userName===currentUserName&&x.dateKey===formatDateKey(new Date()));
+    if(todayDraft&&getTodayWorkStatus()==='started')restoreVisitDraft(todayDraft);
+    renderVisitDrafts();
     startSessionTicker(); startWorkTimer(); startAutoEndTimer(); syncGpsCheckTimer();
 
     // ✅ 안드로이드 앱은 로그인 직후 위치 권한을 먼저 요청합니다.
@@ -1617,6 +1756,7 @@
 
   function logout(){
     if(currentSession&&currentSession.activities.length){ if(!confirm("진행 중인 활동 선택이 있습니다. 로그아웃할까요?")) return; }
+    if(!protectVisitDraft()){alert("작성 내용을 보관하지 못했습니다. 저장 공간을 확인해주세요.");return;}
     const lastUser=currentUserName;
     currentUserName=""; currentSession=null; etcText=""; resetSubActivitySelections(); el("manual-user-input").value="";
     selectedLoginUser=lastUser;
@@ -1744,9 +1884,13 @@
     autoEndInProgress=true;
     try{
       if(currentSession&&currentSession.activities&&currentSession.activities.length){
-        // 자동 일과 종료 시에는 입력이 미완성일 수 있으므로 방문기록을 강제 저장하지 않습니다.
-        // 대신 활동시간 세션만 종료하여 시간이 계속 누적되는 문제를 막습니다.
-        discardCurrentActivitySession();
+        const data=getVisitCaseFormData();
+        if(!validateVisitCaseData(data)){
+          if(!await saveActivityRecord({silent:true}))return;
+        }else{
+          if(!protectVisitDraft())return;
+          discardCurrentActivitySession();
+        }
       }
       if(getTodayWorkStatus()==="started"){
         const ended=await _doSaveWorkBoundaryLog("일과 종료",{autoEnded:true,silent:true});
@@ -1877,7 +2021,7 @@
   }
 
   async function saveGpsCheckSnapshot(source,gps,meta={}){
-    if(!currentUserName) return false;
+    if(!currentUserName || window.step93QuotaBlocked?.()) return false;
     const now=Date.now();
     const hasGps=!!(gps&&gps.lat!=null&&gps.lng!=null);
     const status=meta.status||(hasGps?(gps.gpsStatus||"fresh"):"failed");
@@ -1907,7 +2051,7 @@
         workStatus:getTodayWorkStatus()
       });
       return true;
-    }catch(err){ console.warn("GPS 확인 로그 저장 오류:",err); return false; }
+    }catch(err){ window.step93RememberQuota?.(err); console.warn("GPS 확인 로그 저장 오류:",err); return false; }
   }
 
   async function saveGpsCheckLog(source="manual-refresh",silent=false){
@@ -1996,6 +2140,8 @@
 
   function cancelCurrentSession(){
     if(!confirm("작성 중인 방문(사례) 기록 내용을 초기화할까요?")) return;
+    try{removeVisitDraft(currentUserName,formatDateKey(currentSession?.startedAt||Date.now()));}
+    catch(error){alert('작성 내용 초기화를 완료하지 못했습니다. 기존 내용은 유지합니다.');return;}
     currentSession=null; etcText=""; resetSubActivitySelections(); resetVisitCaseForm();
     saveSessionToStorage(); updateActivityAreaState(); updateCurrentElapsedUi();
   }
@@ -2017,6 +2163,7 @@
 
   // step34: 활동시간은 근무 시작 상태에서만 유지합니다. 근무가 아니면 조용히 초기화합니다.
   function clearCurrentActivitySessionSilently(){
+    if(!protectVisitDraft())return false;
     currentSession=null;
     etcText="";
     resetSubActivitySelections();
@@ -2045,6 +2192,7 @@
   // step30: 방문기록 저장을 누르지 않은 활동 세션을 안전하게 종료합니다.
   // 이 함수는 방문기록을 자동 저장하지 않고 활동시간 누적만 멈춥니다.
   function discardCurrentActivitySession(){
+    if(!protectVisitDraft())return false;
     currentSession=null;
     etcText="";
     resetSubActivitySelections();
@@ -2136,7 +2284,7 @@
       gpsCapturedAt:selectedGps?.capturedAt??null,
       gpsUsedCached:false,
       gpsMetaVersion:"gps-v2",
-      appBuildVersion:"6.11"
+      appBuildVersion:"6.12"
     });
     await db.collection("attendanceLogs").add(payload);
       if(type==="일과 종료") clearCurrentActivitySessionSilently();
@@ -2305,14 +2453,14 @@
     return "";
   }
 
-  function resetVisitCaseForm(){
+  function resetVisitCaseForm(options={}){
     ["client-name-input","housing-etc-input","memo-input"].forEach(id=>{ const node=el(id); if(node) node.value=""; });
     if(el("gender-select")) el("gender-select").value="";
     if(el("birth-year-select")) el("birth-year-select").value="";
     document.querySelectorAll('input[name="visit-reason"],input[name="housing-type"],input[name="visit-purpose"],input[name="agency-detail"],input[name="health-detail"],input[name="resource-detail"],input[name="resource-detail-1"],input[name="resource-detail-2"]').forEach(x=>{ x.checked=false; });
     updateVisitPurposeDetailVisibility();
     updateHousingEtcVisibility();
-    localStorage.removeItem(LS_MEMO);
+    if(!options.keepMemoStorage)localStorage.removeItem(LS_MEMO);
   }
 
   function makeVisitMemoText(data){
@@ -2341,6 +2489,7 @@
     if(status==="none"){ alert("일과 시작을 먼저 저장해주세요."); return false; }
     if(status==="ended"){ alert("오늘 일과가 종료되었습니다."); return false; }
 
+    const visitUser=currentUserName;
     const data=getVisitCaseFormData();
     const validationMessage=validateVisitCaseData(data);
     if(validationMessage){ alert(validationMessage); return false; }
@@ -2365,6 +2514,7 @@
       visitAttemptCode="exception";
       visitAttemptReason=e?.message||"위치 확인 중 오류가 발생했습니다.";
     }
+    if(currentUserName!==visitUser){savingVisitRecord=false;restoreBtn();return false;}
     const visitGpsChoice=selectGpsForRecord(freshGps);
     const gpsForVisit=visitGpsChoice.gps;
     const visitGpsStatus=visitGpsChoice.status;
@@ -2382,7 +2532,7 @@
     const durationMs=Math.max(0,now-sessionStartedAt);
 
     const payload={
-      userName:currentUserName,coordinatorName:currentUserName,
+      userName:visitUser,coordinatorName:visitUser,
       type:"방문사례기록",recordType:"visitCase",
       activities:purposes,activitiesText:purposes.join(", "),memo:makeVisitMemoText(data),
       timestamp:firebase.firestore.FieldValue.serverTimestamp(),clientTimeMs:now,timeStr:new Date(now).toLocaleString("ko-KR"),
@@ -2410,14 +2560,17 @@
         gpsCapturedAt:gpsForVisit?.capturedAt??null,
         gpsUsedCached:false,
         gpsMetaVersion:"gps-v2",
-      appBuildVersion:"6.11"
+      appBuildVersion:"6.12"
       });
-      await db.collection("attendanceLogs").add(payload);
-      await saveGpsCheckSnapshot("visit-record",gpsForVisit,{status:visitGpsStatus,usedCached:false,failureCode:visitGpsFailureCode,failureReason:visitGpsFailureReason,attemptedAt:gpsAttemptedAt});
+      const visitId=queueVisitPayload(payload);
+      // Clearing the form is safe only after the full payload is durable locally.
+      // GPS audit fields are already included in that payload.
+      flushVisitOutbox().catch(console.error);
+      try{removeVisitDraft(visitUser,formatDateKey(now));}catch(error){console.warn("제출한 임시 입력 정리 대기",error);}
       currentSession=null; etcText=""; resetSubActivitySelections(); saveSessionToStorage(); resetVisitCaseForm();
       updateActivityAreaState(); updateCurrentElapsedUi();
-      await reloadMainData();
-      if(!options.silent) alert("방문(사례) 기록이 저장되었습니다.");
+      Promise.resolve(reloadMainData()).catch(error=>console.warn("방문 저장 후 조회 대기",error));
+      if(!options.silent) alert(visitOutboxStatus().some(x=>x.id===visitId)?"방문기록을 기기에 보관했습니다. 서버 저장 확인 전까지 자동 재전송합니다.":"방문(사례) 기록이 서버에 저장되었습니다.");
       return true;
     }catch(err){
       console.error("방문기록 저장 오류:",err);
@@ -2460,7 +2613,7 @@
       alert("일과 시작·종료 기록은 관리자만 정정할 수 있습니다.");return;
     }
     if(!confirm("정말로 이 기록을 삭제하시겠습니까?")) return;
-    try{ await db.collection("attendanceLogs").doc(id).delete(); alert("기록이 삭제되었습니다."); await reloadMainData(); }
+    try{ await db.collection("attendanceLogs").doc(id).delete(); window.step94InvalidateAttendance?.(true); alert("기록이 삭제되었습니다."); await reloadMainData(); }
     catch(err){ alert("삭제 중 오류가 발생했습니다."); }
   };
   function closeEditModal(){ editingLogId=null; el("edit-modal").classList.remove("show"); }
@@ -2476,7 +2629,7 @@
       const workHours=clampWorkHours(el("edit-work-hours-select").value);
       Object.assign(updates, buildWorkBreakFields(workHours));
     }
-    try{ await db.collection("attendanceLogs").doc(editingLogId).update(updates); alert("기록이 수정되었습니다."); closeEditModal(); await reloadMainData(); }
+    try{ await db.collection("attendanceLogs").doc(editingLogId).update(updates); window.step94InvalidateAttendance?.(true); alert("기록이 수정되었습니다."); closeEditModal(); await reloadMainData(); }
     catch(err){ alert("수정 중 오류가 발생했습니다."); }
   }
   el("close-edit-modal").addEventListener("click",closeEditModal);
@@ -2527,7 +2680,7 @@
     el("cal-grid").querySelectorAll(".cal-day[data-key]").forEach(cell=>{
       cell.addEventListener("click",function(){
         selectedDateKey=this.getAttribute("data-key");
-        renderCalendar(); renderHistory();
+        historyMonthRequested=true;loadAttendanceLogs().then(()=>{renderCalendar();renderHistory();});
       });
     });
   }
@@ -2708,16 +2861,17 @@
   el("save-activity-btn").addEventListener("click",saveActivityRecord);
   el("cancel-session-btn").addEventListener("click",cancelCurrentSession);
   initVisitCaseUi();
-  el("cal-prev").addEventListener("click",function(){ calMonth--; if(calMonth<0){calMonth=11;calYear--;} renderCalendar(); renderHistory(); });
-  el("cal-next").addEventListener("click",function(){ calMonth++; if(calMonth>11){calMonth=0;calYear++;} renderCalendar(); renderHistory(); });
-  el("cal-today-btn").addEventListener("click",function(){ const now=new Date(); calYear=now.getFullYear(); calMonth=now.getMonth(); selectedDateKey=formatDateKey(now); renderCalendar(); renderHistory(); });
+  el("cal-load-month").addEventListener("click",()=>{historyMonthRequested=true;loadAttendanceLogs().then(()=>{renderCalendar();renderHistory();});});
+  el("cal-prev").addEventListener("click",function(){ historyMonthRequested=true;calMonth--; if(calMonth<0){calMonth=11;calYear--;} loadAttendanceLogs().then(()=>{renderCalendar();renderHistory();}); });
+  el("cal-next").addEventListener("click",function(){ historyMonthRequested=true;calMonth++; if(calMonth>11){calMonth=0;calYear++;} loadAttendanceLogs().then(()=>{renderCalendar();renderHistory();}); });
+  el("cal-today-btn").addEventListener("click",function(){ const now=new Date(); calYear=now.getFullYear(); calMonth=now.getMonth(); selectedDateKey=formatDateKey(now); loadAttendanceLogs().then(()=>{renderCalendar();renderHistory();}); });
   window.addEventListener("beforeunload",function(e){ if(currentSession&&currentSession.activities.length){ e.preventDefault(); e.returnValue=""; } });
   document.addEventListener("DOMContentLoaded",initApp);
 </script>
   <!-- step62 GPS fresh-only: latest index preserved / no cached fallback / real position timestamp -->
   <!-- step64b GPS audit guarantee: robust function-scoped patch -->
   <!-- step65 GPS atomic audit: metadata in initial Firestore create / no post-create merge -->
-  <!-- release 6.11 / API 36 / correction sync + duplicate boundary guard -->
+  <!-- release 6.12 / API 36 / correction sync + duplicate boundary guard -->
 
 <script id="step79-visit-edit-complete">
 /* step79: 방문사례기록 수정창에 대상자 정보/활동내용 추가
@@ -2962,6 +3116,7 @@
 
       try{
         await db.collection('attendanceLogs').doc(editingLogId).update(updates);
+        window.step94InvalidateAttendance?.(true);
         alert('방문기록이 수정되었습니다.');
         if(typeof closeEditModal==='function') closeEditModal();
         if(typeof reloadMainData==='function') await reloadMainData();
@@ -3099,14 +3254,14 @@
     x.syncState="synced"; x.syncedAtMs=Date.now(); writeLocalWork(x);
   }
 
-  function readPending(){try{const a=JSON.parse(localStorage.getItem(PENDING_KEY)||"[]");return Array.isArray(a)?a:[];}catch(e){return [];}}
-  function writePending(a){try{localStorage.setItem(PENDING_KEY,JSON.stringify(a||[]));}catch(e){}}
+  function readPending(){const a=JSON.parse(localStorage.getItem(PENDING_KEY)||"[]");if(!Array.isArray(a))throw new Error("출근·종료 대기 기록 형식을 확인해야 합니다.");return a;}
+  function writePending(a){localStorage.setItem(PENDING_KEY,JSON.stringify(a||[]));}
   function queue(op){const a=readPending().filter(x=>x?.id!==op.id);a.push(op);writePending(a);}
   function unqueue(id){writePending(readPending().filter(x=>x?.id!==id));}
   function eventTimestamp(ms){try{return firebase.firestore.Timestamp.fromMillis(Number(ms)||Date.now());}catch(e){return new Date(Number(ms)||Date.now());}}
   const SYNC_DIAGNOSTIC_KEY="coordinator_boundary_sync_diagnostic_v1";
   function saveSyncDiagnostic(value){
-    const record={...value,atMs:Date.now(),userName:currentUserName,projectId:"attendance-system-e2848",appVersion:"6.11"};
+    const record={...value,atMs:Date.now(),userName:currentUserName,projectId:typeof activeFirebaseProjectId!=="undefined"?activeFirebaseProjectId:"attendance-system-e2848",appVersion:"6.12"};
     try{localStorage.setItem(SYNC_DIAGNOSTIC_KEY,JSON.stringify(record));}catch(e){}
     renderBoundarySync();
   }
@@ -3135,7 +3290,7 @@
     retry.disabled=flushBusy;retry.addEventListener('click',async()=>{retry.disabled=true;try{await flushPending();}finally{renderBoundarySync();}});box.appendChild(retry);
     const details=document.createElement('details'),summary=document.createElement('summary');summary.textContent='저장 진단 정보';details.appendChild(summary);
     const area=document.createElement('textarea');area.readOnly=true;area.style.cssText='width:100%;height:150px';
-    area.value=JSON.stringify({userName:currentUserName,projectId:'attendance-system-e2848',appVersion:'6.11',pending:pending.map(op=>({id:op.id,type:op.payload.type,clientTimeMs:op.payload.clientTimeMs,lastError:op.lastError||null})),lastResult:diagnostic.userName===currentUserName?diagnostic:null},null,2);
+    area.value=JSON.stringify({userName:currentUserName,projectId:typeof activeFirebaseProjectId!=="undefined"?activeFirebaseProjectId:"attendance-system-e2848",appVersion:'6.12',pending:pending.map(op=>({id:op.id,type:op.payload.type,clientTimeMs:op.payload.clientTimeMs,lastError:op.lastError||null})),lastResult:diagnostic.userName===currentUserName?diagnostic:null},null,2);
     details.appendChild(area);box.appendChild(details);
   }
   function timeoutResult(p,ms){return Promise.race([
@@ -3143,7 +3298,7 @@
     new Promise(r=>setTimeout(()=>r({ok:false,code:'timeout',message:'서버 응답을 아직 확인하지 못했습니다.',phase:'transaction'}),ms))
   ]);}
   function recordSyncResult(id,result){
-    if(result.ok){unqueue(id);saveSyncDiagnostic({state:'synced',id});return;}
+    if(result.ok){window.step94InvalidateAttendance?.();unqueue(id);saveSyncDiagnostic({state:'synced',id});return;}
     window.step93RememberQuota?.(result);
     const lastError={code:result.code,message:result.message,phase:result.phase,atMs:Date.now()};
     writePending(readPending().map(op=>op.id===id?{...op,lastError}:op));
@@ -3302,21 +3457,47 @@
     return null;
   };
 
-  let attendanceLoadTask=null,attendanceLoadUser='';
+  let attendanceLoadTask=null,attendanceLoadUser='',attendanceLoadScope='';
+  const personalRangeCache=new Map();
+  window.step94InvalidateAttendance=(full=false)=>{
+    for(const key of personalRangeCache.keys())if(full||key.includes('|day:')){personalRangeCache.delete(key);if(full)localStorage.removeItem('coordinator_history_cache_v1_'+encodeURIComponent(key));}
+  };
+  async function readPersonalMonth(user,key,daily=false){
+    const cacheKey=user+'|'+(daily?'day:':'month:')+key;
+    const storageKey='coordinator_history_cache_v1_'+encodeURIComponent(cacheKey);
+    let hit=personalRangeCache.get(cacheKey);
+    if(!hit&&!daily){try{hit=JSON.parse(localStorage.getItem(storageKey)||'null');}catch(e){}}
+    const ttl=daily?120000:86400000;
+    if(hit&&Date.now()-hit.at<ttl){personalRangeCache.set(cacheKey,hit);return hit.rows;}
+    const start=new Date(key+(daily?'':'-01')+'T00:00:00+09:00');
+    const end=daily?new Date(start.getTime()+86400000):new Date(Date.UTC(Number(key.slice(0,4)),Number(key.slice(5,7)),1)-9*3600000);
+    const snapshots=await Promise.all(['userName','coordinatorName'].map(field=>db.collection('attendanceLogs')
+      .where(field,'==',user).where('timestamp','>=',firebase.firestore.Timestamp.fromMillis(start.getTime()))
+      .where('timestamp','<',firebase.firestore.Timestamp.fromMillis(end.getTime())).orderBy('timestamp','desc').get({source:'server'})));
+    const rows=new Map();snapshots.forEach(snap=>snap.docs.forEach(doc=>rows.set(doc.id,{id:doc.id,...doc.data()})));
+    const cached={at:Date.now(),rows:[...rows.values()]};personalRangeCache.set(cacheKey,cached);
+    if(!daily){try{localStorage.setItem(storageKey,JSON.stringify(cached));}catch(e){console.warn('과거 내역 캐시 저장 실패',e);}}
+    return cached.rows;
+  }
   loadAttendanceLogs=async function(){
     const user=currentUserName;
     if(!user){allLogs=[];serverLogsConfirmed=false;return;}
     if(window.step93QuotaBlocked?.()){serverLogsConfirmed=false;return;}
-    if(attendanceLoadTask&&attendanceLoadUser===user)return attendanceLoadTask;
-    attendanceLoadUser=user;
+    const scope=formatDateKey(new Date())+'|'+(historyMonthRequested?`${calYear}-${String(calMonth+1).padStart(2,'0')}`:'today');
+    if(attendanceLoadTask&&attendanceLoadUser===user&&attendanceLoadScope===scope)return attendanceLoadTask;
+    attendanceLoadUser=user;attendanceLoadScope=scope;
     const task=(async()=>{
       try{
-        const snapshots=await Promise.all(['userName','coordinatorName'].map(field=>db.collection('attendanceLogs').where(field,'==',user).get({source:'server'})));
-        if(currentUserName!==user)return;
-        const rows=new Map();snapshots.forEach(snap=>snap.docs.forEach(doc=>rows.set(doc.id,{id:doc.id,...doc.data()})));
+        const months=historyMonthRequested?[`${calYear}-${String(calMonth+1).padStart(2,'0')}`]:[];
+        const snapshots=await Promise.all(months.map(key=>readPersonalMonth(user,key)));
+        const today=formatDateKey(new Date()),todayRows=await readPersonalMonth(user,today,true);
+        if(currentUserName!==user||attendanceLoadScope!==scope)return;
+        const rows=new Map();snapshots.forEach(list=>list.forEach(row=>rows.set(row.id,row)));
+        for(const [id,row] of rows)if(formatDateKey(getLogDateTime(row))===today)rows.delete(id);
+        todayRows.forEach(row=>rows.set(row.id,row));
         allLogs=[...rows.values()];allLogs.sort((a,b)=>(getLogDateTime(b)?.getTime()||0)-(getLogDateTime(a)?.getTime()||0));
-        serverLogsConfirmed=true;serverLogsDate=formatDateKey(new Date());syncLocalFromRemote();effectiveInfo();
-      }catch(error){serverLogsConfirmed=false;window.step93RememberQuota?.(error);console.error('[step93] personal attendance read failed',error);}
+        serverLogsConfirmed=true;serverLogsDate=formatDateKey(new Date());syncLocalFromRemote();effectiveInfo();renderVisitOutbox();flushVisitOutbox().catch(console.error);
+      }catch(error){serverLogsConfirmed=false;window.step93RememberQuota?.(error);console.error('[step93] personal attendance read failed',error);if(error.code==='failed-precondition')window.step84Notify?.('기록 조회에 필요한 서버 색인이 준비되지 않았습니다. 기존 기기 기록은 유지합니다.','warn');}
     })();
     attendanceLoadTask=task;try{return await task;}finally{if(attendanceLoadTask===task)attendanceLoadTask=null;}
   };
@@ -3432,7 +3613,7 @@
       gpsStatus:gpsStatus==="not-attempted"?choice.status:gpsStatus,gpsSource:type==="일과 시작"?"work-start":"work-end",
       gpsFailureCode:gps?"":(failCode||"unknown"),gpsFailureReason:gps?"":(failReason||"위치 확인 실패"),
       gpsAttemptedAt:attemptedAt,gpsCapturedAt:selected?.capturedAt??null,gpsUsedCached:false,
-      gpsMetaVersion:"gps-v4",appBuildVersion:"6.11",boundaryStorageVersion:"work-v2"
+      gpsMetaVersion:"gps-v4",appBuildVersion:"6.12",boundaryStorageVersion:"work-v2"
     };
     if(type==="일과 시작"){
       Object.assign(payload,buildWorkBreakFields(workHours));
@@ -3441,9 +3622,12 @@
     }
     if(options.autoEnded){payload.autoEnded=true;payload.autoEndedReason="selected-work-hours";}
 
-    setLocalBoundary(type,now,workHours,payload.autoEndAtMs||null);
     const boundaryKind=type==="일과 시작"?"start":"end";
     const boundaryDocId="boundary__"+formatDateKey(now)+"__"+keyPart(currentUserName)+"__"+boundaryKind;
+    // Persist before showing started/ended or clearing the active session.
+    try{queue({id:boundaryDocId,payload,queuedAtMs:Date.now()});}
+    catch(error){window.step84Notify('기기에 기록을 보관하지 못했습니다. 저장 공간을 확인해주세요.','warn');return false;}
+    setLocalBoundary(type,now,workHours,payload.autoEndAtMs||null);
     const ref=db.collection("attendanceLogs").doc(boundaryDocId), localId="__local__"+boundaryDocId;
     allLogs.unshift({id:localId,...payload,timestamp:{seconds:Math.floor(now/1000)},pendingSync:true});
     updateBoundaryBtnState();updateActivityAreaState();updateWorkHoursUi();updateWorkTimerUi();updateCurrentElapsedUi();syncGpsCheckTimer();
@@ -3575,7 +3759,7 @@
 
 <script id="step87-admin-correction-sync">
 (function(){
-  const POLL_MS=120000;
+  const POLL_MS=600000;
 
   function n(v){return String(v??'').trim();}
   function keyPart(v){return encodeURIComponent(n(v)||'unknown').replace(/%/g,'_').replace(/\//g,'_2F');}
@@ -3619,7 +3803,7 @@
       const snap=await db.collection('attendanceCorrections').doc(correctionId(u,d)).get({source:'server'});
       let next=snap.exists?{id:snap.id,...(snap.data()||{})}:null;
       if(!next){
-        const alt=await db.collection('attendanceCorrections').where('userName','==',u).get({source:'server'});
+        const alt=await db.collection('attendanceCorrections').where('userName','==',u).where('dateKey','==',d).get({source:'server'});
         const found=alt.docs.find(x=>n((x.data()||{}).userName)===u&&n((x.data()||{}).dateKey)===d);
         if(found)next={id:found.id,...(found.data()||{})};
       }
@@ -3672,8 +3856,8 @@
 
 <script id="step84-update-gate">
 (function(){
-  const APP_VERSION_NAME="6.11";
-  const APP_VERSION_CODE=62;
+  const APP_VERSION_NAME="6.12";
+  const APP_VERSION_CODE=63;
   const CACHE_KEY="coordinator_app_update_config_v1";
   const DEFAULT_STORE_URL="https://play.google.com/store/apps/details?id=kr.nonsan.coordinator";
   let cachedConfig=null;
