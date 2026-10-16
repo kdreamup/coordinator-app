@@ -794,6 +794,17 @@
       button.addEventListener('click',()=>flushVisitOutbox().catch(console.error));box.appendChild(button);}
   }
   function queueVisitPayload(payload,id){
+    // Persist an ID with the input session before queueing. A restart between
+    // queue persistence, server commit, and form cleanup must reuse this ID.
+    if(!id&&typeof currentSession!=='undefined'){
+      if(!currentSession)currentSession={startedAt:payload.activityStartedAt||payload.clientTimeMs,activities:[...(payload.activities||[])]};
+      if(!currentSession.visitRecordId||currentSession.visitRecordUser!==payload.userName){
+        currentSession.visitRecordId='visit__'+encodeURIComponent(payload.userName)+'__'+payload.clientTimeMs+'__'+Math.random().toString(36).slice(2);
+        currentSession.visitRecordUser=payload.userName;
+      }
+      saveSessionToStorage(); // Failure leaves the form intact and sends nothing.
+      id=currentSession.visitRecordId;
+    }
     id=id||('visit__'+encodeURIComponent(payload.userName)+'__'+payload.clientTimeMs+'__'+Math.random().toString(36).slice(2));
     const data={...payload};delete data.timestamp;delete data.createdAt;delete data.updatedAt;
     const rows=readVisitOutbox();if(!rows.some(x=>x.id===id))rows.push({id,payload:data,queuedAtMs:Date.now()});
@@ -846,7 +857,8 @@
       const data=getVisitCaseFormData();
       if(!data.clientName&&!data.visitSummary&&!data.visitPurposes?.length)return true;
       const startedAt=Number(currentSession?.startedAt)||Date.now(),dateKey=formatDateKey(startedAt);
-      const draft={userName:currentUserName,dateKey,startedAt,savedAtMs:Date.now(),data};
+      const draft={userName:currentUserName,dateKey,startedAt,savedAtMs:Date.now(),data,
+        visitRecordId:currentSession?.visitRecordId,visitRecordUser:currentSession?.visitRecordUser};
       const rows=readVisitDrafts().filter(x=>!(x.userName===draft.userName&&x.dateKey===draft.dateKey));rows.push(draft);
       localStorage.setItem(VISIT_DRAFT_KEY,JSON.stringify(rows));return true;
     }catch(error){console.error('방문 입력 임시 보관 실패',error);return false;}
@@ -884,7 +896,10 @@
     for(const [id,value] of Object.entries({'client-name-input':d.clientName,'gender-select':d.gender,'birth-year-select':d.birthYear,'housing-etc-input':d.housingEtc,'memo-input':d.visitSummary}))if(el(id))el(id).value=value||'';
     const groups={'visit-purpose':d.visitPurposes,'visit-reason':[d.visitReason],'housing-type':[d.housingType],'agency-detail':d.agencySupportDetails,'health-detail':d.healthCareDetails,'resource-detail-1':d.resourceLinkDetails1,'resource-detail-2':d.resourceLinkDetails2};
     for(const [name,values] of Object.entries(groups))document.querySelectorAll(`input[name="${name}"]`).forEach(node=>node.checked=(values||[]).includes(node.value));
-    currentSession={startedAt:draft.startedAt,activities:[...(d.visitPurposes||[])]};saveSessionToStorage();updateVisitPurposeDetailVisibility();updateHousingEtcVisibility();updateCurrentElapsedUi();
+    const prior=currentSession?.startedAt===draft.startedAt&&currentSession?.visitRecordUser===draft.userName?currentSession:draft;
+    currentSession={startedAt:draft.startedAt,activities:[...(d.visitPurposes||[])]};
+    if(prior.visitRecordUser===draft.userName&&prior.visitRecordId){currentSession.visitRecordId=prior.visitRecordId;currentSession.visitRecordUser=draft.userName;}
+    saveSessionToStorage();updateVisitPurposeDetailVisibility();updateHousingEtcVisibility();updateCurrentElapsedUi();
   }
   document.addEventListener('input',event=>{if(event.target?.closest?.('.visit-case-field,.visit-field'))protectVisitDraft();});
   document.addEventListener('change',event=>{if(event.target?.closest?.('.visit-field'))protectVisitDraft();});
