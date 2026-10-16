@@ -33,5 +33,39 @@ const mismatch=boot({config:{projectId:'test-project'}},'attendance-system-e2848
 const isolated=boot({config:{projectId:'demo-coordinator'},emulator:{host:'127.0.0.1',port:8080}});assert.equal(isolated.run(),'demo-coordinator');assert.equal(isolated.stats().emulator[1],8080);
 assert.equal(boot(undefined).run(),'attendance-system-e2848');
 assert.ok(html.includes(".where('timestamp','<',firebase.firestore.Timestamp.fromMillis(end.getTime()))"));
+// Crash windows: queue durable -> form clear, and server commit -> form clear.
+mem.clear();records.clear();fail=false;ackLost=false;
+const sessionKey='coordinator_session';
+function resumed(){
+ const c=make();c.currentSession=JSON.parse(mem.get(sessionKey)||'null');
+ c.saveSessionToStorage=()=>c.localStorage.setItem(sessionKey,JSON.stringify(c.currentSession));
+ c.el=()=>null;c.document.querySelectorAll=()=>[];
+ c.updateVisitPurposeDetailVisibility=c.updateHousingEtcVisibility=c.updateCurrentElapsedUi=()=>{};
+ return c;
+}
+c=resumed();c.currentSession={startedAt:original-50000,activities:['상담']};
+const visit={userName:'tester',clientTimeMs:original,activityStartedAt:original-50000,activities:['상담'],visitSummary:'original'};
+const stable=c.queueVisitPayload(visit);
+c=resumed();
+// Login may restore an older draft; it must not discard the persisted ID.
+c.restoreVisitDraft({userName:'tester',startedAt:original-50000,data:{visitPurposes:['상담']}});
+assert.equal(c.currentSession.visitRecordId,stable);
+assert.equal(c.queueVisitPayload({...visit,clientTimeMs:original+1000,visitSummary:'retry'}),stable);
+assert.equal(c.visitOutboxStatus().length,1);assert.equal(c.visitOutboxStatus()[0].payload.clientTimeMs,original);
+await c.flushVisitOutbox();assert.equal(records.size,1);
+// Server already committed and queue is empty, but session cleanup was interrupted.
+c=resumed();assert.equal(c.queueVisitPayload({...visit,clientTimeMs:original+2000}),stable);
+await c.flushVisitOutbox();assert.equal(records.size,1);assert.equal(records.get(stable).clientTimeMs,original);
+// A new session or another user must receive a fresh ID.
+c.currentSession={startedAt:original+3000,activities:['상담']};
+assert.notEqual(c.queueVisitPayload({...visit,clientTimeMs:original+3000}),stable);
+const own=c.currentSession.visitRecordId;
+assert.notEqual(c.queueVisitPayload({...visit,userName:'other',clientTimeMs:original+4000}),own);
+storageFail=true;c.currentSession={startedAt:original+5000,activities:['상담']};
+const retained=mem.get('coordinator_pending_visits_v1');
+assert.throws(()=>c.queueVisitPayload({...visit,clientTimeMs:original+5000}));
+assert.equal(mem.get('coordinator_pending_visits_v1'),retained);assert.ok(c.currentSession);storageFail=false;
+assert.equal(JSON.parse(fs.readFileSync('firebase.json')).firestore.indexes,'firestore.indexes.json');
+console.log('PASS: restart before form clear, restart after commit, draft restore ID, original payload, distinct sessions/users, session-storage failure, index config');
 console.log('PASS: complete visit retention, restart/update, quota suppression, lost acknowledgement, concurrent retry, original time, user isolation, storage failure');
 })().catch(e=>{console.error(e);process.exitCode=1;});
