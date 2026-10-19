@@ -824,13 +824,17 @@
         if(currentUserName!==user||window.step93QuotaBlocked?.())break;
         try{
           const ref=db.collection('attendanceLogs').doc(op.id);
+          let confirmedRow=null;
           await visitTransferWithDeadline(db.runTransaction(async tx=>{
-            const existing=await tx.get(ref);if(existing.exists)return;
+            const existing=await tx.get(ref);
+            if(existing.exists){confirmedRow={id:op.id,...existing.data()};return;}
             tx.set(ref,{...op.payload,timestamp:firebase.firestore.Timestamp.fromMillis(op.payload.clientTimeMs),
               createdAt:firebase.firestore.FieldValue.serverTimestamp(),updatedAt:firebase.firestore.FieldValue.serverTimestamp()});
+            confirmedRow={...op.payload,id:op.id,timestamp:firebase.firestore.Timestamp.fromMillis(op.payload.clientTimeMs)};
           }));
           writeVisitOutbox(readVisitOutbox().filter(x=>x.id!==op.id));
-          window.step94InvalidateAttendance?.();
+          if(confirmedRow)window.step95ApplyAttendanceMutation?.(null,confirmedRow);
+          if(typeof renderMainDataFromMemory==='function')renderMainDataFromMemory();
         }catch(error){
           window.step93RememberQuota?.(error);
           writeVisitOutbox(readVisitOutbox().map(x=>x.id===op.id?{...x,lastError:{code:String(error.code||'unknown'),message:String(error.message),atMs:Date.now()}}:x));
@@ -1309,6 +1313,18 @@
   function isCurrentMonth(dateStr){
     const now=new Date();
     return dateStr.startsWith(`${now.getFullYear()}-${pad2(now.getMonth()+1)}`);
+  }
+
+  function canMutateOwnCurrentMonthRecord(log){
+    if(!log||!currentUserName)return false;
+    const date=getLogDateTime(log);
+    return !!(log&&currentUserName&&getLogUserName(log)===currentUserName&&date&&
+      isCurrentMonth(formatDateKey(date))&&!isStartLog(log)&&!isEndLog(log));
+  }
+  function requireOwnCurrentMonthRecord(log){
+    if(canMutateOwnCurrentMonthRecord(log))return true;
+    alert("본인의 이번 달 활동·방문 기록만 수정·삭제할 수 있습니다. 이전 달 및 출근·퇴근 정정은 관리자에게 요청해주세요.");
+    return false;
   }
 
   function updateActivityAreaState(){
@@ -2584,7 +2600,7 @@
       try{removeVisitDraft(visitUser,formatDateKey(now));}catch(error){console.warn("제출한 임시 입력 정리 대기",error);}
       currentSession=null; etcText=""; resetSubActivitySelections(); saveSessionToStorage(); resetVisitCaseForm();
       updateActivityAreaState(); updateCurrentElapsedUi();
-      Promise.resolve(reloadMainData()).catch(error=>console.warn("방문 저장 후 조회 대기",error));
+      if(typeof renderMainDataFromMemory==='function')renderMainDataFromMemory();
       if(!options.silent) alert(visitOutboxStatus().some(x=>x.id===visitId)?"방문기록을 기기에 보관했습니다. 서버 저장 확인 전까지 자동 재전송합니다.":"방문(사례) 기록이 서버에 저장되었습니다.");
       return true;
     }catch(err){
@@ -2601,6 +2617,7 @@
   let editingLogId=null;
   window.openEditModal=function(id){
     const log=allLogs.find(l=>l.id===id); if(!log) return;
+    if(!requireOwnCurrentMonthRecord(log))return;
     editingLogId=id;
     const isAct=isActivityLog(log);
     const existing=getActivitiesFromLog(log);
@@ -2624,17 +2641,19 @@
   };
   window.deleteLog=async function(id){
     const record=allLogs.find(l=>l.id===id);
+    if(!requireOwnCurrentMonthRecord(record))return;
     if(!record||!isActivityLog(record)){
       alert("일과 시작·종료 기록은 관리자만 정정할 수 있습니다.");return;
     }
     if(!confirm("정말로 이 기록을 삭제하시겠습니까?")) return;
-    try{ await db.collection("attendanceLogs").doc(id).delete(); window.step94InvalidateAttendance?.(true); alert("기록이 삭제되었습니다."); await reloadMainData(); }
+    try{ await db.collection("attendanceLogs").doc(id).delete(); window.step95ApplyAttendanceMutation(record,null); alert("기록이 삭제되었습니다."); renderMainDataFromMemory(); }
     catch(err){ alert("삭제 중 오류가 발생했습니다."); }
   };
   function closeEditModal(){ editingLogId=null; el("edit-modal").classList.remove("show"); }
   async function saveEditModal(){
     if(!editingLogId) return;
     const log=allLogs.find(l=>l.id===editingLogId); if(!log) return;
+    if(!requireOwnCurrentMonthRecord(log))return;
     const memo=normalizeText(el("edit-memo-input").value);
     let updates={memo};
     if(isActivityLog(log)){
@@ -2644,7 +2663,7 @@
       const workHours=clampWorkHours(el("edit-work-hours-select").value);
       Object.assign(updates, buildWorkBreakFields(workHours));
     }
-    try{ await db.collection("attendanceLogs").doc(editingLogId).update(updates); window.step94InvalidateAttendance?.(true); alert("기록이 수정되었습니다."); closeEditModal(); await reloadMainData(); }
+    try{ await db.collection("attendanceLogs").doc(editingLogId).update(updates); window.step95ApplyAttendanceMutation(log,{...log,...updates}); alert("기록이 수정되었습니다."); closeEditModal(); renderMainDataFromMemory(); }
     catch(err){ alert("수정 중 오류가 발생했습니다."); }
   }
   el("close-edit-modal").addEventListener("click",closeEditModal);
@@ -2766,10 +2785,13 @@
     wrap.innerHTML=html;
   }
 
-  async function reloadMainData(){
-    await loadAttendanceLogs();
+  function renderMainDataFromMemory(){
     updateTodaySummary(); renderCalendar(); renderHistory();
     updateActivityAreaState(); updateBoundaryBtnState(); syncGpsCheckTimer();
+  }
+  async function reloadMainData(){
+    await loadAttendanceLogs();
+    renderMainDataFromMemory();
   }
 
   /* ── 초기화 ── */
@@ -3057,6 +3079,8 @@
     if(typeof window.openEditModal!=='function' || window.openEditModal.__step79) return;
     var original=window.openEditModal;
     var wrapped=function(id){
+      var requested=(allLogs||[]).find(function(l){return l.id===id;})||null;
+      if(!requireOwnCurrentMonthRecord(requested))return;
       restoreNormalMemo79();
       original(id);
       var log=null;
@@ -3077,6 +3101,8 @@
 
       e.preventDefault();
       e.stopImmediatePropagation();
+
+      if(!requireOwnCurrentMonthRecord(log))return;
 
       var checked=Array.from(document.querySelectorAll('#edit-checklist input:checked'))
         .map(function(cb){return n(cb.value)}).filter(Boolean);
@@ -3131,10 +3157,10 @@
 
       try{
         await db.collection('attendanceLogs').doc(editingLogId).update(updates);
-        window.step94InvalidateAttendance?.(true);
+        window.step95ApplyAttendanceMutation(log,{...log,...updates});
         alert('방문기록이 수정되었습니다.');
         if(typeof closeEditModal==='function') closeEditModal();
-        if(typeof reloadMainData==='function') await reloadMainData();
+        if(typeof renderMainDataFromMemory==='function') renderMainDataFromMemory();
       }catch(err){
         console.error('방문기록 수정 오류:',err);
         alert('수정 중 오류가 발생했습니다.');
@@ -3313,7 +3339,7 @@
     new Promise(r=>setTimeout(()=>r({ok:false,code:'timeout',message:'서버 응답을 아직 확인하지 못했습니다.',phase:'transaction'}),ms))
   ]);}
   function recordSyncResult(id,result){
-    if(result.ok){window.step94InvalidateAttendance?.();unqueue(id);saveSyncDiagnostic({state:'synced',id});return;}
+    if(result.ok){unqueue(id);saveSyncDiagnostic({state:'synced',id});return;}
     window.step93RememberQuota?.(result);
     const lastError={code:result.code,message:result.message,phase:result.phase,atMs:Date.now()};
     writePending(readPending().map(op=>op.id===id?{...op,lastError}:op));
@@ -3328,7 +3354,8 @@
     const ref=db.collection("attendanceLogs").doc(id);
     const data={...payload,timestamp:eventTimestamp(payload.clientTimeMs),syncedAt:firebase.firestore.FieldValue.serverTimestamp()};
     // Read before creating: concurrent devices and retries must preserve the first record.
-    return db.runTransaction(async tx=>{
+    let confirmedRow=null;
+    const result=await db.runTransaction(async tx=>{
       const correctionRef=db.collection("attendanceCorrections").doc(formatDateKey(payload.clientTimeMs)+"__"+keyPart(payload.userName));
       let correctionSnap;
       try{correctionSnap=await tx.get(correctionRef);}catch(e){e.boundaryPhase='attendanceCorrections 읽기';throw e;}
@@ -3337,8 +3364,12 @@
       try{existing=await tx.get(ref);}catch(e){e.boundaryPhase='attendanceLogs 읽기';throw e;}
       if(Number(payload.clientTimeMs)<=resetAt)return 'reset-discarded';
       if(!existing.exists)tx.set(ref,data);
+      confirmedRow={...(existing.exists?existing.data():data),id};
       return existing.exists?'existing':'created';
     });
+    if(result==='reset-discarded')window.step95ApplyAttendanceMutation?.({...payload,id},null);
+    else if(confirmedRow)window.step95ApplyAttendanceMutation?.(null,confirmedRow);
+    return result;
   }
   async function writeBoundary(id,payload){
     queue({id,payload,queuedAtMs:Date.now()});
@@ -3362,7 +3393,7 @@
         if(result.value!=='reset-discarded')markSynced(op.payload.clientTimeMs);changed=true;
       }
       if(changed){
-        try{await loadAttendanceLogs();syncLocalFromRemote();updateTodaySummary();renderCalendar();renderHistory();updateActivityAreaState();updateBoundaryBtnState();updateWorkTimerUi();updateCurrentElapsedUi();}catch(e){}
+        try{syncLocalFromRemote();updateTodaySummary();renderCalendar();renderHistory();updateActivityAreaState();updateBoundaryBtnState();updateWorkTimerUi();updateCurrentElapsedUi();}catch(e){}
       }
       return readPending().length===0;
     }finally{flushBusy=false;renderBoundarySync();}
@@ -3474,6 +3505,27 @@
 
   let attendanceLoadTask=null,attendanceLoadUser='',attendanceLoadScope='';
   const personalRangeCache=new Map();
+  window.step95ApplyAttendanceMutation=function(previous,next){
+    const row=next||previous;
+    if(!row||getLogUserName(row)!==currentUserName)return;
+    const id=row.id,user=currentUserName,date=formatDateKey(getLogDateTime(row));
+    const update=rows=>{
+      const out=rows.filter(x=>x.id!==id&&x.id!=='__local__'+id);
+      if(next)out.push(next);
+      return out.sort((a,b)=>(getLogDateTime(b)?.getTime()||0)-(getLogDateTime(a)?.getTime()||0));
+    };
+    allLogs=update(allLogs);
+    for(const [key,hit] of personalRangeCache){
+      if(key!==user+'|day:'+date&&key!==user+'|month:'+date.slice(0,7))continue;
+      hit.rows=update(hit.rows);
+      if(key.includes('|month:')){
+        try{localStorage.setItem('coordinator_history_cache_v1_'+encodeURIComponent(key),JSON.stringify(hit));}
+        catch(error){console.warn('변경 내역 캐시 저장 실패',error);}
+      }
+    }
+    const monthKey=user+'|month:'+date.slice(0,7);
+    if(!personalRangeCache.has(monthKey))localStorage.removeItem('coordinator_history_cache_v1_'+encodeURIComponent(monthKey));
+  };
   window.step94InvalidateAttendance=(full=false)=>{
     for(const key of personalRangeCache.keys())if(full||key.includes('|day:')){personalRangeCache.delete(key);if(full)localStorage.removeItem('coordinator_history_cache_v1_'+encodeURIComponent(key));}
   };
@@ -3653,8 +3705,8 @@
       status:payload.gpsStatus,usedCached:false,failureCode:payload.gpsFailureCode,failureReason:payload.gpsFailureReason,attemptedAt
     })).catch(()=>{});
     if(ok){
-      // Keep the optimistic row until the reload replaces it; avoid an empty-state gap.
-      try{await reloadMainData();}catch(e){console.warn("[step91] boundary reload deferred",e);}
+      // The committed transaction result already updated the local record store.
+      try{syncLocalFromRemote();renderMainDataFromMemory();}catch(e){console.warn("[step95] boundary render deferred",e);}
       if(!options.silent)window.step84Notify(type+"이 저장되었습니다.");
     }else if(!options.silent){
       const result=window.step92BoundarySyncDiagnostic().last;
