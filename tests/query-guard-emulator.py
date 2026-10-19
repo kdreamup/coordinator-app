@@ -104,5 +104,10 @@ expect(200, call('PATCH', '/attendanceLogs/outbox', {'fields': fixtures[0][1]}),
 expect(200, call('PATCH', '/settings/appUpdateConfig', {'fields': {'minVersionCode': {'integerValue': '63'}}}), 'update config write retained')
 expect(200, call('GET', '/settings/appUpdateConfig'), 'old-client update configuration read retained')
 expect(200, run_query(collection='settings'), 'other shared-project collection queries retained')
+doc_prefix = f'projects/{PROJECT}/databases/(default)/documents/'
+expect(200, call('POST', ':commit', {'writes': [
+    {'update': {'name': doc_prefix + 'attendanceLogs/manual-admin', 'fields': fixtures[0][1]}},
+    {'update': {'name': doc_prefix + 'attendanceRecordEdits/manual-audit', 'fields': {'recordId': {'stringValue': 'manual-admin'}}}},
+]}), 'read-free atomic administrator record and audit write allowed')
 expect(403, run_query(), 'legacy full scan still denied after successful writes')
 print('PASS: real local Firestore rules; legacy full scan denied; current queries, admin pagination and writes retained.')
