@@ -1086,7 +1086,20 @@ td{font-size:10px!important;padding:7px!important;line-height:1.35!important}
     if(state.all){
       const hit=logRangeCache.get('all');
       if(hit&&Date.now()-hit.at<300000)rows=hit.rows;
-      else{const snap=await db.collection('attendanceLogs').get();rows=snap.docs.map(d=>({id:d.id,...d.data()}));logRangeCache.set('all',{at:Date.now(),rows});}
+      else{
+        // Only the explicit all-period action reaches this path. Page by ID so
+        // legacy rows without a timestamp remain visible, without an unbounded get.
+        rows=[];let cursor=null;
+        while(true){
+          let query=db.collection('attendanceLogs').orderBy(firebase.firestore.FieldPath.documentId()).limit(500);
+          if(cursor)query=query.startAfter(cursor);
+          const snap=await query.get();
+          rows.push(...snap.docs.map(d=>({id:d.id,...d.data()})));
+          if(snap.docs.length<500)break;
+          cursor=snap.docs[snap.docs.length-1];
+        }
+        logRangeCache.set('all',{at:Date.now(),rows});
+      }
     }else rows=await readLogRange(norm(state.month)||monthKey(),true);
     rows.sort((a,b)=>(time(b)?.getTime()||0)-(time(a)?.getTime()||0));
     state.logs=rows;window.__step76AttendanceCache=rows;window.__step76AttendanceCacheAt=Date.now();
@@ -1680,7 +1693,11 @@ document.addEventListener("DOMContentLoaded",function(){
     if(!confirm(`${name} · ${dk}의 시작·종료 기록과 정정시간을 초기화할까요? 방문·활동 기록은 유지됩니다. 초기화 후 앱에서 다시 시작할 수 있습니다.`))return;
     const btn=document.getElementById('step90ResetBoundary');if(btn.disabled)return;btn.disabled=true;
     try{
-      const snap=await db.collection('attendanceLogs').where('userName','==',name).get({source:'server'});
+      const rangeStart=new Date(dk+'T00:00:00+09:00'),rangeEnd=new Date(rangeStart.getTime()+86400000);
+      const snap=await db.collection('attendanceLogs').where('userName','==',name)
+        .where('timestamp','>=',firebase.firestore.Timestamp.fromDate(rangeStart))
+        .where('timestamp','<',firebase.firestore.Timestamp.fromDate(rangeEnd))
+        .orderBy('timestamp','desc').get({source:'server'});
       const rows=snap.docs.filter(doc=>{const l=doc.data()||{};return dateKey(time(l))===dk&&(type(l)==='일과 시작'||type(l)==='일과 종료');});
       if(rows.length>450)throw new Error('기록이 너무 많아 별도 확인이 필요합니다.');
       const resetAtMs=Date.now(),batch=db.batch();
