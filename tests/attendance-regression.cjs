@@ -1,3 +1,4 @@
+for(const test of ['record-edit-access','mutation-read-cost']) require('node:child_process').execFileSync(process.execPath,['tests/'+test+'.cjs'],{stdio:'inherit'});
 const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
 const html=fs.readFileSync('index.html','utf8');
 const scripts=[...html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/g)];
@@ -23,6 +24,7 @@ const c={console,Date:TestDate,Promise,Map,Set,Number,String,JSON,encodeURICompo
  buildWorkBreakFields:h=>({workHours:h}),selectGpsForRecord:g=>({gps:g,status:'fresh'}),
  requestGpsOnce:()=>new Promise(r=>gpsResolve=r),lastGpsErrorCode:'',lastGpsErrorMessage:'',
  saveWorkBoundaryLog:noop,_doSaveWorkBoundaryLog:noop,renderHistory:noop,
+ renderMainDataFromMemory:()=>{},
  reloadMainData:async()=>{c.allLogs=[...records].map(([id,data])=>({id,...data}));},
  firebase:{firestore:{Timestamp:{fromMillis:ms=>({seconds:ms/1000})},FieldValue:{serverTimestamp:()=>0}}},
  db:{collection:name=>({get:async()=>({docs:[...records].map(([id,data])=>({id,data:()=>data}))}),doc:id=>({id,collection:name,get:async()=>({id,exists:corrections.has(id),data:()=>corrections.get(id)})}),where:(field,op,value)=>{const filters=[[field,op,value]];const query={where:(f,o,v)=>{filters.push([f,o,v]);return query;},orderBy:()=>query,get:async()=>({docs:[...records].filter(([id,data])=>filters.every(([f,o,v])=>o==='=='?data[f]===v:true)).map(([id,data])=>({id,data:()=>data}))})};return query;}}),

@@ -5,7 +5,7 @@ const mem=new Map(),records=new Map();let fail=true,ackLost=false,storageFail=fa
 const make=()=>{const c={setTimeout,clearTimeout,console,Math,Date,JSON,Promise,encodeURIComponent,currentUserName:'tester',navigator:{onLine:true},document:{visibilityState:'visible',addEventListener:()=>{}},setInterval:()=>0,
 localStorage:{getItem:k=>mem.get(k)||null,setItem:(k,v)=>{if(storageFail)throw Error('storage full');mem.set(k,v);}},
 firebase:{firestore:{Timestamp:{fromMillis:ms=>({ms})},FieldValue:{serverTimestamp:()=>0}}},
-db:{collection:()=>({doc:id=>({id})}),runTransaction:async fn=>{if(fail){const e=Error('Quota exceeded');e.code='resource-exhausted';throw e;}await fn({get:async ref=>{reads++;return {exists:records.has(ref.id)};},set:(ref,data)=>records.set(ref.id,data)});if(ackLost){ackLost=false;throw Error('acknowledgement lost');}}}};c.window=c;c.addEventListener=()=>{};c.step93RememberQuota=()=>{};vm.createContext(c);vm.runInContext(body,c);return c;};
+db:{collection:()=>({doc:id=>({id})}),runTransaction:async fn=>{if(fail){const e=Error('Quota exceeded');e.code='resource-exhausted';throw e;}await fn({get:async ref=>{reads++;return {exists:records.has(ref.id),data:()=>records.get(ref.id)};},set:(ref,data)=>records.set(ref.id,data)});if(ackLost){ackLost=false;throw Error('acknowledgement lost');}}}};c.window=c;c.addEventListener=()=>{};c.step93RememberQuota=()=>{};vm.createContext(c);vm.runInContext(body,c);return c;};
 (async()=>{let c=make();const original=1791349586870;
 c.queueVisitPayload({userName:'tester',clientTimeMs:original,visitSummary:'full memo',visitPurposes:['상담'],activityStartedAt:original-50000},'visit1');
 await c.flushVisitOutbox();assert.equal(c.visitOutboxStatus().length,1);
