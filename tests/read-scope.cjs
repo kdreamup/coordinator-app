@@ -27,6 +27,17 @@ c3.window=c3;vm.createContext(c3);vm.runInContext(loaderBody,c3);vm.runInContext
 const older=c3.loadAttendanceLogs();c3.calMonth=9;await c3.loadAttendanceLogs();releaseOld([{id:'september',clientTimeMs:Date.UTC(2026,8,1)}]);await older;
 assert.ok(requested.includes('2026-10'));assert.ok(c3.allLogs.some(x=>x.id==='october'));assert.ok(!c3.allLogs.some(x=>x.id==='september'));
 const admin=fs.readFileSync('public/admin_test.html','utf8'),subscriptions=[];
+// Execute the administrator's actual explicit all-period loader. It must page
+// without losing undated legacy rows, and reuse its completed cache.
+const adminAllFixtures=Array.from({length:1001},(_,i)=>({id:String(i).padStart(5,'0'),data:()=>({userName:'tester',clientTimeMs:i})}));
+let adminAllCalls=0;
+const allCtx={Date,Map,state:{all:true,registeredUsers:['tester']},window:{},time:l=>new Date(l.clientTimeMs),user:l=>l.userName,uniq:a=>[...new Set(a)],
+ firebase:{firestore:{FieldPath:{documentId:()=>'__name__'}}},logRangeCache:new Map(),
+ db:{collection:name=>{assert.equal(name,'attendanceLogs');let start=0,limit=0;const q={orderBy:field=>{assert.equal(field,'__name__');return q;},limit:n=>{assert.equal(n,500);limit=n;return q;},startAfter:doc=>{start=adminAllFixtures.indexOf(doc)+1;return q;},get:async()=>{adminAllCalls++;assert.equal(limit,500);return {docs:adminAllFixtures.slice(start,start+limit)};}};return q;}}};
+vm.createContext(allCtx);vm.runInContext(admin.slice(admin.indexOf('  async function loadLogs(){'),admin.indexOf('  async function loadTodayLogs(){')),allCtx);
+await allCtx.loadLogs();assert.equal(adminAllCalls,3);assert.equal(allCtx.state.logs.length,1001);assert.equal(new Set(allCtx.state.logs.map(r=>r.id)).size,1001);
+await allCtx.loadLogs();assert.equal(adminAllCalls,3);
+console.log('PASS: actual administrator all-period loader uses 500-row cursor pages, preserves 1001 legacy rows and reuses cache');
 const rangeBody=admin.slice(admin.indexOf('  const logRangeCache='),admin.indexOf('  async function loadLogs('));
 let adminReads=0,denyRange=false;const releaseRanges=[];
 const rc={Date,Map,Promise,firebase:{firestore:{Timestamp:{fromDate:d=>d}}},time:l=>new Date(l.clientTimeMs),
