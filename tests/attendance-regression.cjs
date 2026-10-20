@@ -1,4 +1,4 @@
-for(const test of ['record-edit-access','mutation-read-cost','admin-record-editor','admin-corrections']) require('node:child_process').execFileSync(process.execPath,['tests/'+test+'.cjs'],{stdio:'inherit'});
+for(const test of ['record-edit-access','mutation-read-cost','admin-record-editor','admin-corrections','admin-bounded-reads']) require('node:child_process').execFileSync(process.execPath,['tests/'+test+'.cjs'],{stdio:'inherit'});
 const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
 const html=fs.readFileSync('index.html','utf8');
 const scripts=[...html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/g)];
