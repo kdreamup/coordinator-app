@@ -1,0 +1,20 @@
+// Stops legacy unfiltered attendance collection scans. This is a query guard,
+// not user authentication. Existing document reads/writes remain compatible.
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /attendanceLogs/{record} {
+      allow get, create, update, delete: if true;
+      // Current apps query timestamp ranges. The administrator's explicit
+      // all-period view uses pages, including legacy rows without timestamps.
+      allow list: if (request.query.limit != null && request.query.limit <= 500)
+        || resource.data.timestamp >= timestamp.date(1, 1, 1)
+        || resource.data.visitDateTime >= timestamp.date(1, 1, 1);
+    }
+    // Preserve the published rules for other collections in the shared project.
+    // A recursive allow-all here would accidentally override the guard above.
+    match /{collection}/{document=**} {
+      allow read, write: if collection != 'attendanceLogs';
+    }
+  }
+}

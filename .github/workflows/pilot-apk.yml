@@ -1,0 +1,100 @@
+name: Build authorized single-user pilot APK
+
+on:
+  push:
+    branches: ['codex/verify-6-12-*']
+    paths: ['.github/workflows/pilot-apk.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  isolated-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify retention and read scope without production network
+        run: |
+          node tests/attendance-regression.cjs
+          node tests/admin-boundaries.cjs
+          node tests/visit-outbox.cjs
+          node tests/visit-save-flow.cjs
+          node tests/visit-drafts.cjs
+          node tests/read-scope.cjs
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+          log-accepted-android-sdk-licenses: false
+      - name: Bundle authorized live pilot for Lee Seunghyun
+        run: |
+          mkdir -p www
+          python3 - <<'PYCODE'
+          from pathlib import Path
+          import re
+          source=Path('index.html').read_text()
+          assert source==Path('public/index.html').read_text()
+          assert 'window.COORDINATOR_TEST_ENV=' not in source
+          assert 'projectId: "attendance-system-e2848"' in source
+          def replace_once(old,new):
+              global source
+              assert source.count(old)==1,old
+              source=source.replace(old,new,1)
+          replace_once('async function loadCoordinatorList(){', 'async function loadCoordinatorList(){\n    coordinatorNames=["이승현"];return;')
+          source,count=re.subn(r'const allNames = uniqueSorted\(\[\.\.\.coordinatorNames, \.\.\.(?:derivedFromLogs|deriveUsersFromLogs\(allLogs\))\]\);','const allNames = ["이승현"];',source)
+          assert count==3,count
+          replace_once('const finalUser = selectedLoginUser;', 'const finalUser = selectedLoginUser;\n    if(finalUser!=="이승현"){alert("이승현 전용 검증 앱입니다.");return;}')
+          replace_once('async function readPersonalMonth(user,key,daily=false){', 'async function readPersonalMonth(user,key,daily=false){\n    if(user!=="이승현")throw new Error("검증 사용자 불일치");')
+          replace_once('function queueVisitPayload(payload,id){', 'function queueVisitPayload(payload,id){\n    if(payload.userName!=="이승현")throw new Error("검증 사용자 불일치");')
+          replace_once('async function persistBoundary(id,payload){', 'async function persistBoundary(id,payload){\n    if(payload.userName!=="이승현")throw new Error("검증 사용자 불일치");')
+          replace_once('<body>', '<body><div style="background:#fff3cd;color:#513c00;padding:10px;text-align:center;font-weight:bold">이승현 검증용 · 기존 관리자에 기록이 저장됩니다</div>')
+          assert 'useEmulator(' not in source.replace("if(testEnvironment?.emulator) db.useEmulator(testEnvironment.emulator.host||'127.0.0.1',testEnvironment.emulator.port||8080);",'')
+          Path('www/index.html').write_text(source)
+          print('PASS live Firebase config, one-user login/read/write guards, separate pilot package')
+          PYCODE
+      - name: Create separate Android app
+        run: |
+          npm init -y
+          npm install --save-exact @capacitor/core@8.0.0 @capacitor/cli@8.0.0 @capacitor/android@8.0.0 @capacitor/geolocation@8.0.0
+          npx cap init "Coordinator Pilot" "kr.nonsan.coordinator.pilot" --web-dir www
+          npx cap add android
+          npx cap sync android
+      - name: Set SDK and debug version
+        run: |
+          sdkmanager 'platforms;android-36' 'build-tools;35.0.0'
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          p=Path('android/variables.gradle');s=p.read_text()
+          for key,value in [('minSdkVersion',24),('compileSdkVersion',36),('targetSdkVersion',36)]:
+              s=re.sub(rf'{key}\s*=\s*\d+',f'{key} = {value}',s)
+          p.write_text(s)
+          p=Path('android/app/build.gradle');s=p.read_text()
+          s=re.sub(r'versionCode\s+\d+','versionCode 64',s,count=1)
+          s=re.sub(r'versionName\s+"[^"]+"','versionName "6.12-pilot"',s,count=1)
+          p.write_text(s)
+          p=Path('android/app/src/main/AndroidManifest.xml');s=p.read_text()
+          permissions=['android.permission.ACCESS_FINE_LOCATION','android.permission.ACCESS_COARSE_LOCATION']
+          addition=''.join('\n    <uses-permission android:name="'+name+'" />' for name in permissions if name not in s)
+          s=re.sub(r'(<manifest[^>]*>)',lambda m:m.group(1)+addition,s,count=1)
+          p.write_text(s)
+          PY
+      - name: Build debug APK
+        working-directory: android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon
+          cp app/build/outputs/apk/debug/app-debug.apk app/build/outputs/apk/debug/coordinator-live-pilot.apk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: coordinator-6.12-live-pilot-only-apk
+          path: android/app/build/outputs/apk/debug/coordinator-live-pilot.apk
+          if-no-files-found: error

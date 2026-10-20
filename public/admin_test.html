@@ -924,7 +924,7 @@ td{font-size:10px!important;padding:7px!important;line-height:1.35!important}
 <main class="wrap">
 <section class="hero target-hero"><div class="hero-art"></div><h2>한눈에 보고 바로 관리하는 관리자 화면</h2><p>일과 시작부터 종료까지, 활동 기록과 미사용자를 한 화면에서 확인하고 월별 결과를 빠르게 정리합니다.</p></section>
 <section class="grid2">
-<div class="status red"><div class="status-head"><div><div class="st-title"><span class="status-title-icon red">⌁</span><span>앱 미사용자 확인</span></div><div class="st-sub" id="inactiveSub">조회 월 기준 미사용 또는 활동 없음 대상자</div></div><div class="countbox"><strong id="inactiveTotal">0</strong>명<span class="count-label">미사용자</span></div></div><div class="status-body"><div class="two-cols"><div class="mini-box red"><div class="mini-title">① 완전 미사용자 <span id="neverCnt">0</span>명</div><div class="chips" id="neverList"></div></div><div class="mini-box blue"><div class="mini-title">② 활동 없음 대상자 <span id="noActivityCnt">0</span>명</div><div class="chips" id="noActivityList"></div></div></div><div class="actions" style="margin-top:12px"><button class="btn b-soft" id="copyInactiveBtn">명단 복사</button><button class="btn b-ghost" id="excelInactiveBtn">미사용자 엑셀</button></div></div></div>
+<div class="status red"><div class="status-head"><div><div class="st-title"><span class="status-title-icon red">⌁</span><span>앱 미사용자 확인</span></div><div class="st-sub" id="inactiveSub">현재 조회 범위 기준 미사용 또는 활동 없음 대상자</div></div><div class="countbox"><strong id="inactiveTotal">0</strong>명<span class="count-label">미사용자</span></div></div><div class="status-body"><div class="two-cols"><div class="mini-box red"><div class="mini-title">① 완전 미사용자 <span id="neverCnt">0</span>명</div><div class="chips" id="neverList"></div></div><div class="mini-box blue"><div class="mini-title">② 활동 없음 대상자 <span id="noActivityCnt">0</span>명</div><div class="chips" id="noActivityList"></div></div></div><div class="actions" style="margin-top:12px"><button class="btn b-soft" id="copyInactiveBtn">명단 복사</button><button class="btn b-ghost" id="excelInactiveBtn">미사용자 엑셀</button></div></div></div>
 <div class="status green"><div class="status-head"><div><div class="st-title"><span class="status-title-icon green">●</span><span>오늘 근무·활동자</span></div><div class="st-sub" id="todayActiveSub">오늘 일과 시작 또는 활동 기록이 있는 사람</div></div><div class="countbox"><strong id="todayActiveCnt">0</strong>명<span class="count-label">근무·활동</span></div></div><div class="status-body"><div class="chips" id="todayActiveList"></div><div class="today-actions"><button class="btn missing-attendance-btn" id="missingStartBtn" type="button">출근 미확인 <strong id="missingStartCnt">0</strong>명 · 확인</button><button class="btn b-soft" id="copyTodayBtn">오늘 명단 복사</button></div></div></div>
 </section>
 <section class="summary">
@@ -977,7 +977,7 @@ td{font-size:10px!important;padding:7px!important;line-height:1.35!important}
   function dateKey(v){const d=kstDate(v);return d?`${d.getUTCFullYear()}-${pad(d.getUTCMonth()+1)}-${pad(d.getUTCDate())}`:''}
   function monthKey(v=new Date()){const d=kstDate(v)||kstDate(new Date());return `${d.getUTCFullYear()}-${pad(d.getUTCMonth()+1)}`}
   function fmtDT(v){const d=kstDate(v);return d?`${d.getUTCFullYear()}-${pad(d.getUTCMonth()+1)}-${pad(d.getUTCDate())}<br>${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}`:'-'}
-  function fmtDur(ms){ms=Number(ms)||0;if(ms<=0)return'0초';let s=Math.floor(ms/1000),h=Math.floor(s/3600),m=Math.floor((s%3600)/60); if(h&&m)return`${h}시간 ${m}분`; if(h)return`${h}시간`; if(m)return`${m}분`; return`${s%60}초`} function daysInMonth(y,mo){const days=[31,28,31,30,31,30,31,31,30,31,30,31];if(mo===2&&((y%4===0&&y%100!==0)||y%400===0))return 29;return days[mo-1]||31} function range(m){let [y,mo]=String(m||monthKey()).split('-').map(Number),last=daysInMonth(y,mo),s=new Date(y,mo-1,1,0,0,0,0),e=new Date(y,mo,1,0,0,0,0);return {s,e,sk:`${y}-${pad(mo)}-01`,ek:`${y}-${pad(mo)}-${pad(last)}`}} function syncMonthDateInputs(){let r=range(state.month),sd=$('startDate'),ed=$('endDate');if(sd){sd.value=r.sk;sd.defaultValue=r.sk}if(ed){ed.value=r.ek;ed.defaultValue=r.ek}return r}
+  function fmtDur(ms){ms=Number(ms)||0;if(ms<=0)return'0초';let s=Math.floor(ms/1000),h=Math.floor(s/3600),m=Math.floor((s%3600)/60); if(h&&m)return`${h}시간 ${m}분`; if(h)return`${h}시간`; if(m)return`${m}분`; return`${s%60}초`} function daysInMonth(y,mo){const days=[31,28,31,30,31,30,31,31,30,31,30,31];if(mo===2&&((y%4===0&&y%100!==0)||y%400===0))return 29;return days[mo-1]||31} function range(m){let [y,mo]=String(m||monthKey()).split('-').map(Number),last=daysInMonth(y,mo),s=new Date(y,mo-1,1,0,0,0,0),e=new Date(y,mo,1,0,0,0,0);return {s,e,sk:`${y}-${pad(mo)}-01`,ek:`${y}-${pad(mo)}-${pad(last)}`}} function syncMonthDateInputs(){let r=state.detailScope==='today'?{sk:dateKey(new Date()),ek:dateKey(new Date())}:range(state.month),sd=$('startDate'),ed=$('endDate');if(sd){sd.value=r.sk;sd.defaultValue=r.sk}if(ed){ed.value=r.ek;ed.defaultValue=r.ek}return r}
   function time(log){return toDate(log.visitDateTime)||toDate(log.timestamp)||toDate(log.clientTimeMs)||toDate(log.activitySavedAt)||null} function user(log){return norm(log.coordinatorName||log.userName||log.name||log.user)} function type(log){const t=norm(log.type); if(t==='일과 시작'||log.activities==='일과 시작')return '일과 시작'; if(t==='일과 종료'||log.activities==='일과 종료')return '일과 종료'; if(norm(log.recordType)==='visitCase'||t==='방문사례기록'||t==='방문(사례)기록')return '방문사례기록'; return '활동 기록'} function arr(v){if(Array.isArray(v))return v.map(norm).filter(Boolean); if(norm(v))return String(v).split(/[,/]/).map(x=>x.trim()).filter(Boolean); return []} function acts(log){let a=[]; a.push(...arr(log.activities),...arr(log.selectedActivities),...arr(log.visitPurposes),...arr(log.purposes),...arr(log.activityNames)); if(norm(log.activity))a.push(norm(log.activity)); if(norm(log.activitiesText))a.push(...arr(log.activitiesText)); return uniq(a)} function memo(log){
     const direct=norm(log.visitSummary||log.activityContent);
     if(direct)return direct.replace(/^활동\s*내용\s*:\s*/,'').trim();
@@ -1058,15 +1058,20 @@ td{font-size:10px!important;padding:7px!important;line-height:1.35!important}
   }
   function setToday(){let d=kstDate(new Date()),w='일월화수목금토'[d.getUTCDay()];$('todayText').innerHTML=`${d.getUTCFullYear()}년 ${d.getUTCMonth()+1}월 ${d.getUTCDate()}일 (${w})<br>오늘도 수고하십니다! 👋`} function toast(t){let e=$('toast');e.textContent=t;e.style.display='block';setTimeout(()=>e.style.display='none',1800)}
   async function loadSettings(){try{let u=await db.collection('settings').doc('userConfig').get();let ud=u.data()||{};state.registeredUsers=uniq([...(Array.isArray(ud.users)?ud.users:[]),...(Array.isArray(ud.coordinatorNames)?ud.coordinatorNames:[]),...(Array.isArray(ud.names)?ud.names:[])].map(v=>typeof v==='string'?v:v?.name||''));state.users=[...state.registeredUsers];let a=await db.collection('settings').doc('activityConfig').get();let ad=a.data()||{};state.activities=uniq([...(ad.activities||[]),...MAIN]).filter(x=>MAIN.includes(x));let vf=await db.collection('settings').doc('visitFieldConfig').get(); if(vf.exists)state.visitFields={...state.visitFields,...(vf.data()||{})};let si=await db.collection('settings').doc('subItemConfig').get(); if(si.exists)state.subItems={...state.subItems,...(si.data()||{})};}catch(e){console.error(e)}}
+  let monthPager;
   const logRangeCache=new Map();
+  const logRangeInFlight=new Map();
   function kstRange(key,monthly=false){
     const start=new Date(key+(monthly?'-01':'')+'T00:00:00+09:00');
     const end=monthly?new Date(Date.UTC(Number(key.slice(0,4)),Number(key.slice(5,7)),1)-9*3600000):new Date(start.getTime()+86400000);
     return {start,end};
   }
   async function readLogRange(key,monthly=false){
+    if(!monthly&&key===dateKey(new Date())&&window.step97ReadToday)return window.step97ReadToday(key);
     const cacheKey=(monthly?'month:':'day:')+key,hit=logRangeCache.get(cacheKey);
-    if(hit&&Date.now()-hit.at<120000)return hit.rows;
+    if(hit&&Date.now()-hit.at<(monthly?1800000:120000))return hit.rows;
+    if(logRangeInFlight.has(cacheKey))return logRangeInFlight.get(cacheKey);
+    const task=(async()=>{
     const range=kstRange(key,monthly),rows=new Map();
     const snaps=await Promise.all(['timestamp','visitDateTime'].map(field=>db.collection('attendanceLogs')
       .where(field,'>=',firebase.firestore.Timestamp.fromDate(range.start))
@@ -1074,27 +1079,46 @@ td{font-size:10px!important;padding:7px!important;line-height:1.35!important}
     snaps.forEach(snap=>snap.docs.forEach(doc=>rows.set(doc.id,{id:doc.id,...doc.data()})));
     const result=[...rows.values()].filter(l=>{const d=time(l);return d&&d>=range.start&&d<range.end;});
     logRangeCache.set(cacheKey,{at:Date.now(),rows:result});return result;
+    })();
+    logRangeInFlight.set(cacheKey,task);
+    try{return await task;}finally{logRangeInFlight.delete(cacheKey);}
   }
   async function loadLogs(){
+    const generation=state.loadGeneration;
     let rows;
     if(state.all){
       const hit=logRangeCache.get('all');
       if(hit&&Date.now()-hit.at<300000)rows=hit.rows;
-      else{const snap=await db.collection('attendanceLogs').get();rows=snap.docs.map(d=>({id:d.id,...d.data()}));logRangeCache.set('all',{at:Date.now(),rows});}
-    }else rows=await readLogRange(norm(state.month)||monthKey(),true);
+      else{
+        // Only the explicit all-period action reaches this path. Page by ID so
+        // legacy rows without a timestamp remain visible, without an unbounded get.
+        rows=[];let cursor=null;
+        while(true){
+          let query=db.collection('attendanceLogs').orderBy(firebase.firestore.FieldPath.documentId()).limit(500);
+          if(cursor)query=query.startAfter(cursor);
+          const snap=await query.get();
+          rows.push(...snap.docs.map(d=>({id:d.id,...d.data()})));
+          if(snap.docs.length<500)break;
+          cursor=snap.docs[snap.docs.length-1];
+        }
+        logRangeCache.set('all',{at:Date.now(),rows});
+      }
+    }else if(state.detailScope==='today')rows=await readLogRange(dateKey(new Date()));
+    else {const key=norm(state.month)||monthKey();const page=monthPager.has(key)?monthPager.snapshot(key):await monthPager.next(key);rows=page.rows;state.detailComplete=page.complete;}
     rows.sort((a,b)=>(time(b)?.getTime()||0)-(time(a)?.getTime()||0));
+    if(generation!==state.loadGeneration)return;
     state.logs=rows;window.__step76AttendanceCache=rows;window.__step76AttendanceCacheAt=Date.now();
     state.users=uniq([...state.registeredUsers,...rows.map(user)]);
   }
-  async function loadTodayLogs(){state.todayLogs=await readLogRange(dateKey(new Date()));}
+  async function loadTodayLogs(){const today=dateKey(new Date());state.todayLogs=state.detailScope==='month'&&state.detailComplete&&state.month===today.slice(0,7)?state.logs.filter(l=>dateKey(time(l))===today):await readLogRange(today);}
   function fillSelect(id,items,first){let e=$(id); if(!e)return; e.innerHTML=`<option value="">${first}</option>`+items.map(x=>`<option>${esc(x)}</option>`).join('')} function buildSelects(){const names=uniq([...(state.registeredUsers||[]),...(state.users||[]),...(Array.isArray(window.__step76AttendanceCache)?window.__step76AttendanceCache:[]).map(user)]);fillSelect('userFilter',names,'전체 사용자');fillSelect('activityFilter',state.activities,'전체 활동목적');fillSelect('housingFilter',state.visitFields.housingTypes||[],'전체');fillSelect('reasonFilter',state.visitFields.visitReasons||[],'전체')}
   function apply(){let sd=$('startDate').value,ed=$('endDate').value,u=$('userFilter').value,a=$('activityFilter').value,h=$('housingFilter').value,r=$('reasonFilter').value,t=$('typeFilter').value,k=norm($('keywordFilter').value),min=Number($('minDur').value||0),max=Number($('maxDur').value||0);state.filtered=state.logs.filter(l=>{let dk=dateKey(time(l)); if(sd&&dk<sd)return false;if(ed&&dk>ed)return false;if(u&&user(l)!==u)return false;if(a&&!acts(l).includes(a))return false;if(h&&housing(l)!==h)return false;if(r&&reason(l)!==r)return false;if(t&&type(l)!==t)return false;let dur=duration(l)/60000;if(min&&dur<min)return false;if(max&&dur>max)return false;if(k&&!JSON.stringify(l).includes(k))return false;return true}); state.page=1; renderAll()}
   function calcWork(logs){let by={};logs.forEach(l=>{let n=user(l); if(!n)return;(by[n]??=[]).push(l)});let total=0,per={};Object.entries(by).forEach(([n,ls])=>{ls.sort((a,b)=>(time(a)?.getTime()||0)-(time(b)?.getTime()||0));let start=null,sum=0;ls.forEach(l=>{if(type(l)==='일과 시작')start=time(l); if(type(l)==='일과 종료'&&start){let e=time(l); if(e&&e>start){sum+=e-start;start=null}}});per[n]=sum;total+=sum});return{total,per}}
-  function renderStatus(){let today=dateKey(new Date()),users=state.users,logs=state.logs,todayLogs=state.todayLogs||[],monthLabel=state.all?'전체 기간':state.month;let by=Object.fromEntries(users.map(u=>[u,logs.filter(l=>user(l)===u)]));let never=[],noact=[];users.forEach(n=>{let ls=by[n]||[];if(!ls.length)never.push(n);else if(!ls.some(l=>type(l)!=='일과 시작'&&type(l)!=='일과 종료'&&duration(l)>0))noact.push(n)});$('inactiveSub').textContent=`${monthLabel} 기준 · 등록 회원 ${users.length}명 중 미사용 또는 활동 없음 대상자`;$('inactiveTotal').textContent=never.length+noact.length;$('neverCnt').textContent=never.length;$('noActivityCnt').textContent=noact.length;$('neverList').innerHTML=never.length?never.slice(0,12).map(n=>`<span class="chip red">${esc(n)} · 기록 없음</span>`).join('')+(never.length>12?`<span class="chip red">+${never.length-12}명</span>`:''):'<div class="empty">없음</div>';$('noActivityList').innerHTML=noact.length?noact.slice(0,12).map(n=>`<span class="chip">${esc(n)} · 활동 없음</span>`).join('')+(noact.length>12?`<span class="chip">+${noact.length-12}명</span>`:''):'<div class="empty">없음</div>';
+  function renderStatus(){let today=dateKey(new Date()),users=state.users,logs=state.logs,todayLogs=state.todayLogs||[],monthLabel=state.detailScope==='today'?'오늘':state.all?'전체 기간':state.month;let by=Object.fromEntries(users.map(u=>[u,logs.filter(l=>user(l)===u)]));let never=[],noact=[];users.forEach(n=>{let ls=by[n]||[];if(!ls.length)never.push(n);else if(!ls.some(l=>type(l)!=='일과 시작'&&type(l)!=='일과 종료'&&duration(l)>0))noact.push(n)});$('inactiveSub').textContent=`${monthLabel} 기준 · 등록 회원 ${users.length}명 중 미사용 또는 활동 없음 대상자`;$('inactiveTotal').textContent=never.length+noact.length;$('neverCnt').textContent=never.length;$('noActivityCnt').textContent=noact.length;$('neverList').innerHTML=never.length?never.slice(0,12).map(n=>`<span class="chip red">${esc(n)} · 기록 없음</span>`).join('')+(never.length>12?`<span class="chip red">+${never.length-12}명</span>`:''):'<div class="empty">없음</div>';$('noActivityList').innerHTML=noact.length?noact.slice(0,12).map(n=>`<span class="chip">${esc(n)} · 활동 없음</span>`).join('')+(noact.length>12?`<span class="chip">+${noact.length-12}명</span>`:''):'<div class="empty">없음</div>';
 let todayUsers=uniq(todayLogs.filter(l=>type(l)==='일과 시작'||type(l)!=='일과 종료').map(user));$('todayActiveCnt').textContent=todayUsers.length;$('todayActiveSub').textContent=`${today} 기준 · 일과 시작 또는 활동기록이 있는 사람`;$('todayActiveList').innerHTML=todayUsers.length?(()=>{let visible=todayUsers.slice(0,9),hasMore=todayUsers.length>9;if(hasMore)visible=todayUsers.slice(0,8);let html=visible.map(n=>{let ls=todayLogs.filter(l=>user(l)===n);let st=ls.filter(l=>type(l)==='일과 시작').length,ac=ls.filter(l=>type(l)!=='일과 시작'&&type(l)!=='일과 종료').length;return`<span class="chip green">${esc(n)} · 시작 ${st} · 활동 ${ac}</span>`}).join('');if(hasMore)html+=`<span class="chip green more-chip">외 ${todayUsers.length-visible.length}명</span>`;return html})():'<div class="empty">오늘 기록자가 없습니다.</div>';
 let registered=(state.registeredUsers&&state.registeredUsers.length?state.registeredUsers:state.users),attendanceUsers=uniq(todayLogs.map(user).filter(Boolean)),attendanceSet=new Set(attendanceUsers),missing=registered.filter(n=>!attendanceSet.has(n)).map(n=>({name:n,status:'오늘 일과 시작·활동·종료 기록 없음',kind:'',label:'미확인'}));missing.sort((a,b)=>a.name.localeCompare(b.name,'ko'));
 let confirmed=registered.filter(n=>attendanceSet.has(n)).length;$('missingStartCnt').textContent=missing.length;$('missingStartBtn').classList.toggle('zero',missing.length===0);$('missingRegisteredCnt').textContent=registered.length;$('startConfirmedCnt').textContent=confirmed;$('missingModalCnt').textContent=missing.length;$('missingStartModalSub').textContent=`${today} 기준 · 등록 회원 ${registered.length}명 중 오늘 관련 기록이 전혀 없는 ${missing.length}명`;$('missingStartList').innerHTML=missing.length?missing.map(x=>`<div class="attendance-row"><div class="attendance-name">${esc(x.name)}</div><div class="attendance-state">${esc(x.status)}</div><span class="attendance-badge ${x.kind}">${esc(x.label)}</span></div>`).join(''):'<div class="empty">오늘 출근이 모두 확인되었습니다.</div>';window._inactive={never,noact};window._todayUsers=todayUsers;window._missingStart=missing;window._startConfirmed=attendanceUsers}
-  function renderSummary(){let today=dateKey(new Date()),flt=state.filtered,work=calcWork(state.logs),actMs=state.logs.filter(l=>type(l)!=='일과 시작'&&type(l)!=='일과 종료').reduce((s,l)=>s+duration(l),0);$('todayCnt').textContent=state.logs.filter(l=>dateKey(time(l))===today).length;$('workTime').textContent=fmtDur(work.total);$('activityTime').textContent=fmtDur(actMs);$('filteredUsers').textContent=uniq(flt.map(user)).length+'명';let counts={};flt.forEach(l=>acts(l).forEach(a=>counts[a]=(counts[a]||0)+1));let top=Object.entries(counts).sort((a,b)=>b[1]-a[1])[0];$('topActivity').textContent=top?top[0]:'-';$('topActivitySub').textContent=top?`${top[1]}건 포함됨`:'활동 포함 횟수';let topw=Object.entries(work.per).sort((a,b)=>b[1]-a[1])[0];$('topWorker').textContent=topw&&topw[1]?topw[0]:'-';$('topWorkerSub').textContent=topw&&topw[1]?fmtDur(topw[1]):'이번 달 근무 1위';}
+  function renderSummary(){let today=dateKey(new Date()),flt=state.filtered,work=calcWork(state.logs),actMs=state.logs.filter(l=>type(l)!=='일과 시작'&&type(l)!=='일과 종료').reduce((s,l)=>s+duration(l),0);$('todayCnt').textContent=(state.todayLogs||[]).filter(l=>dateKey(time(l))===today).length;$('workTime').textContent=fmtDur(work.total);$('activityTime').textContent=fmtDur(actMs);$('filteredUsers').textContent=uniq(flt.map(user)).length+'명';let counts={};flt.forEach(l=>acts(l).forEach(a=>counts[a]=(counts[a]||0)+1));let top=Object.entries(counts).sort((a,b)=>b[1]-a[1])[0];$('topActivity').textContent=top?top[0]:'-';$('topActivitySub').textContent=top?`${top[1]}건 포함됨`:'활동 포함 횟수';let topw=Object.entries(work.per).sort((a,b)=>b[1]-a[1])[0];$('topWorker').textContent=topw&&topw[1]?topw[0]:'-';$('topWorkerSub').textContent=topw&&topw[1]?fmtDur(topw[1]):'이번 달 근무 1위';}
   function renderFilters(){let chips=[]; if($('startDate').value||$('endDate').value)chips.push(`기간 ${$('startDate').value||'-'} ~ ${$('endDate').value||'-'}`);['userFilter','activityFilter','housingFilter','reasonFilter','typeFilter'].forEach(id=>{let v=$(id).value;if(v)chips.push(v)});let k=norm($('keywordFilter').value);if(k)chips.push('검색 '+k);$('filterChips').innerHTML=chips.length?chips.map(c=>`<span class="chip">${esc(c)}</span>`).join(''):`<span class="chip">${state.all?'전체 기간':'선택 월'} 데이터 기준</span>`}
 
   function purposeSubDetails(log){
@@ -1184,12 +1208,12 @@ let confirmed=registered.filter(n=>attendanceSet.has(n)).length;$('missingStartC
     // 관리설정 렌더링 오류가 상세내역 전체를 '데이터 로딩 오류'로 덮어쓰지 않게 분리
     try{renderManage()}catch(e){console.error('관리 설정 렌더링 오류',e)}
   } async function saveUsers(){let users=state.registeredUsers.length?state.registeredUsers:state.users;await db.collection('settings').doc('userConfig').set({users,coordinatorNames:users,updatedAt:firebase.firestore.FieldValue.serverTimestamp()},{merge:true})}
-  async function init(all=false){try{state.all=all; if(!state.month)state.month=monthKey();$('queryMonth').value=state.month;$('queryMonth').defaultValue=state.month;syncMonthDateInputs();$('monthBadge').textContent=state.all?'전체 기간 조회 중':`${state.month} 조회 중`;await loadSettings();await loadLogs();await loadTodayLogs();buildSelects();syncMonthDateInputs();state.filtered=[...state.logs];renderAll();toast('데이터를 불러왔습니다')}catch(e){console.error(e);$('tbody').innerHTML='<tr><td colspan="11"><div class="empty">데이터 로딩 오류가 발생했습니다. 콘솔을 확인해주세요.</div></td></tr>';toast('로딩 오류')}}
-  function exportRows(visitOnly=false){let base=state.filtered.filter(l=>type(l)!=='일과 시작'&&type(l)!=='일과 종료');if(visitOnly)base=base.filter(l=>type(l)==='방문사례기록');let rows=[];base.forEach(l=>{let al=acts(l);if(!al.length)al=[''];let g=gpsInfo(l),st=gpsStatusInfo(l),gpsText=g.lat!==null&&g.lng!==null?`${g.lat.toFixed(6)}, ${g.lng.toFixed(6)}`:(g.text||''),gpsState=g.lat!==null&&g.lng!==null?(st.status==='cached'?'최근 위치':'수집 완료'):(st.status==='failed'?'수집 실패':'미수집'),kakao=g.lat!==null&&g.lng!==null?`https://map.kakao.com/link/map/${encodeURIComponent(user(l)||'위치')},${g.lat.toFixed(6)},${g.lng.toFixed(6)}`:'';al.forEach(a=>rows.push({'일시':(fmtDT(time(l))||'').replace('<br>',' '),'사용자':user(l),'유형':type(l),'대상자':client(l),'상담형태':reason(l),'주거형태':housing(l),'활동목적':a,'활동내용':memo(l),'활동시간':fmtDur(duration(l)),'GPS':gpsText,'GPS상태':gpsState,'GPS실패사유':st.reason||(g.lat===null&&g.lng===null?'실패 사유 기록 없음':''),'카카오맵 링크':kakao}))});if(!rows.length)return alert('내보낼 데이터가 없습니다.');let ws=XLSX.utils.json_to_sheet(rows),wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,visitOnly?'방문기록':'전체기록');XLSX.writeFile(wb,`${visitOnly?'방문기록만':'전체기록'}_${state.all?'전체기간':state.month}.xlsx`)}
+  async function init(all=false,detailScope='month'){const generation=(state.loadGeneration||0)+1;state.loadGeneration=generation;try{state.all=all;state.detailScope=all?'all':detailScope;state.detailComplete=all||detailScope==='today'; if(!state.month)state.month=monthKey();$('queryMonth').value=state.month;$('queryMonth').defaultValue=state.month;syncMonthDateInputs();$('monthBadge').textContent=state.all?'전체 기간 조회 중':`${state.month} 조회 중`;await loadSettings();if(generation!==state.loadGeneration)return;await loadLogs();if(generation!==state.loadGeneration)return;await loadTodayLogs();if(generation!==state.loadGeneration)return;buildSelects();syncMonthDateInputs();state.filtered=[...state.logs];renderAll();toast('데이터를 불러왔습니다')}catch(e){console.error(e);$('tbody').innerHTML='<tr><td colspan="11"><div class="empty">데이터 로딩 오류가 발생했습니다. 콘솔을 확인해주세요.</div></td></tr>';toast('로딩 오류')}}
+  function exportRows(visitOnly=false){let base=state.filtered.filter(l=>type(l)!=='일과 시작'&&type(l)!=='일과 종료');if(visitOnly)base=base.filter(l=>type(l)==='방문사례기록');let rows=[];base.forEach(l=>{let al=acts(l);if(!al.length)al=[''];let g=gpsInfo(l),st=gpsStatusInfo(l),gpsText=g.lat!==null&&g.lng!==null?`${g.lat.toFixed(6)}, ${g.lng.toFixed(6)}`:(g.text||''),gpsState=g.lat!==null&&g.lng!==null?(st.status==='cached'?'최근 위치':'수집 완료'):(st.status==='failed'?'수집 실패':'미수집'),kakao=g.lat!==null&&g.lng!==null?`https://map.kakao.com/link/map/${encodeURIComponent(user(l)||'위치')},${g.lat.toFixed(6)},${g.lng.toFixed(6)}`:'';al.forEach(a=>rows.push({'일시':(fmtDT(time(l))||'').replace('<br>',' '),'사용자':user(l),'유형':type(l),'대상자':client(l),'상담형태':reason(l),'주거형태':housing(l),'활동목적':a,'활동내용':memo(l),'활동시간':fmtDur(duration(l)),'GPS':gpsText,'GPS상태':gpsState,'GPS실패사유':st.reason||(g.lat===null&&g.lng===null?'실패 사유 기록 없음':''),'카카오맵 링크':kakao}))});if(!rows.length)return alert('내보낼 데이터가 없습니다.');let ws=XLSX.utils.json_to_sheet(rows),wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,visitOnly?'방문기록':'전체기록');XLSX.writeFile(wb,`${visitOnly?'방문기록만':'전체기록'}_${state.detailScope==='today'?dateKey(new Date()):state.all?'전체기간':state.month}.xlsx`)}
   function setMissingStartModal(open){let m=$('missingStartModal');if(!m)return;m.classList.toggle('open',!!open);m.setAttribute('aria-hidden',open?'false':'true');document.body.style.overflow=open?'hidden':''}
   function copyMissingStart(){let names=(window._missingStart||[]).map(x=>x.name);if(!names.length)return toast('출근 미확인 대상자가 없습니다');let text=names.join('\n');if(navigator.clipboard?.writeText)navigator.clipboard.writeText(text).then(()=>toast('미확인 명단을 복사했습니다')).catch(()=>fallbackCopy(text));else fallbackCopy(text)}
   function fallbackCopy(text){let ta=document.createElement('textarea');ta.value=text;ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.select();try{document.execCommand('copy');toast('미확인 명단을 복사했습니다')}catch(e){alert(text)}ta.remove()}
-  document.addEventListener('DOMContentLoaded',()=>{setToday();state.month=monthKey();$('reloadBtn').onclick=()=>init(state.all);$('loadMonth').onclick=()=>{state.month=$('queryMonth').value||monthKey();state.all=false;init(false)};$('loadAll').onclick=()=>{if(confirm('전체 기간은 느릴 수 있습니다. 불러올까요?'))init(true)};$('prevMonth').onclick=()=>{let d=range(state.month).s;d.setMonth(d.getMonth()-1);state.month=monthKey(d);init(false)};$('nextMonth').onclick=()=>{let d=range(state.month).s;d.setMonth(d.getMonth()+1);state.month=monthKey(d);init(false)};$('applyBtn').onclick=apply;$('resetBtn').onclick=$('clearBtn').onclick=()=>{['userFilter','activityFilter','housingFilter','reasonFilter','typeFilter','keywordFilter','minDur','maxDur'].forEach(id=>$(id).value='');syncMonthDateInputs();apply()};document.querySelectorAll('[data-range]').forEach(b=>b.onclick=()=>{let d=new Date(),r;if(b.dataset.range==='today'){let k=dateKey(d);$('startDate').value=k;$('endDate').value=k}else if(b.dataset.range==='week'){let s=new Date(d-6*86400000);$('startDate').value=dateKey(s);$('endDate').value=dateKey(d)}else if(b.dataset.range==='month'){syncMonthDateInputs()}else{$('startDate').value='';$('endDate').value=''}apply()});['userFilter','activityFilter','housingFilter','reasonFilter','typeFilter','pageSize'].forEach(id=>$(id).addEventListener('change',apply));$('keywordFilter').addEventListener('keydown',e=>{if(e.key==='Enter')apply()});$('prevPage').onclick=()=>{if(state.page>1){state.page--;renderTable()}};$('nextPage').onclick=()=>{let ps=Number($('pageSize').value||50),pages=Math.max(1,Math.ceil(state.filtered.length/ps));if(state.page<pages){state.page++;renderTable()}};$('excelAllBtn').onclick=()=>exportRows(false);$('excelVisitBtn').onclick=()=>exportRows(true);$('copyInactiveBtn').onclick=()=>navigator.clipboard?.writeText([...(window._inactive?.never||[]),...(window._inactive?.noact||[])].join('\n')).then(()=>toast('복사했습니다'));$('copyTodayBtn').onclick=()=>navigator.clipboard?.writeText((window._todayUsers||[]).join('\n')).then(()=>toast('복사했습니다'));$('missingStartBtn').onclick=()=>setMissingStartModal(true);$('missingStartCloseX').onclick=$('missingStartCloseBtn').onclick=()=>setMissingStartModal(false);$('copyMissingStartBtn').onclick=copyMissingStart;$('missingStartModal').addEventListener('click',e=>{if(e.target===$('missingStartModal'))setMissingStartModal(false)});document.addEventListener('keydown',e=>{if(e.key==='Escape'&&$('missingStartModal')?.classList.contains('open'))setMissingStartModal(false)});$('excelInactiveBtn').onclick=()=>{let rows=[...(window._inactive?.never||[]).map(n=>({구분:'완전 미사용자',이름:n})),...(window._inactive?.noact||[]).map(n=>({구분:'활동 없음 대상자',이름:n}))];if(!rows.length)return alert('대상이 없습니다.');let ws=XLSX.utils.json_to_sheet(rows),wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'미사용자');XLSX.writeFile(wb,`미사용자_${state.month}.xlsx`)};document.querySelectorAll('[data-open]').forEach(a=>a.onclick=()=>{let key=a.dataset.open;$('manageDetails').open=true;setTimeout(()=>$(key+'Panel')?.scrollIntoView({behavior:'smooth',block:'center'}),80)});$('addMember').onclick=async()=>{let n=norm($('memberInput').value);if(!n)return alert('이름 입력');if(state.users.includes(n))return alert('이미 있음');state.registeredUsers=uniq([...state.registeredUsers,n]);state.users=uniq([...state.users,n]);await saveUsers();$('memberInput').value='';buildSelects();renderManage();toast('추가했습니다')};$('addPurpose').onclick=()=>alert('활동목적은 현재 7개 목적 기준으로 고정하는 방향이 안전합니다.');init(false)});
+  document.addEventListener('DOMContentLoaded',()=>{setToday();state.month=monthKey();$('reloadBtn').onclick=()=>init(state.all,state.detailScope);$('loadMonth').onclick=()=>{state.month=$('queryMonth').value||monthKey();state.all=false;init(false)};$('loadAll').onclick=()=>{if(confirm('전체 기간은 느릴 수 있습니다. 불러올까요?'))init(true)};$('prevMonth').onclick=()=>{let d=range(state.month).s;d.setMonth(d.getMonth()-1);state.month=monthKey(d);init(false)};$('nextMonth').onclick=()=>{let d=range(state.month).s;d.setMonth(d.getMonth()+1);state.month=monthKey(d);init(false)};$('applyBtn').onclick=apply;$('resetBtn').onclick=$('clearBtn').onclick=()=>{['userFilter','activityFilter','housingFilter','reasonFilter','typeFilter','keywordFilter','minDur','maxDur'].forEach(id=>$(id).value='');syncMonthDateInputs();apply()};document.querySelectorAll('[data-range]').forEach(b=>b.onclick=()=>{let d=new Date(),r;if(b.dataset.range==='today'){let k=dateKey(d);$('startDate').value=k;$('endDate').value=k}else if(b.dataset.range==='week'){let s=new Date(d-6*86400000);$('startDate').value=dateKey(s);$('endDate').value=dateKey(d)}else if(b.dataset.range==='month'){syncMonthDateInputs()}else{$('startDate').value='';$('endDate').value=''}apply()});['userFilter','activityFilter','housingFilter','reasonFilter','typeFilter','pageSize'].forEach(id=>$(id).addEventListener('change',apply));$('keywordFilter').addEventListener('keydown',e=>{if(e.key==='Enter')apply()});$('prevPage').onclick=()=>{if(state.page>1){state.page--;renderTable()}};$('nextPage').onclick=()=>{let ps=Number($('pageSize').value||50),pages=Math.max(1,Math.ceil(state.filtered.length/ps));if(state.page<pages){state.page++;renderTable()}};$('excelAllBtn').onclick=()=>exportRows(false);$('excelVisitBtn').onclick=()=>exportRows(true);$('copyInactiveBtn').onclick=()=>navigator.clipboard?.writeText([...(window._inactive?.never||[]),...(window._inactive?.noact||[])].join('\n')).then(()=>toast('복사했습니다'));$('copyTodayBtn').onclick=()=>navigator.clipboard?.writeText((window._todayUsers||[]).join('\n')).then(()=>toast('복사했습니다'));$('missingStartBtn').onclick=()=>setMissingStartModal(true);$('missingStartCloseX').onclick=$('missingStartCloseBtn').onclick=()=>setMissingStartModal(false);$('copyMissingStartBtn').onclick=copyMissingStart;$('missingStartModal').addEventListener('click',e=>{if(e.target===$('missingStartModal'))setMissingStartModal(false)});document.addEventListener('keydown',e=>{if(e.key==='Escape'&&$('missingStartModal')?.classList.contains('open'))setMissingStartModal(false)});$('excelInactiveBtn').onclick=()=>{let rows=[...(window._inactive?.never||[]).map(n=>({구분:'완전 미사용자',이름:n})),...(window._inactive?.noact||[]).map(n=>({구분:'활동 없음 대상자',이름:n}))];if(!rows.length)return alert('대상이 없습니다.');let ws=XLSX.utils.json_to_sheet(rows),wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'미사용자');XLSX.writeFile(wb,`미사용자_${state.month}.xlsx`)};document.querySelectorAll('[data-open]').forEach(a=>a.onclick=()=>{let key=a.dataset.open;$('manageDetails').open=true;setTimeout(()=>$(key+'Panel')?.scrollIntoView({behavior:'smooth',block:'center'}),80)});$('addMember').onclick=async()=>{let n=norm($('memberInput').value);if(!n)return alert('이름 입력');if(state.users.includes(n))return alert('이미 있음');state.registeredUsers=uniq([...state.registeredUsers,n]);state.users=uniq([...state.users,n]);await saveUsers();$('memberInput').value='';buildSelects();renderManage();toast('추가했습니다')};$('addPurpose').onclick=()=>alert('활동목적은 현재 7개 목적 기준으로 고정하는 방향이 안전합니다.');init(false,'today')});
   </script>
 
 <!-- step69-admin-gps-readability: GPS 실패 표시 간결화 / GPS 열 8% -->
@@ -1440,7 +1464,8 @@ let confirmed=registered.filter(n=>attendanceSet.has(n)).length;$('missingStartC
       window.__step76AttendanceCache=null;
       window.__step76AttendanceCacheAt=0;
       state.page=1;
-      init(state.all);
+      if(state.detailScope==='month')monthPager.reset(state.month);
+      init(state.all,state.detailScope);
     };
   }
 
@@ -1659,12 +1684,37 @@ document.addEventListener("DOMContentLoaded",function(){
 
   function renderCorrHistory(c){const box=document.getElementById('step87CorrHistory');if(!box)return;const h=Array.isArray(c?.history)?[...c.history].slice(-8).reverse():[];box.innerHTML='<b>정정 이력</b>'+(h.length?h.map(x=>`<div class="step87-history-row">${esc(kstLocale(Number(x.changedAtMs)||0))} · ${esc(x.by||'관리자')} · ${esc(x.reason||'-')} · 시작 ${esc(x.startMs?clock(x.startMs):'-')} / 종료 ${esc(x.endMs?clock(x.endMs):'-')}</div>`).join(''):'<div class="step87-history-row">정정 이력이 없습니다.</div>');}
   async function openCorrection(name,dk){
+    // Use already-loaded data: opening an emergency correction must not require a read.
+    const id=corrId(name,dk);
+    let status=document.getElementById('step96CorrectionStatus');
+    if(!status){status=document.createElement('div');status.id='step96CorrectionStatus';status.className='step87-note';document.getElementById('step87CorrHistory').before(status);}
+    status.textContent='현재 화면에 불러온 자료를 기준으로 표시합니다. 저장하면 입력한 확정시간으로 정정됩니다.';
     const b=effectiveBoundary(name,dk),c=b.correction||{};document.getElementById('step87CorrUser').value=name;document.getElementById('step87CorrDate').value=dk;document.getElementById('step87OrigStart').value=b.original.startMs?kstLocale(b.original.startMs):'기록 없음';document.getElementById('step87OrigEnd').value=b.original.endMs?kstLocale(b.original.endMs):'기록 없음';document.getElementById('step87CorrStart').value=dtLocal(ms(c.correctedStartMs)||b.original.startMs);document.getElementById('step87CorrEnd').value=dtLocal(ms(c.correctedEndMs)||b.original.endMs);document.getElementById('step87CorrReason').value=n(c.correctionReason);document.getElementById('step87CorrBy').value=n(c.updatedBy)||'관리자';document.getElementById('step87CorrNote').value=n(c.correctionNote);renderCorrHistory(c);document.getElementById('step87CorrectionModal').classList.add('open');
   }
   function closeCorrection(){document.getElementById('step87CorrectionModal')?.classList.remove('open');}
+  let correctionSaving=false;
   async function saveCorrection(){
-    const name=n(document.getElementById('step87CorrUser').value),dk=n(document.getElementById('step87CorrDate').value),reason=n(document.getElementById('step87CorrReason').value),by=n(document.getElementById('step87CorrBy').value)||'관리자',note=n(document.getElementById('step87CorrNote').value),start=fromDtLocal(document.getElementById('step87CorrStart').value),end=fromDtLocal(document.getElementById('step87CorrEnd').value);if(!name||!dk)return;if(!reason)return alert('정정 사유를 선택해주세요.');if(start&&end&&end<=start)return alert('종료시간은 시작시간보다 늦어야 합니다.');const id=corrId(name,dk),old=s87.corrections[id]||{},orig=originalBoundary(name,dk);const history=Array.isArray(old.history)?old.history.slice(-49):[];history.push({changedAtMs:Date.now(),by,reason,note,startMs:start,endMs:end,previousStartMs:ms(old.correctedStartMs),previousEndMs:ms(old.correctedEndMs)});const data={userName:name,dateKey:dk,originalStartMs:ms(old.originalStartMs)||orig.startMs||null,originalEndMs:ms(old.originalEndMs)||orig.endMs||null,correctedStartMs:start,correctedEndMs:end,correctionReason:reason,correctionNote:note,updatedBy:by,updatedAtMs:Date.now(),updatedAt:firebase.firestore.FieldValue.serverTimestamp(),history};await db.collection(CORRECTIONS).doc(id).set(data,{merge:true});closeCorrection();toast('근무시간 정정을 저장했습니다');
+    if(correctionSaving)return;
+    const name=n(document.getElementById('step87CorrUser').value),dk=n(document.getElementById('step87CorrDate').value),reason=n(document.getElementById('step87CorrReason').value),by=n(document.getElementById('step87CorrBy').value),note=n(document.getElementById('step87CorrNote').value),start=fromDtLocal(document.getElementById('step87CorrStart').value),end=fromDtLocal(document.getElementById('step87CorrEnd').value);
+    if(!name||!dk)return;
+    if(!reason||!by)return alert('정정 사유와 정정자를 입력해주세요.');
+    if(!start&&!end)return alert('확정 시작 또는 종료시간을 입력해주세요.');
+    if(start&&end&&end<=start)return alert('종료시간은 시작시간보다 늦어야 합니다.');
+    const id=corrId(name,dk),old=s87.corrections[id]||{},entry={changedAtMs:Date.now(),by,reason,note,startMs:start,endMs:end};
+    const data={userName:name,dateKey:dk,correctedStartMs:start,correctedEndMs:end,correctionReason:reason,correctionNote:note,updatedBy:by,updatedAtMs:entry.changedAtMs,updatedAt:firebase.firestore.FieldValue.serverTimestamp(),history:firebase.firestore.FieldValue.arrayUnion(entry)};
+    correctionSaving=true;const button=document.getElementById('step87CorrSave');button.disabled=true;
+    try{
+      // Merge + arrayUnion preserves original timestamps and the server's audit
+      // history even when the read quota prevents loading that history first.
+      await db.collection(CORRECTIONS).doc(id).set(data,{merge:true});
+      s87.corrections[id]={...old,...data,id,history:[...(Array.isArray(old.history)?old.history:[]),entry]};
+      closeCorrection();toast('근무시간 정정을 서버에 저장했습니다');
+      try{renderLive();renderSummary();renderTable();}catch(e){console.error('근무시간 저장 후 화면 갱신 오류',e);}
+    }catch(e){console.error(e);alert('근무시간 서버 저장 실패 ('+(e.code||'오류')+'). 입력 내용은 유지됩니다.');}
+    finally{correctionSaving=false;button.disabled=false;}
   }
+  window.step96OpenCorrection=openCorrection;
+  window.step96RenderLive=renderLive;
 
   async function resetWorkBoundaries(){
     const name=n(document.getElementById('step87CorrUser').value),dk=n(document.getElementById('step87CorrDate').value);
@@ -1672,7 +1722,11 @@ document.addEventListener("DOMContentLoaded",function(){
     if(!confirm(`${name} · ${dk}의 시작·종료 기록과 정정시간을 초기화할까요? 방문·활동 기록은 유지됩니다. 초기화 후 앱에서 다시 시작할 수 있습니다.`))return;
     const btn=document.getElementById('step90ResetBoundary');if(btn.disabled)return;btn.disabled=true;
     try{
-      const snap=await db.collection('attendanceLogs').where('userName','==',name).get({source:'server'});
+      const rangeStart=new Date(dk+'T00:00:00+09:00'),rangeEnd=new Date(rangeStart.getTime()+86400000);
+      const snap=await db.collection('attendanceLogs').where('userName','==',name)
+        .where('timestamp','>=',firebase.firestore.Timestamp.fromDate(rangeStart))
+        .where('timestamp','<',firebase.firestore.Timestamp.fromDate(rangeEnd))
+        .orderBy('timestamp','desc').get({source:'server'});
       const rows=snap.docs.filter(doc=>{const l=doc.data()||{};return dateKey(time(l))===dk&&(type(l)==='일과 시작'||type(l)==='일과 종료');});
       if(rows.length>450)throw new Error('기록이 너무 많아 별도 확인이 필요합니다.');
       const resetAtMs=Date.now(),batch=db.batch();
@@ -1713,18 +1767,48 @@ document.addEventListener("DOMContentLoaded",function(){
   }
 
   function mapSnap(snap){const out={};snap.forEach(doc=>out[doc.id]={id:doc.id,...(doc.data()||{})});return out;}
-  async function loadCollectionsOnce(){const [a,b,c]=await Promise.all([db.collection(SCHEDULES).get(),db.collection(EXCEPTIONS).get(),db.collection(CORRECTIONS).get()]);s87.schedules=mapSnap(a);s87.exceptions=mapSnap(b);s87.corrections=mapSnap(c);s87.ready=true;renderScheduleLists();renderLive();renderSummary();renderTable();}
+  function managementQueries(collection){
+    if(state.all)return [db.collection(collection)];
+    if(state.detailScope==='today')return [db.collection(collection).where('dateKey','==',dateKey(new Date()))];
+    const month=state.month||monthKey(),today=dateKey(new Date());
+    const [year,number]=month.split('-').map(Number);
+    const next=number===12?`${year+1}-01`:`${year}-${String(number+1).padStart(2,'0')}`;
+    const queries=[db.collection(collection).where('dateKey','>=',month+'-01').where('dateKey','<',next+'-01')];
+    if(!today.startsWith(month+'-'))queries.push(db.collection(collection).where('dateKey','==',today));
+    return queries;
+  }
+  async function readManagementScope(collection){
+    const snapshots=await Promise.all(managementQueries(collection).map(query=>query.get()));
+    return Object.assign({},...snapshots.map(mapSnap));
+  }
+  function refreshManagementRealtime(){
+    (s87.scopeUnsubs||[]).forEach(fn=>fn());s87.scopeUnsubs=[];
+    const generation=(s87.scopeGeneration||0)+1;s87.scopeGeneration=generation;
+    for(const [collection,key] of [[EXCEPTIONS,'exceptions'],[CORRECTIONS,'corrections']]){
+      const queries=managementQueries(collection),parts=queries.map(()=>({}));
+      s87[key]={};
+      queries.forEach((query,index)=>s87.scopeUnsubs.push(query.onSnapshot(snap=>{
+        if(generation!==s87.scopeGeneration)return;
+        parts[index]=mapSnap(snap);s87[key]=Object.assign({},...parts);
+        renderScheduleLists();renderLive();renderSummary();renderTable();
+      },error=>{console.error('관리 범위 조회 실패',error);toast('관리 범위 조회 오류: '+error.code);})));
+    }
+  }
+  const baseManagementInit=init;
+  init=async function(...args){await baseManagementInit(...args);if(s87.ready)refreshManagementRealtime();};
+  async function loadCollectionsOnce(){const [a,b,c]=await Promise.all([db.collection(SCHEDULES).get(),readManagementScope(EXCEPTIONS),readManagementScope(CORRECTIONS)]);s87.schedules=mapSnap(a);s87.exceptions=b;s87.corrections=c;s87.ready=true;renderScheduleLists();renderLive();renderSummary();renderTable();}
   function startRealtime(){
     s87.unsubs.forEach(fn=>{try{fn();}catch(e){}});s87.unsubs=[];
     s87.unsubs.push(db.collection(SCHEDULES).onSnapshot(s=>{s87.schedules=mapSnap(s);renderScheduleLists();loadScheduleForm();renderLive();}));
-    s87.unsubs.push(db.collection(EXCEPTIONS).onSnapshot(s=>{s87.exceptions=mapSnap(s);renderScheduleLists();renderLive();}));
-    s87.unsubs.push(db.collection(CORRECTIONS).onSnapshot(s=>{s87.corrections=mapSnap(s);renderLive();renderSummary();renderTable();}));
+    refreshManagementRealtime();
     const today=dateKey(new Date()),range=kstRange(today);
-    const todayQuery=db.collection('attendanceLogs').where('timestamp','>=',firebase.firestore.Timestamp.fromDate(range.start)).where('timestamp','<',firebase.firestore.Timestamp.fromDate(range.end));
-    s87.unsubs.push(todayQuery.onSnapshot(s=>{
+    s87.unsubs.push(window.step97SubscribeToday(s=>{
       const rows=s.docs.map(d=>({id:d.id,...d.data()})).filter(l=>dateKey(time(l))===today);
-      state.todayLogs=rows;logRangeCache.delete('day:'+today);logRangeCache.delete('month:'+today.slice(0,7));logRangeCache.delete('all');
-      if(state.all||state.month===today.slice(0,7)){
+      state.todayLogs=rows;logRangeCache.set('day:'+today,{at:Date.now(),rows});
+      for(const key of ['month:'+today.slice(0,7),'all']){
+        const cached=logRangeCache.get(key);if(cached)cached.rows=[...cached.rows.filter(l=>dateKey(time(l))!==today),...rows];
+      }
+      if(state.detailScope==='today'||state.all||(state.detailComplete&&state.month===today.slice(0,7))){
         state.logs=[...state.logs.filter(l=>dateKey(time(l))!==today),...rows];
         state.logs.sort((a,b)=>(time(b)?.getTime()||0)-(time(a)?.getTime()||0));
         window.__step76AttendanceCache=state.logs;
@@ -1734,10 +1818,276 @@ document.addEventListener("DOMContentLoaded",function(){
     },error=>{console.error('[step93] today subscription stopped',error);toast('실시간 조회 오류: '+error.code+' · 기존 화면을 유지합니다');}));
   }
 
-  document.addEventListener('DOMContentLoaded',()=>{ensureUi();setTimeout(()=>{loadCollectionsOnce().then(startRealtime).catch(e=>{console.error('[step87] init failed',e);});},300);setInterval(renderLive,30000);});
+  document.addEventListener('DOMContentLoaded',()=>{ensureUi();setTimeout(()=>{Promise.resolve().then(()=>{s87.ready=true;startRealtime();}).catch(e=>{console.error('[step87] init failed',e);});},300);setInterval(renderLive,30000);});
 })();
 </script>
 <!-- step87-attendance-management -->
 <!-- step87b-kst-time-fix: admin display/schedule/correction fixed to Asia/Seoul -->
+
+<script id="step96-admin-record-editor">
+// Embedded into admin_test.html. No production reads are needed to submit.
+(function(){
+  const DRAFT='coordinator_admin_record_draft_v1';
+  let editing=null,busy=false;
+  const fields=[['userName','선생님 이름','text'],['when','기록 일시 (한국시간)','datetime-local'],
+    ['durationMinutes','활동시간(분)','number'],['workHours','예정 근무시간','number'],
+    ['clientName','대상자명 / 경로당','text'],['gender','성별','text'],['birthYear','출생연도','number'],['age','나이','number'],
+    ['housingType','주거 형태','text'],['housingEtc','주거 형태 기타','text'],['visitReason','상담 형태','text'],
+    ['visitReasonEtc','상담 형태 기타','text'],['visitPlace','방문 장소','text'],['address','주소','text'],['phone','연락처','text'],
+    ['agencySupportDetails','유관기관업무지원 세부 (쉼표로 구분)','text'],['healthCareDetails','건강관리 세부 (쉼표로 구분)','text'],
+    ['resourceLinkDetails1','지역복지자원연계 1 (쉼표로 구분)','text'],['resourceLinkDetails2','지역복지자원연계 2 (쉼표로 구분)','text'],
+    ['visitPurposeEtc','활동목적 기타','text'],['content','활동·방문 내용 전체','textarea'],['by','작성·수정 관리자','text'],['reason','추가·수정 사유','textarea']];
+  const split=value=>String(value||'').split(/[,\n]/).map(x=>x.trim()).filter(Boolean);
+  const key=()=> 'admin__'+crypto.randomUUID();
+  function localTime(value){const d=kstDate(value);return d?d.toISOString().slice(0,16):'';}
+  function patch(input){
+    if(!norm(input.userName))throw Error('선생님 이름을 입력해주세요.');
+    if(!['활동 기록','방문사례기록'].includes(input.type))throw Error('일과 시작·종료는 근무시간 정정에서 저장해주세요.');
+    if(!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(input.when||''))throw Error('기록 일시를 입력해주세요.');
+    const date=new Date(input.when+':00+09:00');if(isNaN(date))throw Error('기록 일시를 확인해주세요.');
+    const minutes=Number(input.durationMinutes||0),hours=Number(input.workHours||5);
+    if(!Number.isFinite(minutes)||minutes<0)throw Error('활동시간은 0 이상의 숫자로 입력해주세요.');
+    if(!Number.isInteger(hours)||hours<1||hours>5)throw Error('예정 근무시간은 1~5시간으로 입력해주세요.');
+    if(!norm(input.by)||!norm(input.reason))throw Error('관리자 이름과 추가·수정 사유를 입력해주세요.');
+    const purposes=Array.isArray(input.purposes)?input.purposes.map(norm).filter(Boolean):[];
+    if(!purposes.length)throw Error('활동목적을 하나 이상 선택해주세요.');
+    const visit=input.type==='방문사례기록',content=String(input.content||'');
+    if(visit&&!norm(input.clientName))throw Error('대상자명 또는 경로당을 입력해주세요.');
+    const details={agencySupport:split(input.agencySupportDetails),healthCare:split(input.healthCareDetails),resourceLink1:split(input.resourceLinkDetails1),resourceLink2:split(input.resourceLinkDetails2)};
+    const payload={userName:norm(input.userName),coordinatorName:norm(input.userName),type:input.type,recordType:visit?'visitCase':'activity',
+      timestamp:firebase.firestore.Timestamp.fromDate(date),clientTimeMs:date.getTime(),timeStr:kstLocale(date),
+      visitDateTime:visit?firebase.firestore.Timestamp.fromDate(date):null,visitDateTimeMs:visit?date.getTime():null,visitDateTimeText:visit?kstLocale(date):'',
+      visitDateTimeValue:visit?input.when:'',activitySavedAt:date.getTime(),
+      activities:purposes,activitiesText:purposes.join(', '),selectedActivities:purposes,activityNames:purposes,
+      visitPurposes:visit?purposes:[],activityPurposes:purposes,purposes:[],activity:'',primaryActivityName:'',secondaryActivities:[],secondaryActivitiesText:'',
+      memo:content,content,note:content,normalMemo:content,activityContent:content,visitSummary:visit?content:'',visitContent:visit?content:'',summary:visit?content:'',
+      durationMs:minutes*60000,activityDurationMs:minutes*60000,durationMinutes:minutes,activityMinutes:minutes,activityDurationText:fmtDur(minutes*60000),activityStartedAt:date.getTime()-minutes*60000,
+      workHours:hours,workHoursText:hours+'시간',
+      agencySupportDetails:details.agencySupport,healthCareDetails:details.healthCare,resourceLinkDetails1:details.resourceLink1,resourceLinkDetails2:details.resourceLink2,
+      resourceLinkDetails:[...new Set([...details.resourceLink1,...details.resourceLink2])],visitPurposeDetails:details,
+      purposeDetailText:[['유관기관업무지원',details.agencySupport],['건강관리',details.healthCare],['지역복지자원연계1',details.resourceLink1],['지역복지자원연계2',details.resourceLink2]].filter(([,a])=>a.length).map(([n,a])=>n+': '+a.join(', ')).join(' / '),
+      adminUpdatedBy:norm(input.by),adminUpdateReason:norm(input.reason),adminUpdatedAtMs:Date.now(),updatedAt:firebase.firestore.FieldValue.serverTimestamp()};
+    for(const name of ['clientName','gender','housingType','housingEtc','visitReason','visitReasonEtc','visitPlace','address','phone','visitPurposeEtc'])payload[name]=String(input[name]||'');
+    Object.assign(payload,{targetName:payload.clientName,elderName:payload.clientName,livingType:payload.housingType,contactType:payload.visitReason});
+    for(const name of ['birthYear','age']){
+      const value=String(input[name]??'').trim();
+      if(value&&(!/^\d+$/.test(value)||Number(value)<0))throw Error(name==='birthYear'?'출생연도를 확인해주세요.':'나이를 확인해주세요.');
+      payload[name]=value?Number(value):null;
+    }
+    return payload;
+  }
+  function inRange(cacheKey,row){
+    if(cacheKey==='all')return true;
+    const dk=dateKey(time(row));return cacheKey.startsWith('month:')?dk.slice(0,7)===cacheKey.slice(6):cacheKey.startsWith('day:')&&dk===cacheKey.slice(4);
+  }
+  function updateMemory(previous,row){
+    for(const [cacheKey,hit] of logRangeCache){hit.rows=hit.rows.filter(x=>x.id!==row.id);if(inRange(cacheKey,row))hit.rows.push(row);}
+    state.logs=state.logs.filter(x=>x.id!==row.id);
+    if(state.all||dateKey(time(row)).slice(0,7)===state.month)state.logs.push(row);
+    state.logs.sort((a,b)=>(time(b)?.getTime()||0)-(time(a)?.getTime()||0));
+    state.todayLogs=(state.todayLogs||[]).filter(x=>x.id!==row.id);if(dateKey(time(row))===dateKey(new Date()))state.todayLogs.push(row);
+    window.__step76AttendanceCache=state.logs;state.users=uniq([...state.users,user(row)]);buildSelects();apply();window.step96RenderLive?.();
+  }
+  function readForm(){
+    const input={type:$('adminRecordType').value,purposes:[...document.querySelectorAll('#adminRecordModal [data-purpose]:checked')].map(x=>x.value)};
+    fields.forEach(([name])=>input[name]=$('adminRecord_'+name).value);return input;
+  }
+  function remember(){if(!editing)return;localStorage.setItem(DRAFT,JSON.stringify({...editing,input:readForm()}));}
+  function status(text){$('adminRecordStatus').textContent=text;}
+  function close(){if(busy)return;try{remember();}catch(e){status('입력 내용을 기기에 보관하지 못했습니다. 화면을 닫지 말고 저장해주세요.');return;}$('adminRecordModal').classList.remove('open');}
+  function show(input){
+    $('adminRecordType').value=input.type||'활동 기록';fields.forEach(([name])=>$('adminRecord_'+name).value=input[name]??'');
+    $('adminRecordPurposes').innerHTML=uniq([...MAIN,...(input.purposes||[])]).map(p=>`<label class="step87-check"><input type="checkbox" data-purpose value="${esc(p)}">${esc(p)}</label>`).join('');
+    document.querySelectorAll('#adminRecordModal [data-purpose]').forEach(x=>x.checked=(input.purposes||[]).includes(x.value));
+    $('adminRecordTitle').textContent=editing.original?'기록 전체 수정':'저장되지 않은 기록 직접 추가';status('');$('adminRecordModal').classList.add('open');changeType();
+  }
+  function changeType(){const boundary=['일과 시작','일과 종료'].includes($('adminRecordType').value);$('adminRecordSave').hidden=boundary;$('adminRecordBoundary').hidden=!boundary;}
+  function open(id){
+    if(busy)return;
+    const original=id?state.logs.find(x=>x.id===id)||state.todayLogs.find(x=>x.id===id):null;
+    if(id&&!original)return toast('수정할 기록을 현재 화면에서 찾을 수 없습니다.');
+    if(original&&['일과 시작','일과 종료'].includes(type(original)))return window.step96OpenCorrection(user(original),dateKey(time(original)));
+    let draft;try{draft=JSON.parse(localStorage.getItem(DRAFT)||'null');}catch(e){}
+    if(draft&&((id&&draft.original?.id===id)||(!id&&!draft.original))&&confirm('저장 전 입력하던 내용을 이어서 작성할까요?')){editing=draft;show(draft.input);return;}
+    editing={id:original?.id||key(),auditId:key(),original:original||null};
+    const input={type:original?type(original):'활동 기록',when:localTime(original?time(original):new Date()),userName:original?user(original):$('userFilter').value,
+      durationMinutes:original?duration(original)/60000:0,workHours:original?.workHours||5,purposes:original?acts(original):[],
+      clientName:original?client(original):'',housingType:original?housing(original):'',visitReason:original?reason(original):'',
+      content:original?String([original.memo,original.visitSummary,original.activityContent,original.content,original.normalMemo,original.note].find(v=>v!=null&&String(v)!=='')??''):'',by:'관리자',reason:''};
+    fields.forEach(([name])=>{if(input[name]!==undefined)return;const v=original?.[name];input[name]=Array.isArray(v)?v.join(', '):v??'';});
+    const detailAliases={agencySupportDetails:'agencySupport',healthCareDetails:'healthCare',resourceLinkDetails1:'resourceLink1',resourceLinkDetails2:'resourceLink2'};
+    for(const [field,alias]of Object.entries(detailAliases))if(!input[field])input[field]=arr(original?.visitPurposeDetails?.[alias]).join(', ');
+    if(!input.resourceLinkDetails1&&!input.resourceLinkDetails2)input.resourceLinkDetails1=arr(original?.resourceLinkDetails||original?.visitPurposeDetails?.resourceLink).join(', ');
+    if(!input.healthCareDetails)input.healthCareDetails=arr(original?.healthDetails).join(', ');
+    show(input);
+  }
+  async function save(){
+    if(busy||!editing)return;
+    let input,payload;
+    try{input=readForm();payload=patch(input);remember();}catch(e){status(e.message);return;}
+    const op=editing;busy=true;$('adminRecordSave').disabled=true;status('서버에 저장 중입니다.');
+    try{
+      const batch=db.batch(),ref=db.collection('attendanceLogs').doc(op.id);
+      if(!op.original)Object.assign(payload,{adminManualEntry:true,createdAt:firebase.firestore.FieldValue.serverTimestamp(),gpsStatus:'not-collected',gpsSource:'admin-manual'});
+      batch.set(ref,payload,{merge:true});
+      const before=op.original?Object.fromEntries(Object.entries(op.original).filter(([key])=>key!=='id')):null;
+      batch.set(db.collection('attendanceRecordEdits').doc(op.auditId),{recordId:op.id,action:op.original?'update':'create',before,after:payload,by:input.by,reason:input.reason,at:firebase.firestore.FieldValue.serverTimestamp()});
+      await batch.commit();
+      const row={...(op.original||{}),...payload,id:op.id};
+      // A confirmed write must not be reported as failed by a local rendering error.
+      editing=null;try{localStorage.removeItem(DRAFT);}catch(e){}$('adminRecordModal').classList.remove('open');
+      try{updateMemory(op.original,row);}catch(e){console.error('관리자 저장 후 화면 갱신 오류',e);}
+      toast('서버에 저장했습니다.');
+    }catch(e){console.error('관리자 기록 저장 실패',e);status('서버 저장 실패 ('+(e.code||'오류')+'). 입력 내용은 유지됩니다. 서버 저장 완료가 아닙니다.');}
+    finally{busy=false;$('adminRecordSave').disabled=false;}
+  }
+  function setup(){
+    const button=document.createElement('button');button.className='btn b-blue';button.textContent='기록 직접 추가';button.type='button';button.id='adminRecordAdd';button.onclick=()=>open();$('reloadBtn').parentElement.appendChild(button);
+    const modal=document.createElement('div');modal.className='step87-modal';modal.id='adminRecordModal';modal.setAttribute('role','dialog');modal.setAttribute('aria-label','관리자 기록 추가 및 수정');
+    modal.innerHTML=`<div class="step87-modal-card"><div class="step87-modal-head"><h3 id="adminRecordTitle">기록 전체 수정</h3><button class="btn b-soft" id="adminRecordClose" type="button">닫기</button></div><div class="step87-modal-body"><p class="step87-note">기존 기록은 행의 ‘수정’을 누르세요. 휴대폰에 같은 기록이 보관 중이면 직접 추가한 기록과 나중에 중복될 수 있으므로 먼저 확인해주세요.</p><div class="step87-form-grid"><div><label for="adminRecordType">기록 유형</label><select id="adminRecordType"><option>활동 기록</option><option>방문사례기록</option><option>일과 시작</option><option>일과 종료</option></select></div>${fields.map(([name,label,kind])=>`<div class="${kind==='textarea'?'full':''}"><label for="adminRecord_${name}">${label}</label>${kind==='textarea'?`<textarea id="adminRecord_${name}" rows="4"></textarea>`:`<input id="adminRecord_${name}" type="${kind}" ${kind==='number'?'min="0" step="any"':''}>`}</div>`).join('')}<div class="full"><label>활동목적</label><div id="adminRecordPurposes">${MAIN.map(p=>`<label class="step87-check"><input type="checkbox" data-purpose value="${esc(p)}">${esc(p)}</label>`).join('')}</div></div></div><p class="step87-note">기존 GPS 위치와 원본의 추가 항목은 유지합니다. 일과 시작·종료는 별도 근무시간 정정으로 저장합니다.</p><div role="status" id="adminRecordStatus" style="white-space:pre-wrap;color:#9f1239"></div></div><div class="step87-modal-foot"><button class="btn b-soft" id="adminRecordCancel" type="button">입력 보관 후 닫기</button><button class="btn b-blue" id="adminRecordBoundary" type="button" hidden>근무시간 정정 열기</button><button class="btn b-blue" id="adminRecordSave" type="button">서버에 저장</button></div></div>`;
+    document.body.appendChild(modal);$('adminRecordClose').onclick=$('adminRecordCancel').onclick=close;$('adminRecordSave').onclick=save;$('adminRecordType').onchange=changeType;
+    modal.addEventListener('input',()=>{try{remember();}catch(e){status('입력 내용을 기기에 보관하지 못했습니다. 화면을 닫지 마세요.');}});
+    $('adminRecordBoundary').onclick=()=>{const input=readForm();if(!norm(input.userName)||!input.when)return status('선생님 이름과 기록 일시를 입력해주세요.');close();window.step96OpenCorrection(input.userName,input.when.slice(0,10));};
+    const base=renderTable;renderTable=function(){base();const tbody=$('tbody');const ps=Number($('pageSize').value||50),rows=state.filtered.slice((state.page-1)*ps,state.page*ps);[...tbody.querySelectorAll('tr')].forEach((tr,i)=>{if(!rows[i])return;const cell=document.createElement('td'),edit=document.createElement('button');edit.type='button';edit.className='btn b-soft';edit.textContent='수정';edit.onclick=()=>open(rows[i].id);cell.appendChild(edit);tr.appendChild(cell);});const head=tbody.closest('table').querySelector('thead tr');if(head&&!head.querySelector('[data-admin-edit]')){const th=document.createElement('th');th.dataset.adminEdit='1';th.textContent='관리';head.appendChild(th);}};
+  }
+  window.adminRecordEditor={patch,updateMemory,open,save};
+  document.addEventListener('DOMContentLoaded',setup);
+})();
+
+</script>
+
+<script id="step97-bounded-admin-reads">
+/* Bounded, retry-safe reads. Cursors advance only after every stream succeeds. */
+function createAdminRangePager({fetchPage, getTime, pageSize=50}) {
+  const entries=new Map();
+  function entry(key){
+    if(!entries.has(key))entries.set(key,{rows:new Map(),cursors:[null,null],done:[false,false],busy:null});
+    return entries.get(key);
+  }
+  async function next(key){
+    const e=entry(key);
+    if(e.busy)return e.busy;
+    if(e.done.every(Boolean))return snapshot(key);
+    e.busy=(async()=>{
+      const pages=await Promise.all(['timestamp','visitDateTime'].map((field,i)=>
+        e.done[i]?null:fetchPage(key,field,e.cursors[i],pageSize)));
+      pages.forEach((page,i)=>{
+        if(!page)return;
+        page.forEach(doc=>e.rows.set(doc.id,{id:doc.id,...doc.data()}));
+        if(page.length)e.cursors[i]=page[page.length-1];
+        e.done[i]=page.length<pageSize;
+      });
+      return snapshot(key);
+    })();
+    try{return await e.busy;}finally{e.busy=null;}
+  }
+  function snapshot(key){const e=entry(key);return {rows:[...e.rows.values()].filter(row=>{const d=new Date(getTime(row));return Number.isFinite(d.getTime())&&new Date(d.getTime()+9*3600000).toISOString().slice(0,7)===key;}).sort((a,b)=>getTime(b)-getTime(a)),complete:e.done.every(Boolean)};}
+  return {next,snapshot,has:key=>entries.has(key),sync:(key,rows)=>{entry(key).rows=new Map(rows.map(row=>[row.id,row]));},reset:key=>entries.delete(key),clear:()=>entries.clear()};
+}
+if(typeof module!=='undefined')module.exports={createAdminRangePager};
+
+(function(){
+  let liveDay=null;
+  const dayConsumers=new Set();
+  function ensureDay(key){
+    if(liveDay&&liveDay.key===key&&!liveDay.error)return liveDay;
+    if(liveDay)liveDay.stops.forEach(stop=>stop());
+    let resolve,reject;
+    const e={key,parts:[null,null],stops:[],rows:[],ready:false,error:null,promise:new Promise((a,b)=>{resolve=a;reject=b;})};
+    // The promise may reject before an init consumer reaches it.
+    e.promise.catch(()=>{});liveDay=e;
+    const r=kstRange(key);
+    ['timestamp','visitDateTime'].forEach((field,i)=>{
+      const q=db.collection('attendanceLogs').where(field,'>=',firebase.firestore.Timestamp.fromDate(r.start))
+        .where(field,'<',firebase.firestore.Timestamp.fromDate(r.end));
+      e.stops.push(q.onSnapshot(snap=>{
+        if(liveDay!==e)return;e.parts[i]=snap.docs;
+        if(e.parts.some(part=>part===null))return;
+        const docs=new Map();e.parts.forEach(part=>part.forEach(doc=>docs.set(doc.id,doc)));
+        const snapshot={docs:[...docs.values()]};e.rows=snapshot.docs.map(d=>({id:d.id,...d.data()}))
+          .filter(l=>dateKey(time(l))===key);e.ready=true;resolve(e.rows);
+        logRangeCache.set('day:'+key,{at:Date.now(),rows:e.rows});
+        dayConsumers.forEach(c=>c.next(snapshot));
+      },error=>{if(liveDay!==e)return;e.error=error;reject(error);dayConsumers.forEach(c=>c.error(error));}));
+    });
+    return e;
+  }
+  window.step97ReadToday=async key=>{
+    const e=ensureDay(key);if(e.error)throw e.error;if(e.ready)return e.rows;
+    let timer;try{return await Promise.race([e.promise,new Promise((_,reject)=>{timer=setTimeout(()=>reject(new Error('오늘 기록 응답 대기 시간 초과')),15000);})]);}finally{clearTimeout(timer);}
+  };
+  window.step97SubscribeToday=(next,error)=>{
+    const c={next,error};dayConsumers.add(c);const e=ensureDay(dateKey(new Date()));
+    if(e.error)error(e.error);else if(e.ready)next({docs:e.rows.map(row=>({id:row.id,data:()=>row}))});
+    return ()=>dayConsumers.delete(c);
+  };
+  const pager=createAdminRangePager({getTime:l=>time(l)?.getTime()||0,fetchPage:async(key,field,cursor,size)=>{
+    const r=kstRange(key,true);
+    let q=db.collection('attendanceLogs').where(field,'>=',firebase.firestore.Timestamp.fromDate(r.start))
+      .where(field,'<',firebase.firestore.Timestamp.fromDate(r.end)).orderBy(field,'desc').limit(size);
+    if(cursor)q=q.startAfter(cursor);
+    return (await q.get()).docs;
+  }});
+  window.step97MonthPager=pager;
+  // Share one pager with the base loader; no network request happens on construction.
+  monthPager=pager;
+  const oldStatus=renderStatus,oldSummary=renderSummary,oldTable=renderTable,oldExport=exportRows;
+  function partial(){return state.detailScope==='month'&&!state.detailComplete;}
+  function paintScope(){
+    const label=state.detailScope==='today'?'오늘':state.all?'전체 기간':state.month;
+    $('monthBadge').textContent=label+(partial()?' · 일부 기록':' · 조회 완료');
+    const note=$('step97ScopeNote');if(note)note.textContent=partial()?
+      '현재 불러온 '+state.logs.length+'건 안에서만 검색합니다. 월 전체 검색·집계·엑셀은 아래 전체 불러오기를 선택하세요.':
+      label+' 자료 기준입니다. 월 전체 자료는 선택 월 조회를 눌렀을 때만 가져옵니다.';
+    for(const [id,suffix] of [['workTime',' 총 근무 시간'],['activityTime',' 총 활동 시간'],['topWorker',' 개인 최고 근무']]){
+      const title=$(id)?.closest('.card')?.querySelector('label');if(title)title.textContent=label+suffix;
+    }
+    if($('step97More'))$('step97More').hidden=!partial();
+    if($('step97Full'))$('step97Full').hidden=!partial();
+  }
+  renderStatus=function(){oldStatus();if(partial()){
+    window._inactive={never:[],noact:[]};
+    for(const id of ['inactiveTotal','neverCnt','noActivityCnt'])$(id).textContent='미집계';
+    $('inactiveSub').textContent='월 전체 기록을 아직 조회하지 않았습니다. 미사용자는 전체 불러오기 후 확인합니다.';
+    $('neverList').textContent='전체 조회 후 확인';$('noActivityList').textContent='전체 조회 후 확인';
+    $('copyInactiveBtn').disabled=true;$('excelInactiveBtn').disabled=true;
+  }else{$('copyInactiveBtn').disabled=false;$('excelInactiveBtn').disabled=false;}paintScope();};
+  renderSummary=function(){oldSummary();if(partial()){
+    $('workTime').textContent='전체 조회 후 집계';$('activityTime').textContent='전체 조회 후 집계';
+    $('topWorker').textContent='미집계';$('topWorkerSub').textContent='월 전체 조회 필요';
+    $('topActivitySub').textContent='현재 불러온 기록 기준';
+  }paintScope();};
+  renderTable=function(){oldTable();if(partial())$('tableInfo').textContent='일부 자료 · '+$('tableInfo').textContent;paintScope();};
+  exportRows=function(visitOnly=false){if(partial())return alert('월 전체 엑셀을 위해 먼저 전체 불러오기를 선택해주세요. 일부 자료를 전체로 내보내지 않습니다.');return oldExport(visitOnly);};
+  let busy=false;
+  async function append(full){
+    if(busy||state.detailScope!=='month')return;
+    if(full&&!confirm('선택 월 전체 기록을 추가 조회합니다. 월 집계·검색·엑셀에 필요한 작업이며 읽기 사용량이 늘어납니다. 진행할까요?'))return;
+    busy=true;const key=state.month,generation=state.loadGeneration;
+    $('step97More').disabled=true;$('step97Full').disabled=true;
+    try{
+      pager.sync(key,state.logs);
+      let page;
+      do{page=await pager.next(key);}while(full&&!page.complete&&state.month===key&&state.detailScope==='month');
+      if(state.month!==key||state.detailScope!=='month'||generation!==state.loadGeneration)return;
+      state.logs=page.rows;state.detailComplete=page.complete;
+      logRangeCache.set('month:'+key,{at:Date.now(),rows:page.rows,complete:page.complete});
+      window.__step76AttendanceCache=state.logs;window.__step76AttendanceCacheAt=Date.now();
+      apply();toast(page.complete?'선택 월 전체 조회 완료':'다음 기록을 추가로 불러왔습니다');
+    }catch(e){console.error(e);alert('추가 조회 실패 ('+(e.code||'오류')+'). 이미 받은 기록은 유지합니다.');}
+    finally{busy=false;$('step97More').disabled=false;$('step97Full').disabled=false;}
+  }
+  document.addEventListener('DOMContentLoaded',()=>{
+    const bar=document.createElement('div');bar.className='section';bar.innerHTML='<button class="btn b-soft" id="step97Today">오늘 현황 보기</button> <button class="btn b-soft" id="step97More" hidden>추가 불러오기 (최대 100건)</button> <button class="btn b-ghost" id="step97Full" hidden>선택 월 전체 불러오기 · 집계·검색·엑셀</button><div class="note" id="step97ScopeNote"></div>';
+    $('tableInfo').parentElement.before(bar);
+    $('step97Today').onclick=()=>init(false,'today');$('step97More').onclick=()=>append(false);$('step97Full').onclick=()=>append(true);
+    // Query-range buttons must load the selected scope instead of filtering today's rows as a month.
+    document.querySelector('[data-range="month"]').onclick=()=>init(false,'month');
+    document.querySelector('[data-range="today"]').onclick=()=>init(false,'today');
+    for(const name of ['week','all'])document.querySelector('[data-range="'+name+'"]').onclick=()=>alert('먼저 선택 월 조회 또는 전체 기간 보기를 눌러 필요한 범위를 불러와주세요.');
+    paintScope();
+  });
+})();
+</script>
 
 </body></html>

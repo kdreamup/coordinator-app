@@ -7,8 +7,8 @@ let correction,exported;
 const elements={step87CorrUser:{value:'tester'},step87CorrDate:{value:'2026-10-07'},step87CorrBy:{value:'관리자'},step90ResetBoundary:{disabled:false}};
 const context={Date,console,document:{getElementById:id=>elements[id]},n:v=>String(v||'').trim(),confirm:()=>true,
  dateKey:()=> '2026-10-07',time:l=>l.clientTimeMs,type:l=>l.type,corrId:(n,d)=>d+'__'+n,CORRECTIONS:'attendanceCorrections',closeCorrection:()=>{},toast:()=>{},
- firebase:{firestore:{FieldValue:{serverTimestamp:()=>0}}},
- db:{collection:name=>({where:()=>({get:async()=>({docs:logs.filter(l=>l.userName==='tester').map(l=>({ref:{id:l.id},data:()=>l}))})}),doc:id=>({id})}),batch:()=>{
+ firebase:{firestore:{FieldValue:{serverTimestamp:()=>0},Timestamp:{fromDate:d=>d}}},
+ db:{collection:name=>({where:()=>{const query={where:()=>query,orderBy:()=>query,get:async()=>({docs:logs.filter(l=>l.userName==='tester').map(l=>({ref:{id:l.id},data:()=>l}))})};return query;},doc:id=>({id})}),batch:()=>{
  const removed=[];return{delete:ref=>removed.push(ref.id),set:(ref,data)=>correction=data,commit:async()=>{logs=logs.filter(l=>!removed.includes(l.id));}};
  }}
 };

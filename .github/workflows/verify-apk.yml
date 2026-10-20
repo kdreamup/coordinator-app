@@ -1,0 +1,85 @@
+name: Verify isolated Android APK
+
+on:
+  push:
+    branches: ['codex/verify-6-12-*']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  isolated-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify retention and read scope without production network
+        run: |
+          node tests/attendance-regression.cjs
+          node tests/admin-boundaries.cjs
+          node tests/visit-outbox.cjs
+          node tests/visit-save-flow.cjs
+          node tests/visit-drafts.cjs
+          node tests/read-scope.cjs
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+          log-accepted-android-sdk-licenses: false
+      - name: Bundle isolated emulator configuration
+        run: |
+          mkdir -p www
+          python3 - <<'PY'
+          from pathlib import Path
+          import json
+          config={'config':{'projectId':'demo-coordinator-validation','apiKey':'demo-api-key','appId':'1:0:web:demo'},'emulator':{'host':'127.0.0.1','port':8080}}
+          source=Path('index.html').read_text()
+          assert source==Path('public/index.html').read_text()
+          script='<script>window.COORDINATOR_TEST_ENV='+json.dumps(config)+';</script>'
+          assert source.count('<head>')==1
+          Path('www/index.html').write_text(source.replace('<head>','<head>'+script,1))
+          PY
+      - name: Create separate Android app
+        run: |
+          npm init -y
+          npm install --save-exact @capacitor/core@8.0.0 @capacitor/cli@8.0.0 @capacitor/android@8.0.0 @capacitor/geolocation@8.0.0
+          npx cap init "Coordinator Validation" "kr.nonsan.coordinator.validation" --web-dir www
+          npx cap add android
+          npx cap sync android
+      - name: Set SDK and debug version
+        run: |
+          sdkmanager 'platforms;android-36' 'build-tools;35.0.0'
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          p=Path('android/variables.gradle');s=p.read_text()
+          for key,value in [('minSdkVersion',24),('compileSdkVersion',36),('targetSdkVersion',36)]:
+              s=re.sub(rf'{key}\s*=\s*\d+',f'{key} = {value}',s)
+          p.write_text(s)
+          p=Path('android/app/build.gradle');s=p.read_text()
+          s=re.sub(r'versionCode\s+\d+','versionCode 63',s,count=1)
+          s=re.sub(r'versionName\s+"[^"]+"','versionName "6.12-validation"',s,count=1)
+          p.write_text(s)
+          p=Path('android/app/src/main/AndroidManifest.xml');s=p.read_text()
+          permissions=['android.permission.ACCESS_FINE_LOCATION','android.permission.ACCESS_COARSE_LOCATION']
+          addition=''.join('\n    <uses-permission android:name="'+name+'" />' for name in permissions if name not in s)
+          s=re.sub(r'(<manifest[^>]*>)',lambda m:m.group(1)+addition,s,count=1)
+          p.write_text(s)
+          PY
+      - name: Build debug APK
+        working-directory: android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon
+      - uses: actions/upload-artifact@v4
+        with:
+          name: coordinator-6.12-isolated-debug-apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error

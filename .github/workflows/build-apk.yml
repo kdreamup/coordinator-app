@@ -5,6 +5,12 @@ on:
     branches:
       - main
   workflow_dispatch:
+    inputs:
+      environment:
+        description: 'test requires COORDINATOR_TEST_FIREBASE_CONFIG repository variable'
+        type: choice
+        options: [test, production]
+        default: test
 
 permissions:
   contents: read
@@ -22,6 +28,15 @@ jobs:
         with:
           node-version: '22'
 
+      - name: Attendance regression checks (no production network)
+        run: |
+          node tests/attendance-regression.cjs
+          node tests/admin-boundaries.cjs
+          node tests/visit-outbox.cjs
+          node tests/visit-save-flow.cjs
+          node tests/visit-drafts.cjs
+          node tests/read-scope.cjs
+
       - name: Setup Java
         uses: actions/setup-java@v5
         with:
@@ -38,6 +53,22 @@ jobs:
           mkdir -p www
           cp index.html www/index.html
 
+      - name: Separate test Firebase and app identity
+        if: github.event_name == 'workflow_dispatch' && inputs.environment == 'test'
+        env:
+          TEST_FIREBASE_CONFIG: ${{ vars.COORDINATOR_TEST_FIREBASE_CONFIG }}
+        run: |
+          python - <<'PYCODE'
+          import json, os
+          from pathlib import Path
+          config=json.loads(os.environ['TEST_FIREBASE_CONFIG'])
+          if not config.get('projectId') or config['projectId']=='attendance-system-e2848':
+              raise SystemExit('A separate Firebase test project is required')
+          p=Path('www/index.html')
+          text=p.read_text().replace('<head>', '<head><script>window.COORDINATOR_TEST_ENV='+json.dumps({'config':config}).replace('<','\\u003c')+';</script>',1)
+          p.write_text(text)
+          PYCODE
+
       - name: Install Capacitor 8
         run: |
           npm init -y
@@ -45,7 +76,11 @@ jobs:
 
       - name: Create Android project
         run: |
-          npx cap init "Coordinator App" "kr.nonsan.coordinator" --web-dir www
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ inputs.environment }}" = "test" ]; then
+            npx cap init "Coordinator Test" "kr.nonsan.coordinator.test" --web-dir www
+          else
+            npx cap init "Coordinator App" "kr.nonsan.coordinator" --web-dir www
+          fi
           npx cap add android
           npx cap sync android
 
@@ -93,8 +128,8 @@ jobs:
 
           app = Path("android/app/build.gradle")
           a = app.read_text(encoding="utf-8")
-          a, c1 = re.subn(r"versionCode\s+\d+", "versionCode 62", a, count=1)
-          a, c2 = re.subn(r'versionName\s+"[^"]+"', 'versionName "6.11"', a, count=1)
+          a, c1 = re.subn(r"versionCode\s+\d+", "versionCode 63", a, count=1)
+          a, c2 = re.subn(r'versionName\s+"[^"]+"', 'versionName "6.12"', a, count=1)
           if c1 != 1 or c2 != 1:
               raise SystemExit("versionCode/versionName update failed")
           app.write_text(a, encoding="utf-8")
@@ -151,13 +186,13 @@ jobs:
       - name: Upload release AAB
         uses: actions/upload-artifact@v4
         with:
-          name: coordinator-release-6.11-aab
+          name: coordinator-release-6.12-aab
           path: android/app/build/outputs/bundle/release/app-release.aab
           if-no-files-found: error
 
       - name: Upload release APK
         uses: actions/upload-artifact@v4
         with:
-          name: coordinator-release-6.11-apk
+          name: coordinator-release-6.12-apk
           path: android/app/build/outputs/apk/release/app-release.apk
           if-no-files-found: error

@@ -1,3 +1,4 @@
+for(const test of ['record-edit-access','mutation-read-cost','admin-record-editor','admin-corrections','admin-bounded-reads']) require('node:child_process').execFileSync(process.execPath,['tests/'+test+'.cjs'],{stdio:'inherit'});
 const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
 const html=fs.readFileSync('index.html','utf8');
 const scripts=[...html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/g)];
@@ -12,7 +13,7 @@ class TestDate extends Date{constructor(...a){super(...(a.length?a:[clock]));}st
 const c={console,Date:TestDate,Promise,Map,Set,Number,String,JSON,encodeURIComponent,
  setTimeout:()=>0,clearTimeout:noop,setInterval:()=>0,
  document:{addEventListener:noop,visibilityState:'visible'},navigator:{onLine:true},
- currentUserName:'tester',selectedDateKey:'2026-10-01',allLogs:[],DEFAULT_WORK_HOURS:5,
+ historyMonthRequested:false,calYear:2026,calMonth:9,renderVisitOutbox:noop,flushVisitOutbox:async()=>true,currentUserName:'tester',selectedDateKey:'2026-10-01',allLogs:[],DEFAULT_WORK_HOURS:5,
  localStorage:{getItem:k=>mem.get(k)||null,setItem:(k,v)=>mem.set(k,v),removeItem:k=>mem.delete(k)},
  formatDateKey:d=>new Date(d).toISOString().slice(0,10),toDate:x=>x==null?null:new Date(x.seconds?x.seconds*1000:x),
  getLogUserName:l=>l.userName,getLogDateTime:l=>new Date(l.clientTimeMs),
@@ -23,9 +24,10 @@ const c={console,Date:TestDate,Promise,Map,Set,Number,String,JSON,encodeURICompo
  buildWorkBreakFields:h=>({workHours:h}),selectGpsForRecord:g=>({gps:g,status:'fresh'}),
  requestGpsOnce:()=>new Promise(r=>gpsResolve=r),lastGpsErrorCode:'',lastGpsErrorMessage:'',
  saveWorkBoundaryLog:noop,_doSaveWorkBoundaryLog:noop,renderHistory:noop,
+ renderMainDataFromMemory:()=>{},
  reloadMainData:async()=>{c.allLogs=[...records].map(([id,data])=>({id,...data}));},
  firebase:{firestore:{Timestamp:{fromMillis:ms=>({seconds:ms/1000})},FieldValue:{serverTimestamp:()=>0}}},
- db:{collection:name=>({get:async()=>({docs:[...records].map(([id,data])=>({id,data:()=>data}))}),doc:id=>({id,collection:name,get:async()=>({id,exists:corrections.has(id),data:()=>corrections.get(id)})}),where:(field,op,value)=>({get:async()=>({docs:[...records].filter(([id,data])=>data[field]===value).map(([id,data])=>({id,data:()=>data}))})})}),
+ db:{collection:name=>({get:async()=>({docs:[...records].map(([id,data])=>({id,data:()=>data}))}),doc:id=>({id,collection:name,get:async()=>({id,exists:corrections.has(id),data:()=>corrections.get(id)})}),where:(field,op,value)=>{const filters=[[field,op,value]];const query={where:(f,o,v)=>{filters.push([f,o,v]);return query;},orderBy:()=>query,get:async()=>({docs:[...records].filter(([id,data])=>filters.every(([f,o,v])=>o==='=='?data[f]===v:true)).map(([id,data])=>({id,data:()=>data}))})};return query;}}),
  runTransaction:async fn=>{if(fail){const e=Error('simulated save failure');e.code=failCode;throw e;}await fn({get:async ref=>{if(readDenied&&ref.collection==='attendanceCorrections'){const e=Error('Missing or insufficient permissions');e.code='permission-denied';throw e;}return ({exists:ref.collection==='attendanceCorrections'?corrections.has(ref.id):records.has(ref.id),data:()=>corrections.get(ref.id)});},set:(ref,data)=>records.set(ref.id,data)});}},
 };
 for(const n of ['updateBoundaryBtnState','updateActivityAreaState','updateWorkHoursUi','updateWorkTimerUi','updateCurrentElapsedUi','syncGpsCheckTimer','clearCurrentActivitySessionSilently','updateTodaySummary','renderCalendar','checkAutoWorkEnd','saveGpsCheckSnapshot','loadAttendanceLogs'])c[n]=noop;
